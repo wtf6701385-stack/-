@@ -1,42 +1,89 @@
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
-local gui = player:WaitForChild("PlayerGui"):FindFirstChild("CatCat_Qin_UI") or Instance.new("ScreenGui", player.PlayerGui)
-_G.ESP_ENABLED = true
-local ESPF, ESPM, ESPC = Instance.new("Folder", gui), {}, {}
+-- 這裡改為對接到你主 UI 的 ScreenGui 名稱，或者保持獨立
+local gui = player:WaitForChild("PlayerGui"):FindFirstChild("CatCat_Final_Neko") or Instance.new("ScreenGui", player.PlayerGui)
+
+local ESPF, ESPM, ESPC = gui:FindFirstChild("ESP_Folder") or Instance.new("Folder", gui), {}, {}
+ESPF.Name = "ESP_Folder"
+
 local function getRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso")) end
-local function clearE(p) if ESPM[p] then ESPM[p]:Destroy(); ESPM[p] = nil end end
+
+local function clearE(p) 
+    if ESPM[p] then 
+        ESPM[p]:Destroy()
+        ESPM[p] = nil 
+    end 
+end
+
 local function attE(p, char)
     clearE(p)
     local hrp = getRoot(char)
     if not hrp then return end
+    
     local bb = Instance.new("BillboardGui", ESPF)
-    bb.Adornee = hrp; bb.AlwaysOnTop = true; bb.Size = UDim2.new(0, 200, 0, 40)
+    bb.Adornee = hrp
+    bb.AlwaysOnTop = true
+    bb.Size = UDim2.new(0, 200, 0, 40)
+    bb.ExtentsOffset = Vector3.new(0, 3, 0) -- 讓文字在頭頂上方
+    
     local txt = Instance.new("TextLabel", bb)
-    txt.Size = UDim2.new(1, 0, 1, 0); txt.BackgroundTransparency = 1; txt.TextColor3 = Color3.new(1, 1, 1); txt.Font = 3; txt.TextSize = 14
+    txt.Size = UDim2.new(1, 0, 1, 0)
+    txt.BackgroundTransparency = 1
+    txt.TextColor3 = Color3.new(1, 1, 1)
+    txt.TextStrokeTransparency = 0 -- 加上外框讓文字更清楚
+    txt.Font = Enum.Font.SourceSansBold
+    txt.TextSize = 14
+    
     ESPM[p] = bb
+    
     task.spawn(function()
-        while _G.ESP_ENABLED and bb.Parent and p.Character do
+        -- 判斷 UI 的 _G.ESP 是否開啟
+        while _G.ESP and bb.Parent and p.Character and p.Parent do
             local me, tg = getRoot(player.Character), getRoot(p.Character)
-            if me and tg then txt.Text = p.Name .. " [" .. math.floor((me.Position - tg.Position).Magnitude) .. "m]" end
+            if me and tg then 
+                txt.Text = p.Name .. " [" .. math.floor((me.Position - tg.Position).Magnitude) .. "m]" 
+            end
             task.wait(0.2)
         end
         clearE(p)
     end)
 end
+
 local function hookP(p)
     if p == player then return end
-    if p.Character then attE(p, p.Character) end
+    -- 只有在開關打開時才掛載
+    if _G.ESP and p.Character then attE(p, p.Character) end
+    
     if ESPC[p] then ESPC[p]:Disconnect() end
-    ESPC[p] = p.CharacterAdded:Connect(function(c) if _G.ESP_ENABLED then task.wait(0.5); attE(p, c) end end)
+    ESPC[p] = p.CharacterAdded:Connect(function(c) 
+        if _G.ESP then 
+            task.wait(0.5)
+            attE(p, c) 
+        end 
+    end)
 end
+
+-- 初始化連線
+for _, p in ipairs(Players:GetPlayers()) do hookP(p) end
 Players.PlayerAdded:Connect(hookP)
-Players.PlayerRemoving:Connect(function(p) clearE(p); if ESPC[p] then ESPC[p]:Disconnect(); ESPC[p] = nil end end)
+Players.PlayerRemoving:Connect(function(p) 
+    clearE(p)
+    if ESPC[p] then ESPC[p]:Disconnect(); ESPC[p] = nil end 
+end)
+
+-- 強制啟動/停止監控循環
 task.spawn(function()
-    local l = false
+    local lastState = false
     while true do
-        if _G.ESP_ENABLED ~= l then
-            l = _G.ESP_ENABLED
-            if l then for _, p in ipairs(Players:GetPlayers()) do hookP(p) end else for p in pairs(ESPM) do clearE(p) end end
+        if _G.ESP ~= lastState then
+            lastState = _G.ESP
+            if lastState then 
+                -- 開啟：幫所有人掛上標籤
+                for _, p in ipairs(Players:GetPlayers()) do hookP(p) end 
+            else 
+                -- 關閉：清除所有顯示中的標籤
+                for p in pairs(ESPM) do clearE(p) end 
+            end
         end
         task.wait(0.5)
     end
