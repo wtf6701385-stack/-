@@ -1,44 +1,45 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Player = Players.LocalPlayer
-_G.AOE_ENABLED = true
-local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
-local RegAttack = Net:WaitForChild("RE/RegisterAttack")
-local RegHit = Net:WaitForChild("RE/RegisterHit")
-local function GetRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")) end
-local function IsAlive(c) local h = c and c:FindFirstChildOfClass("Humanoid") return h and h.Health > 0 end
-local function StartAoe()
-    task.spawn(function()
-        local ar2 = 6250000
-        while _G.AOE_ENABLED do
-            RunService.Stepped:Wait()
-            local char = Player.Character
-            local myRoot = GetRoot(char)
-            if char and char:FindFirstChildOfClass("Tool") and myRoot then
-                local temp, myPos = {}, myRoot.Position
-                local folders = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("Characters"), workspace:FindFirstChild("NPCs")}
-                for _, f in ipairs(folders) do
-                    if f then
-                        for _, v in ipairs(f:GetChildren()) do
-                            if v ~= char and IsAlive(v) then
-                                local hrp = GetRoot(v)
-                                if hrp then
-                                    local dx, dy, dz = hrp.Position.X - myPos.X, hrp.Position.Y - myPos.Y, hrp.Position.Z - myPos.Z
-                                    if (dx*dx + dy*dy + dz*dz) <= ar2 then table.insert(temp, {v, hrp}) end
-                                end
-                            end
-                        end
-                    end
-                end
-                if #temp > 0 then
-                    task.spawn(function()
-                        RegAttack:FireServer(0)
-                        RegHit:FireServer(temp[1][2], temp)
-                    end)
-                end
-            end
-        end
-    end)
+local Players=game:GetService("Players")
+local RunService=game:GetService("RunService")
+local ReplicatedStorage=game:GetService("ReplicatedStorage")
+local Player=Players.LocalPlayer
+local Net=ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+local RegAttack=Net:WaitForChild("RE/RegisterAttack")
+local RegHit=Net:WaitForChild("RE/RegisterHit")
+_G.AOE_RUNNING=true
+local function GetRoot(c)return c and(c:FindFirstChild("HumanoidRootPart")or c:FindFirstChild("Head"))end
+local function IsAlive(c)local h=c and c:FindFirstChildOfClass("Humanoid")return h and h.Health>0 end
+task.spawn(function()
+while _G.AOE_RUNNING do
+RunService.Heartbeat:Wait()
+local char=Player.Character
+local root=GetRoot(char)
+local tool=char and char:FindFirstChildOfClass("Tool")
+if tool and root then
+local targets={}
+local myPos=root.Position
+local folders={workspace:FindFirstChild("Enemies"),workspace:FindFirstChild("Characters"),workspace:FindFirstChild("NPCs")}
+for _,f in ipairs(folders)do
+if f then
+local children=f:GetChildren()
+for i=1,#children do
+local m=children[i]
+if m~=char and IsAlive(m)then
+local tr=GetRoot(m)
+if tr then
+local diff=tr.Position-myPos
+if(diff.X^2+diff.Y^2+diff.Z^2)<=12250000 then
+table.insert(targets,{m,tr})
 end
-StartAoe()
+end
+end
+end
+end
+end
+if #targets>0 then
+RegAttack:FireServer(0)
+RegHit:FireServer(targets[1][2],targets)
+end
+end
+task.wait(0.01)
+end
+end)
