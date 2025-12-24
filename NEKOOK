@@ -1,29 +1,42 @@
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
+local userId = player.UserId
 
--- 1. 從 GitHub 抓取白名單清單
+-- [[ 這裡只放純網址 ]]
+local WHITELIST_URL = "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/FUCKYOU"
+local MAIN_SCRIPT_URL = "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKO"
+
+print("📡 正在驗證白名單...")
+
+-- 1. 抓取白名單內容
 local success, result = pcall(function()
-    return game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/FUCKYOU")
+    return game:HttpGet(WHITELIST_URL)
 end)
 
 if success then
-    local whitelist = loadstring(result)()
-    
-    -- 2. 檢查目前玩家的 UserId 是否在清單中
-    if table.find(whitelist, player.UserId) then
-        print("✅ 身份驗證成功，正在載入專屬 UI...")
+    -- 2. 解析白名單
+    local whitelistFunc = loadstring(result)
+    if whitelistFunc then
+        local whitelist = whitelistFunc()
         
-        ------------------------------------------------
-        -- 這裡放入你原本建立 UI 的代碼，或者是載入主腳本
-        ------------------------------------------------
-        -- 範例：載入你的 NEKO 腳本 (裡面包含 UI)
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKO"))()
-        
+        -- 3. 比對 UserId
+        if table.find(whitelist, userId) then
+            print("✅ 驗證成功，正在載入專屬 UI...")
+            
+            -- 載入主腳本
+            local mainSuccess, err = pcall(function()
+                loadstring(game:HttpGet(MAIN_SCRIPT_URL))()
+            end)
+            
+            if not mainSuccess then
+                warn("❌ 主腳本載入出錯: " .. tostring(err))
+            end
+        else
+            warn("⛔ 您不在白名單清單中 (您的 ID: " .. userId .. ")")
+        end
     else
-        -- 3. 不在白名單內的處理
-        warn("❌ 存取被拒絕：你不在白名單中。")
-        -- 這裡什麼都不做，所以對方不會看到任何 UI
+        warn("❌ 白名單檔案內容格式錯誤")
     end
 else
-    warn("🌐 網路錯誤：無法連接至驗證伺服器。")
+    warn("🌐 無法連線至 GitHub，請檢查連結是否有效。")
 end
