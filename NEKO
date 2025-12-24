@@ -1,3 +1,16 @@
+-- [背景自動功能：視角縮放]
+task.spawn(function()
+    local p = game:GetService("Players").LocalPlayer
+    local function apply() p.CameraMaxZoomDistance = 1000 end
+    apply()
+    p.CharacterAdded:Connect(function() task.wait(1) apply() end)
+    while true do 
+        if p.CameraMaxZoomDistance ~= 1000 then apply() end
+        task.wait(1)
+    end
+end)
+
+-- [以下為原有的貓貓 UI 腳本，未更動任何邏輯]
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -18,7 +31,6 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 _G.PVP, _G.MOB, _G.ESP = false, false, false
 
--- 視覺效果函數
 local function getRainbow(o)
     local t = tick() + (o or 0)
     return Color3.new((math.sin(t) + 1) / 2, (math.sin(t + 2) + 1) / 2, (math.sin(t + 4) + 1) / 2)
@@ -33,7 +45,6 @@ local function getContrast(c)
     return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) > 0.5 and Color3.new(0, 0, 0) or Color3.new(1, 1, 1)
 end
 
--- 主視窗
 local main = Instance.new("Frame", gui)
 main.Size = UDim2.new(0, 260, 0, 230)
 main.Position = UDim2.new(0.5, -130, 0.5, -115)
@@ -92,10 +103,6 @@ local function createBtn(id, n, y, cb)
     table.insert(btnList, {i = b, o = y / 50})
 end
 
------------------------------------------------------------
--- 按鈕功能連結 (全部放回)
------------------------------------------------------------
-
 -- 1. 打架模式
 createBtn("PVP", "打架模式 : OFF", 60, function(b)
     _G.PVP = not _G.PVP
@@ -118,7 +125,7 @@ createBtn("MOB", "刷怪模式 : OFF", 105, function(b)
     b.Text = "🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
--- 3. 透視對手 (已重新放回功能)
+-- 3. 透視對手
 createBtn("ESP", "透視對手 : OFF", 150, function(b)
     _G.ESP = not _G.ESP
     if _G.ESP then
@@ -132,14 +139,11 @@ createBtn("FLY", "點擊召喚飛行", 195, function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))()
 end)
 
------------------------------------------------------------
--- 縮小/關閉/渲染邏輯
------------------------------------------------------------
-
 close.MouseButton1Click:Connect(function() gui:Destroy() end)
 
 mini.MouseButton1Click:Connect(function()
-    title.Visible = false; mini.Visible = false
+    title.Visible = false
+    mini.Visible = false
     for _, v in ipairs(btnList) do v.i.Visible = false end
     main.BackgroundTransparency = 0.8
     main:TweenSize(UDim2.new(0, 140, 0, 45), "Out", "Quart", 0.3, true)
@@ -148,9 +152,11 @@ end)
 
 restore.MouseButton1Click:Connect(function()
     main:TweenSize(UDim2.new(0, 260, 0, 230), "Out", "Quart", 0.3, true, function()
-        title.Visible = true; mini.Visible = true
+        title.Visible = true
+        mini.Visible = true
         for _, v in ipairs(btnList) do v.i.Visible = true end
-        main.BackgroundTransparency = 0; restore.Visible = false
+        main.BackgroundTransparency = 0
+        restore.Visible = false
     end)
 end)
 
