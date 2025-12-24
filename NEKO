@@ -1,0 +1,173 @@
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- 清理舊 UI
+pcall(function()
+    if playerGui:FindFirstChild("CatCat_Final_Neko") then 
+        playerGui.CatCat_Final_Neko:Destroy() 
+    end
+end)
+
+local gui = Instance.new("ScreenGui", playerGui)
+gui.Name = "CatCat_Final_Neko"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+_G.PVP, _G.MOB, _G.ESP = false, false, false
+
+-- 視覺效果函數
+local function getRainbow(o)
+    local t = tick() + (o or 0)
+    return Color3.new((math.sin(t) + 1) / 2, (math.sin(t + 2) + 1) / 2, (math.sin(t + 4) + 1) / 2)
+end
+
+local function getPulse(b, s)
+    local p = (math.sin(tick() * s) + 1) / 2
+    return b:Lerp(Color3.new(1, 1, 1), p * 0.3)
+end
+
+local function getContrast(c)
+    return (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) > 0.5 and Color3.new(0, 0, 0) or Color3.new(1, 1, 1)
+end
+
+-- 主視窗
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 260, 0, 230)
+main.Position = UDim2.new(0.5, -130, 0.5, -115)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 20)
+
+local bar = Instance.new("Frame", main)
+bar.Size = UDim2.new(1, 0, 0, 45)
+bar.BorderSizePixel = 0
+Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 20)
+
+local title = Instance.new("TextLabel", bar)
+title.Size = UDim2.new(1, -90, 1, 0)
+title.Position = UDim2.new(0, 15, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "ฅ^•ﻌ•^ฅ 貓貓"
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+local close = Instance.new("TextButton", bar)
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -35, 0.5, -15)
+close.Text = "🐾"
+Instance.new("UICorner", close).CornerRadius = UDim.new(1, 0)
+
+local mini = Instance.new("TextButton", bar)
+mini.Size = UDim2.new(0, 30, 0, 30)
+mini.Position = UDim2.new(1, -70, 0.5, -15)
+mini.Text = "miu"
+Instance.new("UICorner", mini).CornerRadius = UDim.new(1, 0)
+
+local restore = Instance.new("TextButton", main)
+restore.Size = UDim2.new(1, 0, 1, 0)
+restore.BackgroundTransparency = 1
+restore.Text = "[ 🐾 摸我還原 ]"
+restore.Font = Enum.Font.SourceSansBold
+restore.Visible = false
+
+local btns = {}
+local btnList = {}
+
+local function createBtn(id, n, y, cb)
+    local b = Instance.new("TextButton", main)
+    b.Size = UDim2.new(1, -30, 0, 36)
+    b.Position = UDim2.new(0, 15, 0, y)
+    b.Font = Enum.Font.SourceSansBold
+    b.TextSize = 14
+    b.Text = "🐱 " .. n
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 12)
+    
+    btns[id] = b
+    b.MouseButton1Click:Connect(function() cb(b) end)
+    table.insert(btnList, {i = b, o = y / 50})
+end
+
+-----------------------------------------------------------
+-- 按鈕功能連結 (全部放回)
+-----------------------------------------------------------
+
+-- 1. 打架模式
+createBtn("PVP", "打架模式 : OFF", 60, function(b)
+    _G.PVP = not _G.PVP
+    if _G.PVP then 
+        _G.MOB = false 
+        btns["MOB"].Text = "🐱 刷怪模式 : OFF" 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"))()
+    end
+    b.Text = "🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
+end)
+
+-- 2. 刷怪模式
+createBtn("MOB", "刷怪模式 : OFF", 105, function(b)
+    _G.MOB = not _G.MOB
+    if _G.MOB then 
+        _G.PVP = false 
+        btns["PVP"].Text = "🐱 打架模式 : OFF" 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKO.Monster"))()
+    end
+    b.Text = "🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
+end)
+
+-- 3. 透視對手 (已重新放回功能)
+createBtn("ESP", "透視對手 : OFF", 150, function(b)
+    _G.ESP = not _G.ESP
+    if _G.ESP then
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()
+    end
+    b.Text = "🐱 透視對手 : " .. (_G.ESP and "ON" or "OFF")
+end)
+
+-- 4. 飛行功能
+createBtn("FLY", "點擊召喚飛行", 195, function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))()
+end)
+
+-----------------------------------------------------------
+-- 縮小/關閉/渲染邏輯
+-----------------------------------------------------------
+
+close.MouseButton1Click:Connect(function() gui:Destroy() end)
+
+mini.MouseButton1Click:Connect(function()
+    title.Visible = false; mini.Visible = false
+    for _, v in ipairs(btnList) do v.i.Visible = false end
+    main.BackgroundTransparency = 0.8
+    main:TweenSize(UDim2.new(0, 140, 0, 45), "Out", "Quart", 0.3, true)
+    restore.Visible = true
+end)
+
+restore.MouseButton1Click:Connect(function()
+    main:TweenSize(UDim2.new(0, 260, 0, 230), "Out", "Quart", 0.3, true, function()
+        title.Visible = true; mini.Visible = true
+        for _, v in ipairs(btnList) do v.i.Visible = true end
+        main.BackgroundTransparency = 0; restore.Visible = false
+    end)
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not gui or not gui.Parent then return end
+    local mc = getRainbow(0)
+    main.BackgroundColor3 = mc
+    bar.BackgroundColor3 = getPulse(getRainbow(1), 2)
+    title.TextColor3 = getContrast(bar.BackgroundColor3)
+    close.BackgroundColor3 = getPulse(Color3.new(0.9, 0.4, 0.4), 3)
+    mini.BackgroundColor3 = getPulse(getRainbow(2), 3)
+    restore.TextColor3 = getContrast(mc)
+    for _, v in ipairs(btnList) do
+        if v.i.Visible then
+            local bc = getPulse(getRainbow(v.o), 3)
+            v.i.BackgroundColor3 = bc
+            v.i.TextColor3 = getContrast(bc)
+        end
+    end
+end)
