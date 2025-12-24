@@ -15,26 +15,41 @@ local root = GetRoot(char)
 local tool = char and char:FindFirstChildOfClass("Tool")
 if tool and root then
 local targets = {}
+local playersFound = {}
+local npcsFound = {}
 local myPos = root.Position
-local folders = {workspace:FindFirstChild("Enemies"),workspace:FindFirstChild("Characters"),workspace:FindFirstChild("NPCs")}
-for _,f in ipairs(folders)do
-if f then
-local children = f:GetChildren()
-for i=1,#children do
-local m = children[i]
+local charFolder = workspace:FindFirstChild("Characters")
+local otherFolders = {workspace:FindFirstChild("Enemies"),workspace:FindFirstChild("NPCs")}
+if charFolder then
+for _,m in ipairs(charFolder:GetChildren())do
 if m~=char and IsAlive(m)then
 local tr = GetRoot(m)
-if tr then
-local diff = tr.Position-myPos
-if(diff.X^2+diff.Y^2+diff.Z^2)<=2250000 then
-table.insert(targets,{m,tr})
+if tr and(tr.Position-myPos).Magnitude <= 1500 then
+table.insert(playersFound,{m,tr})
+end
+end
+end
+end
+if #playersFound == 0 then
+for _,f in ipairs(otherFolders)do
+if f then
+for _,m in ipairs(f:GetChildren())do
+if IsAlive(m)then
+local tr = GetRoot(m)
+if tr and(tr.Position-myPos).Magnitude <= 1500 then
+table.insert(npcsFound,{m,tr})
 end
 end
 end
 end
 end
 end
-if #targets>0 then
+if #playersFound > 0 then
+targets = playersFound
+elseif #npcsFound > 0 then
+targets = npcsFound
+end
+if #targets > 0 then
 RegAttack:FireServer(0)
 RegHit:FireServer(targets[1][2],targets)
 end
