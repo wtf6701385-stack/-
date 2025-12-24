@@ -1,0 +1,43 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local gui = player:WaitForChild("PlayerGui"):FindFirstChild("CatCat_Qin_UI") or Instance.new("ScreenGui", player.PlayerGui)
+_G.ESP_ENABLED = true
+local ESPF, ESPM, ESPC = Instance.new("Folder", gui), {}, {}
+local function getRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso")) end
+local function clearE(p) if ESPM[p] then ESPM[p]:Destroy(); ESPM[p] = nil end end
+local function attE(p, char)
+    clearE(p)
+    local hrp = getRoot(char)
+    if not hrp then return end
+    local bb = Instance.new("BillboardGui", ESPF)
+    bb.Adornee = hrp; bb.AlwaysOnTop = true; bb.Size = UDim2.new(0, 200, 0, 40)
+    local txt = Instance.new("TextLabel", bb)
+    txt.Size = UDim2.new(1, 0, 1, 0); txt.BackgroundTransparency = 1; txt.TextColor3 = Color3.new(1, 1, 1); txt.Font = 3; txt.TextSize = 14
+    ESPM[p] = bb
+    task.spawn(function()
+        while _G.ESP_ENABLED and bb.Parent and p.Character do
+            local me, tg = getRoot(player.Character), getRoot(p.Character)
+            if me and tg then txt.Text = p.Name .. " [" .. math.floor((me.Position - tg.Position).Magnitude) .. "m]" end
+            task.wait(0.2)
+        end
+        clearE(p)
+    end)
+end
+local function hookP(p)
+    if p == player then return end
+    if p.Character then attE(p, p.Character) end
+    if ESPC[p] then ESPC[p]:Disconnect() end
+    ESPC[p] = p.CharacterAdded:Connect(function(c) if _G.ESP_ENABLED then task.wait(0.5); attE(p, c) end end)
+end
+Players.PlayerAdded:Connect(hookP)
+Players.PlayerRemoving:Connect(function(p) clearE(p); if ESPC[p] then ESPC[p]:Disconnect(); ESPC[p] = nil end end)
+task.spawn(function()
+    local l = false
+    while true do
+        if _G.ESP_ENABLED ~= l then
+            l = _G.ESP_ENABLED
+            if l then for _, p in ipairs(Players:GetPlayers()) do hookP(p) end else for p in pairs(ESPM) do clearE(p) end end
+        end
+        task.wait(0.5)
+    end
+end)
