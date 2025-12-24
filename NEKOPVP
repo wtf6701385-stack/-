@@ -2,56 +2,44 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Player = Players.LocalPlayer
-
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
-
--- 這裡不需要設置 _G.AOE_RUNNING = true，因為我們要改用 UI 的開關
-
-local function GetRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")) end
-local function IsAlive(c) local h = c and c:FindFirstChildOfClass("Humanoid") return h and h.Health > 0 end
-
+local function GetRoot(c)return c and(c:FindFirstChild("HumanoidRootPart")or c:FindFirstChild("Head"))end
+local function IsAlive(c)local h=c and c:FindFirstChildOfClass("Humanoid")return h and h.Health>0 end
 task.spawn(function()
-    -- 使用一個長期的循環來監聽切換
-    while true do
-        -- 對接到你 UI 的全局變量 _G.PVP
-        if _G.PVP then
-            local char = Player.Character
-            local root = GetRoot(char)
-            local tool = char and char:FindFirstChildOfClass("Tool")
-            
-            if tool and root then
-                local targets = {}
-                local myPos = root.Position
-                local folders = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("Characters"), workspace:FindFirstChild("NPCs")}
-                
-                for _, f in ipairs(folders) do
-                    if f then
-                        local children = f:GetChildren()
-                        for i = 1, #children do
-                            local m = children[i]
-                            if m ~= char and IsAlive(m) then
-                                local tr = GetRoot(m)
-                                if tr then
-                                    local diff = tr.Position - myPos
-                                    -- 距離判斷
-                                    if (diff.X^2 + diff.Y^2 + diff.Z^2) <= 12250000 then
-                                        table.insert(targets, {m, tr})
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-                
-                if #targets > 0 then
-                    RegAttack:FireServer(0)
-                    RegHit:FireServer(targets[1][2], targets)
-                end
-            end
-        end
-        -- 控制檢查頻率，避免卡頓
-        RunService.Heartbeat:Wait()
-    end
+while true do
+if _G.PVP then
+local char = Player.Character
+local root = GetRoot(char)
+local tool = char and char:FindFirstChildOfClass("Tool")
+if tool and root then
+local targets = {}
+local myPos = root.Position
+local folders = {workspace:FindFirstChild("Enemies"),workspace:FindFirstChild("Characters"),workspace:FindFirstChild("NPCs")}
+for _,f in ipairs(folders)do
+if f then
+local children = f:GetChildren()
+for i=1,#children do
+local m = children[i]
+if m~=char and IsAlive(m)then
+local tr = GetRoot(m)
+if tr then
+local diff = tr.Position-myPos
+if(diff.X^2+diff.Y^2+diff.Z^2)<=2250000 then
+table.insert(targets,{m,tr})
+end
+end
+end
+end
+end
+end
+if #targets>0 then
+RegAttack:FireServer(0)
+RegHit:FireServer(targets[1][2],targets)
+end
+end
+end
+RunService.Heartbeat:Wait()
+end
 end)
