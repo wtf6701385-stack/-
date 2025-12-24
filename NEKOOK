@@ -1,63 +1,29 @@
-print("🚀 Loader Start")
-
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 
-------------------------------------------------
--- ① 載入 GitHub 的 key.lua（一定要在最前面）
-------------------------------------------------
-local raw = game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/FUCKYOU")
-local keys = loadstring(raw)()
-
-print("🔑 Key list loaded")
-
-------------------------------------------------
--- ② 建立 UI
-------------------------------------------------
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "KeyUI"
-screenGui.Parent = playerGui
-
-local textBox = Instance.new("TextBox")
-textBox.Size = UDim2.new(0, 240, 0, 45)
-textBox.Position = UDim2.new(0.5, -120, 0.4, 0)
-textBox.PlaceholderText = "請輸入你的 Key"
-textBox.Text = ""
-textBox.Parent = screenGui
-
-local button = Instance.new("TextButton")
-button.Size = UDim2.new(0, 240, 0, 45)
-button.Position = UDim2.new(0.5, -120, 0.5, 0)
-button.Text = "驗證 Key"
-button.Parent = screenGui
-
-------------------------------------------------
--- ③ 點擊驗證
-------------------------------------------------
-button.MouseButton1Click:Connect(function()
-    local input = textBox.Text
-
-    if not table.find(keys, input) then
-        warn("❌ Invalid Key")
-        button.Text = "Key 錯誤"
-        return
-    end
-
-    print("✅ Key OK，啟動主腳本")
-    button.Text = "驗證成功 ✅"
-
-    -- 可選：關掉 UI
-    screenGui:Destroy()
-
-    ------------------------------------------------
-    -- ④ 在這裡放你的「真正腳本」
-
-loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKO"))()
-
-    ------------------------------------------------
-
-    -- 方式 A：直接寫功能
-    -- print("這裡是你的主功能")
-
+-- 1. 從 GitHub 抓取白名單清單
+local success, result = pcall(function()
+    return game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/FUCKYOU")
 end)
+
+if success then
+    local whitelist = loadstring(result)()
+    
+    -- 2. 檢查目前玩家的 UserId 是否在清單中
+    if table.find(whitelist, player.UserId) then
+        print("✅ 身份驗證成功，正在載入專屬 UI...")
+        
+        ------------------------------------------------
+        -- 這裡放入你原本建立 UI 的代碼，或者是載入主腳本
+        ------------------------------------------------
+        -- 範例：載入你的 NEKO 腳本 (裡面包含 UI)
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKO"))()
+        
+    else
+        -- 3. 不在白名單內的處理
+        warn("❌ 存取被拒絕：你不在白名單中。")
+        -- 這裡什麼都不做，所以對方不會看到任何 UI
+    end
+else
+    warn("🌐 網路錯誤：無法連接至驗證伺服器。")
+end
