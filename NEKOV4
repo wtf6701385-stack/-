@@ -1,36 +1,30 @@
--- ==========================================
--- Kexuan Zenith | 核心自動 V4 (純淨版)
--- ==========================================
+-- [[ Neko x AutoV4: Module Edition ]]
 
--- 1. 設定全域開關 (預設執行即開啟)
-_G.AutoV4 = true
+-- 1. 自殺協議：確保每次 loadstring 時都會殺掉舊的自己，防止重複運行
+local scriptId = "NekoV4_Exec_" .. tick()
+_G.CurrentV4ID = scriptId
 
+-- 2. 獲取服務
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
 
--- 2. 核心邏輯 (完全保留你要求的原始高頻偵測)
-local Connection
-Connection = RunService.Heartbeat:Connect(function()
-    -- 如果全域變數被設為 false，則會停止發送請求
-    if _G.AutoV4 then
-        pcall(function()
-            local char = LocalPlayer.Character
-            local backpack = LocalPlayer:FindFirstChild("Backpack")
-            
-            -- 雙路徑偵測：同時找角色和背包
-            local awake = (char and char:FindFirstChild("Awakening")) or (backpack and backpack:FindFirstChild("Awakening"))
-            
-            if awake then
-                -- 向伺服器發送變身指令
-                awake.RemoteFunction:InvokeServer(true)
-            end
-        end)
+-- 3. 獨立執行緒 (子模組核心)
+task.spawn(function()
+    -- 這裡不用 print，保持後台靜默
+    while _G.CurrentV4ID == scriptId do
+        -- 只有當主面板把這個全域變數設為 true 時，這裡才會動
+        if _G.AutoV4 then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local backpack = LocalPlayer:FindFirstChild("Backpack")
+                local awake = (char and char:FindFirstChild("Awakening")) or (backpack and backpack:FindFirstChild("Awakening"))
+                
+                if awake then
+                    awake.RemoteFunction:InvokeServer(true)
+                end
+            end)
+        end
+        -- 暴力頻率 (0.01s)，與你的 PVP 模組同步
+        task.wait(0.01)
     end
 end)
-
--- 3. 輸出啟動訊息到控制台 (F9)
-print("-------------------------------")
-print("Kexuan Zenith: 自動 V4 已啟動!")
-print("提示: 輸入 _G.AutoV4 = false 可停止")
-print("-------------------------------")
