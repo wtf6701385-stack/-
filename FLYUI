@@ -1,7 +1,7 @@
 local CatLib = {}
 
 function CatLib.Init()
-    -- === [1. 你的 V12 UI 完整代碼] ===
+    -- === [1. 你的 V12 UI 完整代碼 - 絕對不動 UI] ===
     local main = Instance.new("ScreenGui")
     main.Name = "NekoFlyUI_V12_CleanText"
     main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -102,16 +102,16 @@ function CatLib.Init()
     local ExpandBtn = Instance.new("TextButton")
     ExpandBtn.Size = UDim2.new(0, 50, 0, 50); ExpandBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); ExpandBtn.BackgroundTransparency = 0.3; ExpandBtn.Text = "🐱"; ExpandBtn.TextSize = 24; ExpandBtn.Visible = false; ExpandBtn.Parent = main; Instance.new("UICorner", ExpandBtn).CornerRadius = UDim.new(1, 0); local ExpandStroke = Instance.new("UIStroke", ExpandBtn); ExpandStroke.Thickness = 3
 
-    -- === [2. 核心飛行功能與數據對接] ===
+    -- === [2. 核心功能：100% 原始疊加飛行 + 相機控制] ===
     local speaker = game:GetService("Players").LocalPlayer
     local nowe = false
     local tpwalking = false
     local heartbeat = game:GetService("RunService").Heartbeat
 
-    -- 速度刷新邏輯 (原始疊加法)
+    -- 原始疊加飛行刷新
     local function refreshFlight()
         tpwalking = false
-        task.wait(0.05)
+        task.wait(0.01)
         if nowe then
             tpwalking = true
             for i = 1, currentSpeed do
@@ -130,30 +130,55 @@ function CatLib.Init()
 
     onof.MouseButton1Click:Connect(function()
         nowe = not nowe
+        local char = speaker.Character
+        local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso"))
+
         if nowe then
             onof.Text = "FLYING"
-            speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
-            speaker.Character.Animate.Disabled = true
+            char.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+            char.Humanoid.PlatformStand = true
+            char.Animate.Disabled = true
             refreshFlight()
+
+            -- 補回 BodyVelocity 相機控制邏輯
+            task.spawn(function()
+                local bg = Instance.new("BodyGyro", root)
+                bg.P = 9e4; bg.maxTorque = Vector3.new(9e9, 9e9, 9e9); bg.cframe = root.CFrame
+                local bv = Instance.new("BodyVelocity", root)
+                bv.velocity = Vector3.new(0, 0.1, 0); bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
+                local ctrl = {f = 0, b = 0, l = 0, r = 0}
+                local mouse = speaker:GetMouse()
+                local k1 = mouse.KeyDown:Connect(function(k) if k:lower()=="w" then ctrl.f=1 elseif k:lower()=="s" then ctrl.f=-1 elseif k:lower()=="a" then ctrl.l=-1 elseif k:lower()=="d" then ctrl.r=1 end end)
+                local k2 = mouse.KeyUp:Connect(function(k) if k:lower()=="w" or k:lower()=="s" then ctrl.f=0 elseif k:lower()=="a" or k:lower()=="d" then ctrl.l=0 end end)
+
+                while nowe and char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 do
+                    game:GetService("RunService").RenderStepped:Wait()
+                    bv.velocity = ((workspace.CurrentCamera.CoordinateFrame.lookVector * ctrl.f) + ((workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r, (ctrl.f)*0.2, 0).p) - workspace.CurrentCamera.CoordinateFrame.p)) * 50
+                    bg.cframe = workspace.CurrentCamera.CoordinateFrame
+                end
+                bg:Destroy(); bv:Destroy(); k1:Disconnect(); k2:Disconnect()
+            end)
         else
             onof.Text = "(=^ω^=)"
             tpwalking = false
-            speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
-            speaker.Character.Animate.Disabled = false
+            char.Humanoid.PlatformStand = false
+            char.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+            char.Animate.Disabled = false
         end
     end)
 
     plus.MouseButton1Click:Connect(function()
         currentSpeed = currentSpeed + 1
         speedDisp.Text = "MEOW: " .. tostring(currentSpeed)
-        if nowe then refreshFlight() end -- 立即提升速度
+        if nowe then refreshFlight() end
     end)
 
     mine.MouseButton1Click:Connect(function()
         if currentSpeed > 1 then
             currentSpeed = currentSpeed - 1
             speedDisp.Text = "MEOW: " .. tostring(currentSpeed)
-            if nowe then refreshFlight() end -- 立即降低速度
+            if nowe then refreshFlight() end
         end
     end)
 
