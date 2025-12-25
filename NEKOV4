@@ -1,0 +1,22 @@
+-- ==========================================
+-- 原始提取：自動 V4 邏輯 (完全未優化版)
+-- ==========================================
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+_G.AutoV4 = true -- 預設開啟
+
+RunService.Heartbeat:Connect(function()
+    if _G.AutoV4 then
+        pcall(function()
+            local backpack = LocalPlayer:FindFirstChild("Backpack")
+            local char = LocalPlayer.Character
+            local awake = (backpack and backpack:FindFirstChild("Awakening")) or (char and char:FindFirstChild("Awakening"))
+            if awake then
+                awake.RemoteFunction:InvokeServer(true)
+            end
+        end)
+    end
+end)
