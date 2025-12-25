@@ -44,11 +44,15 @@ CatLib:CreateButton(p1, "透視對手 : OFF", function(self)
     self.Text = "  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
 end)
 
--- 6. 貓召喚分頁 (包含落葉中心)
+-- 6. 貓召喚分頁 (包含落葉中心與新加入的腳本)
 CatLib:CreateButton(p2, "召喚飛行", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
 end)
 
 CatLib:CreateButton(p2, "落葉中心", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/%E8%90%BD%E5%8F%B6%E4%B8%AD%E5%BF%83%E6%B7%B7%E6%B7%86.txt"))() 
+end)
+
+CatLib:CreateButton(p2, "大司馬 V6", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/whenheer/dasimav6/main/dasimaV6.txt"))() 
 end)
