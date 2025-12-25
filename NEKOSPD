@@ -3,14 +3,18 @@
 -- 引用 Orion 庫
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
--- 確保建立新視窗前清除舊的，防止畫面混亂
-pcall(function() game:GetService("CoreGui").Orion:Destroy() end)
+-- 確保建立新視窗前清除舊的，防止多個視窗重疊
+pcall(function() 
+    if game:GetService("CoreGui"):FindFirstChild("Orion") then
+        game:GetService("CoreGui").Orion:Destroy() 
+    end
+end)
 
--- 使用全域變數，確保主腳本也能讀取到
+-- 全域變數同步
 _G.CatSpeedActive = _G.CatSpeedActive or false
-_G.CatSpeedValue = _G.CatSpeedValue or 50 -- 默認 50
+_G.CatSpeedValue = _G.CatSpeedValue or 50 
 
--- 核心速度邏輯 (TranslateBy 原理)
+-- 核心加速邏輯 (只會啟動一次)
 if not _G.SpeedLogicStarted then
     _G.SpeedLogicStarted = true
     task.spawn(function()
@@ -29,35 +33,47 @@ if not _G.SpeedLogicStarted then
     end)
 end
 
--- 建立 Orion 視窗
-local Window = OrionLib:MakeWindow({Name = "貓貓速度控制台", HidePremium = false, SaveConfig = true, ConfigFolder = "CatSpeed"})
-local Tab = Window:MakeTab({Name = "速度設定", Icon = "rbxassetid://4483345998"})
-
--- 開關
-Tab:AddToggle({
-	Name = "開啟神速模式",
-	Default = _G.CatSpeedActive,
-	Callback = function(Value)
-		_G.CatSpeedActive = Value
-	end    
+-- 建立 Orion 視窗 (這個視窗是可以自由拖動的)
+local Window = OrionLib:MakeWindow({
+    Name = "貓貓速度控制台", 
+    HidePremium = true, 
+    SaveConfig = false, 
+    IntroText = "貓貓加速加載中..." -- 加個酷炫的小開場
 })
 
--- 【這裡改成了輸入框】
+local Tab = Window:MakeTab({
+    Name = "速度設定",
+    Icon = "rbxassetid://4483345998"
+})
+
+-- 1. 開關：控制是否啟用加速
+Tab:AddToggle({
+    Name = "開啟神速模式",
+    Default = _G.CatSpeedActive,
+    Callback = function(Value)
+        _G.CatSpeedActive = Value
+    end    
+})
+
+-- 2. 輸入框：直接輸入數字改速度
 Tab:AddInput({
-	Name = "輸入速度倍率",
-	Default = tostring(_G.CatSpeedValue),
-	PlaceholderText = "目前速度: " .. _G.CatSpeedValue,
-	ClearTextOnFocus = true, -- 點擊框框時自動清空文字，方便輸入
-	Callback = function(Text)
-		local num = tonumber(Text)
-		if num then
-			_G.CatSpeedValue = num
-			print("速度已更換為: " .. num)
-		else
-			-- 如果輸入的不是數字，就彈出警告（選配）
-			print("請輸入有效的數字！")
-		end
-	end	  
+    Name = "輸入速度倍率 (建議1-100)",
+    Default = tostring(_G.CatSpeedValue),
+    PlaceholderText = "目前速度: " .. _G.CatSpeedValue,
+    ClearTextOnFocus = true,
+    Callback = function(Text)
+        local num = tonumber(Text)
+        if num then
+            _G.CatSpeedValue = num
+            -- 這裡可以加一個小通知提醒修改成功
+            OrionLib:MakeNotification({
+                Name = "速度更新",
+                Content = "當前倍率已設定為: " .. num,
+                Image = "rbxassetid://4483345998",
+                Time = 2
+            })
+        end
+    end	  
 })
 
 OrionLib:Init()
