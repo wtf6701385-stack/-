@@ -3,11 +3,7 @@ CatLib.__index = CatLib
 
 function CatLib.Init()
     local self = setmetatable({}, CatLib)
-    
-    -- === [你最滿意的 V12 UI 核心佈局] ===
-    local main = Instance.new("ScreenGui")
-    main.Name = "NekoLibrary_V12"
-    main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    local main = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
     main.ResetOnSpawn = false
     self.MainGui = main
 
@@ -18,65 +14,53 @@ function CatLib.Init()
     Frame.BackgroundTransparency = 0.25 
     Frame.Active = true
     Frame.Draggable = true
-    self.MainFrame = Frame
 
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 20)
-    local UIStroke = Instance.new("UIStroke", Frame)
-    UIStroke.Thickness = 3
-    UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    local Stroke = Instance.new("UIStroke", Frame)
+    Stroke.Thickness = 3
+    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    -- 頂部標題
-    local TopBar = Instance.new("Frame", Frame)
-    TopBar.Size = UDim2.new(1, 0, 0, 35)
-    TopBar.BackgroundTransparency = 1
-    
-    local Title = Instance.new("TextLabel", TopBar)
-    Title.Size = UDim2.new(1, 0, 1, 0)
-    Title.Text = "NYAN PROTOCOL"
+    local Title = Instance.new("TextLabel", Frame)
+    Title.Size = UDim2.new(1, 0, 0, 35)
+    Title.Text = "NYAN PROTOCOL V12"
     Title.Font = Enum.Font.GothamBold
     Title.TextSize = 11
     Title.BackgroundTransparency = 1
 
-    -- === [按鈕容器] ===
-    -- 這裡讓按鈕可以橫向排列，對應你的 ActionRow
-    local ActionRow = Instance.new("Frame", Frame)
-    ActionRow.Size = UDim2.new(0, 190, 0, 40)
-    ActionRow.Position = UDim2.new(0.5, -95, 0, 85)
-    ActionRow.BackgroundTransparency = 1
-    local Layout = Instance.new("UIListLayout", ActionRow)
-    Layout.FillDirection = Enum.FillDirection.Horizontal
-    Layout.Padding = UDim.new(0, 5)
-    Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    self.Container = ActionRow
+    -- 按鈕放置區
+    local Container = Instance.new("Frame", Frame)
+    Container.Size = UDim2.new(1, -20, 1, -45)
+    Container.Position = UDim2.new(0, 10, 0, 35)
+    Container.BackgroundTransparency = 1
+    self.MainContainer = Container
+    
+    local Layout = Instance.new("UIGridLayout", Container)
+    Layout.CellSize = UDim2.new(0, 90, 0, 35) -- 兩兩一排
+    Layout.CellPadding = UDim2.new(0, 10, 0, 10)
 
-    -- === [RGB 循環邏輯] ===
     task.spawn(function()
         while main.Parent do
             local rgb = Color3.fromHSV(tick() % 5 / 5, 0.7, 1)
-            UIStroke.Color = rgb
+            Stroke.Color = rgb
             Title.TextColor3 = rgb
             task.wait()
         end
     end)
-
     return self
 end
 
--- 讓你在外部建立按鈕
 function CatLib:CreateButton(text, callback)
-    local btn = Instance.new("TextButton", self.Container)
-    btn.Size = UDim2.new(0, 60, 1, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    btn.BackgroundTransparency = 0.2
+    local btn = Instance.new("TextButton", self.MainContainer)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.BackgroundTransparency = 0.3
     btn.Text = text
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 12
-
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
     local s = Instance.new("UIStroke", btn)
     s.Thickness = 1.2; s.Color = Color3.new(1,1,1); s.Transparency = 0.8
-
+    
     btn.MouseButton1Click:Connect(function() callback(btn) end)
     return btn
 end
