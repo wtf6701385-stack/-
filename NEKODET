@@ -1,8 +1,4 @@
--- [[ 雲端偵測模組：負責掃描與找人 ]]
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
-
--- 初始化儲存空間（這張紙用來記下目標）
+-- [[ 雲端 NEKODET 內容 ]]
 _G.TargetCache = { Enemies = {}, Players = {} }
 
 local function GetRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")) end
@@ -11,21 +7,41 @@ local function IsAlive(c)
     return h and h.Health > 0
 end
 
--- 這裡就是你剛才提供的掃描邏輯（怪物+玩家）
+-- 啟動偵測 (移除 ID 限制，確保一定會跑)
 task.spawn(function()
-    local myId = _G.CurrentPvpID
-    while _G.CurrentPvpID == myId and _G.PVP do
-        -- 怪物掃描部分... (省略，內容同你提供的邏輯)
-        -- 把結果存入 _G.TargetCache.Enemies
-        task.wait(0.5)
+    while _G.PVP do
+        local pTemp, eTemp = {}, {}
+        local myRoot = GetRoot(game.Players.LocalPlayer.Character)
+        if myRoot then
+            local myPos = myRoot.Position
+            -- 玩家掃描
+            local chars = workspace:FindFirstChild("Characters")
+            if chars then
+                for _, m in ipairs(chars:GetChildren()) do
+                    if m ~= game.Players.LocalPlayer.Character and IsAlive(m) then
+                        local r = GetRoot(m)
+                        if r and (r.Position - myPos).Magnitude <= 1500 then
+                            table.insert(pTemp, {m, r})
+                        end
+                    end
+                end
+            end
+            -- 怪物掃描
+            local enems = workspace:FindFirstChild("Enemies")
+            if enems then
+                for _, m in ipairs(enems:GetChildren()) do
+                    if IsAlive(m) then
+                        local r = GetRoot(m)
+                        if r and (r.Position - myPos).Magnitude <= 1500 then
+                            table.insert(eTemp, {m, r})
+                        end
+                    end
+                end
+            end
+        end
+        _G.TargetCache.Players = pTemp
+        _G.TargetCache.Enemies = eTemp
+        task.wait(0.3)
     end
 end)
-
-task.spawn(function()
-    local myId = _G.CurrentPvpID
-    while _G.CurrentPvpID == myId and _G.PVP do
-        -- 玩家掃描部分... (省略，內容同你提供的邏輯)
-        -- 把結果存入 _G.TargetCache.Players
-        task.wait(0.03)
-    end
-end)
+warn("!!! NEKODET CLOUD LOADED !!!")
