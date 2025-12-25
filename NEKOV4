@@ -1,12 +1,33 @@
--- ==========================================
--- 原始提取：自動 V4 邏輯 (完全未優化版)
--- ==========================================
+-- Kexuan Zenith 獨立自動 V4 腳本
+-- 載入 Luna UI 框架
+local Luna = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nebula-Softworks/Luna-Interface-Suite/main/source.lua"))()
 
+-- 創建窗口
+local Window = Luna:CreateWindow({
+    Name = "Kexuan Zenith | Auto V4",
+    Subtitle = "自動變身模組",
+    Color = Color3.fromRGB(0, 170, 255),
+    ConfigSaving = false
+})
+
+local Tab = Window:CreateTab({Name = "戰鬥"})
+
+-- 設定全域變數
+_G.AutoV4 = false
+
+-- 創建 UI 開關
+Tab:CreateToggle({
+    Name = "自動 V4 變身 (高頻原版)",
+    CurrentValue = false,
+    Callback = function(V) 
+        _G.AutoV4 = V 
+    end
+})
+
+-- 核心邏輯 (你要求的原封不動版)
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-
-_G.AutoV4 = true -- 預設開啟
 
 RunService.Heartbeat:Connect(function()
     if _G.AutoV4 then
@@ -20,3 +41,5 @@ RunService.Heartbeat:Connect(function()
         end)
     end
 end)
+
+Luna:Notification({Title = "系統", Content = "自動 V4 腳本已啟動", Duration = 3})
