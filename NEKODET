@@ -1,47 +1,68 @@
--- [[ 雲端 NEKODET 內容 ]]
+-- [[ NEKODET CLOUD SENSOR ]]
+-- 建議設置：_G.PVP = true (在啟動前設置)
+
 _G.TargetCache = { Enemies = {}, Players = {} }
 
-local function GetRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")) end
-local function IsAlive(c)
-    local h = c and c:FindFirstChildOfClass("Humanoid")
-    return h and h.Health > 0
+local LocalPlayer = game:GetService("Players").LocalPlayer
+
+-- 優化後的獲取根部零件函數
+local function GetRoot(character) 
+    return character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Head")) 
 end
 
--- 啟動偵測 (移除 ID 限制，確保一定會跑)
+-- 優化後的存活檢查
+local function IsAlive(character)
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    return humanoid and humanoid.Health > 0
+end
+
+-- 啟動後台掃描循環
 task.spawn(function()
-    while _G.PVP do
-        local pTemp, eTemp = {}, {}
-        local myRoot = GetRoot(game.Players.LocalPlayer.Character)
-        if myRoot then
-            local myPos = myRoot.Position
-            -- 玩家掃描
-            local chars = workspace:FindFirstChild("Characters")
-            if chars then
-                for _, m in ipairs(chars:GetChildren()) do
-                    if m ~= game.Players.LocalPlayer.Character and IsAlive(m) then
-                        local r = GetRoot(m)
-                        if r and (r.Position - myPos).Magnitude <= 1500 then
-                            table.insert(pTemp, {m, r})
+    while true do
+        -- 如果 _G.PVP 被設為 false 或 nil，循環會暫停等待，不佔用太多 CPU
+        if _G.PVP then
+            local pTemp, eTemp = {}, {}
+            local myChar = LocalPlayer.Character
+            local myRoot = GetRoot(myChar)
+            
+            if myRoot then
+                local myPos = myRoot.Position
+                
+                -- 1. 玩家掃描
+                local charsFolder = workspace:FindFirstChild("Characters")
+                if charsFolder then
+                    for _, m in ipairs(charsFolder:GetChildren()) do
+                        if m ~= myChar and IsAlive(m) then
+                            local r = GetRoot(m)
+                            if r and (r.Position - myPos).Magnitude <= 1500 then
+                                table.insert(pTemp, {Instance = m, Root = r})
+                            end
+                        end
+                    end
+                end
+                
+                -- 2. 怪物掃描
+                local enemsFolder = workspace:FindFirstChild("Enemies")
+                if enemsFolder then
+                    for _, m in ipairs(enemsFolder:GetChildren()) do
+                        if IsAlive(m) then
+                            local r = GetRoot(m)
+                            if r and (r.Position - myPos).Magnitude <= 1500 then
+                                table.insert(eTemp, {Instance = m, Root = r})
+                            end
                         end
                     end
                 end
             end
-            -- 怪物掃描
-            local enems = workspace:FindFirstChild("Enemies")
-            if enems then
-                for _, m in ipairs(enems:GetChildren()) do
-                    if IsAlive(m) then
-                        local r = GetRoot(m)
-                        if r and (r.Position - myPos).Magnitude <= 1500 then
-                            table.insert(eTemp, {m, r})
-                        end
-                    end
-                end
-            end
+            
+            -- 更新全局緩存
+            _G.TargetCache.Players = pTemp
+            _G.TargetCache.Enemies = eTemp
         end
-        _G.TargetCache.Players = pTemp
-        _G.TargetCache.Enemies = eTemp
-        task.wait(0.3)
+        
+        -- 既然怪物不多，設為 0.1s 保持流暢
+        task.wait(0.1)
     end
 end)
-warn("!!! NEKODET CLOUD LOADED !!!")
+
+warn("!!! NEKODET CLOUD LOADED SUCCESSFULLY !!!")
