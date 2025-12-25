@@ -1,68 +1,115 @@
 local CatLib = {}
-CatLib.__index = CatLib
 
 function CatLib.Init()
-    local self = setmetatable({}, CatLib)
-    local main = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+    -- [[ 這裡完全就是你剛才測試成功、功能正常的整段代碼 ]]
+    local main = Instance.new("ScreenGui")
+    main.Name = "NekoFlyUI_V12_Integrated"
+    main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     main.ResetOnSpawn = false
-    self.MainGui = main
 
+    local currentSpeed = 1 
+    local lp = game.Players.LocalPlayer
+    local mouse = lp:GetMouse()
+    local flying = false
+    local ctrl = {f = 0, b = 0}
+
+    -- 主面板與樣式 (完全保留你的 V12 設計)
     local Frame = Instance.new("Frame", main)
     Frame.Size = UDim2.new(0, 210, 0, 130)
     Frame.Position = UDim2.new(0.5, -105, 0.4, 0)
     Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     Frame.BackgroundTransparency = 0.25 
-    Frame.Active = true
-    Frame.Draggable = true
-
+    Frame.Active = true; Frame.Draggable = true
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 20)
-    local Stroke = Instance.new("UIStroke", Frame)
-    Stroke.Thickness = 3
-    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    local UIStroke = Instance.new("UIStroke", Frame)
+    UIStroke.Thickness = 3
+    UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
+    -- 頂部標題
     local Title = Instance.new("TextLabel", Frame)
     Title.Size = UDim2.new(1, 0, 0, 35)
     Title.Text = "NYAN PROTOCOL V12"
     Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 11
-    Title.BackgroundTransparency = 1
+    Title.TextSize = 11; Title.BackgroundTransparency = 1
 
-    -- 按鈕放置區
-    local Container = Instance.new("Frame", Frame)
-    Container.Size = UDim2.new(1, -20, 1, -45)
-    Container.Position = UDim2.new(0, 10, 0, 35)
-    Container.BackgroundTransparency = 1
-    self.MainContainer = Container
-    
-    local Layout = Instance.new("UIGridLayout", Container)
-    Layout.CellSize = UDim2.new(0, 90, 0, 35) -- 兩兩一排
-    Layout.CellPadding = UDim2.new(0, 10, 0, 10)
+    -- 按鈕樣式函數 (你的原始邏輯)
+    local function applyNekoStyle(btn)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
+        local s = Instance.new("UIStroke", btn)
+        s.Thickness = 1.2; s.Color = Color3.new(1, 1, 1); s.Transparency = 0.8
+    end
+
+    -- 速度顯示
+    local speedDisp = Instance.new("TextLabel", Frame)
+    speedDisp.Size = UDim2.new(0, 110, 0, 35)
+    speedDisp.Position = UDim2.new(0.5, -55, 0, 45)
+    speedDisp.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    speedDisp.BackgroundTransparency = 0.5
+    speedDisp.Text = "MEOW: 1"
+    speedDisp.Font = Enum.Font.GothamBold; speedDisp.TextSize = 14
+    Instance.new("UICorner", speedDisp).CornerRadius = UDim.new(0, 12)
+
+    -- 速度控制按鈕
+    local plus = Instance.new("TextButton", Frame)
+    plus.Text = "+"; plus.Size = UDim2.new(0, 35, 0, 35); plus.Position = UDim2.new(1, -45, 0, 45)
+    plus.BackgroundColor3 = Color3.fromRGB(50, 50, 50); applyNekoStyle(plus)
+
+    local mine = Instance.new("TextButton", Frame)
+    mine.Text = "−"; mine.Size = UDim2.new(0, 35, 0, 35); mine.Position = UDim2.new(0, 10, 0, 45)
+    mine.BackgroundColor3 = Color3.fromRGB(50, 50, 50); applyNekoStyle(mine)
+
+    -- 飛行開關與位移
+    local onof = Instance.new("TextButton", Frame)
+    onof.Text = "(=^ω^=)"; onof.Size = UDim2.new(0, 70, 0, 40); onof.Position = UDim2.new(0.5, -35, 0, 85)
+    onof.BackgroundColor3 = Color3.fromRGB(70, 70, 70); applyNekoStyle(onof)
+
+    local up = Instance.new("TextButton", Frame)
+    up.Text = "UP"; up.Size = UDim2.new(0, 55, 0, 40); up.Position = UDim2.new(0, 10, 0, 85)
+    up.BackgroundColor3 = Color3.fromRGB(50, 50, 50); applyNekoStyle(up)
+
+    local down = Instance.new("TextButton", Frame)
+    down.Text = "DOWN"; down.Size = UDim2.new(0, 55, 0, 40); down.Position = UDim2.new(1, -65, 0, 85)
+    down.BackgroundColor3 = Color3.fromRGB(50, 50, 50); applyNekoStyle(down)
+
+    -- --- 核心功能執行 (完全不變) ---
+    onof.MouseButton1Click:Connect(function()
+        flying = not flying
+        onof.Text = flying and "FLYING" or "(=^ω^=)"
+        if flying then
+            task.spawn(function()
+                local char = lp.Character or lp.CharacterAdded:Wait()
+                local root = char:WaitForChild("HumanoidRootPart")
+                local bg = Instance.new("BodyGyro", root)
+                bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+                local bv = Instance.new("BodyVelocity", root)
+                bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+                char.Humanoid.PlatformStand = true
+                while flying and char.Parent do
+                    game:GetService("RunService").RenderStepped:Wait()
+                    bv.velocity = (workspace.CurrentCamera.CFrame.LookVector * (ctrl.f) * (currentSpeed * 20))
+                    bg.cframe = workspace.CurrentCamera.CFrame
+                end
+                bg:Destroy(); bv:Destroy(); char.Humanoid.PlatformStand = false
+            end)
+        end
+    end)
+
+    plus.MouseButton1Click:Connect(function() currentSpeed = currentSpeed + 1; speedDisp.Text = "MEOW: "..currentSpeed end)
+    mine.MouseButton1Click:Connect(function() if currentSpeed > 1 then currentSpeed = currentSpeed - 1 end; speedDisp.Text = "MEOW: "..currentSpeed end)
+    up.MouseButton1Click:Connect(function() lp.Character.HumanoidRootPart.CFrame *= CFrame.new(0,5,0) end)
+    down.MouseButton1Click:Connect(function() lp.Character.HumanoidRootPart.CFrame *= CFrame.new(0,-5,0) end)
+
+    mouse.KeyDown:Connect(function(key) if key:lower()=="w" then ctrl.f=1 elseif key:lower()=="s" then ctrl.f=-1 end end)
+    mouse.KeyUp:Connect(function(key) if key:lower()=="w" or key:lower()=="s" then ctrl.f=0 end end)
 
     task.spawn(function()
         while main.Parent do
             local rgb = Color3.fromHSV(tick() % 5 / 5, 0.7, 1)
-            Stroke.Color = rgb
-            Title.TextColor3 = rgb
-            task.wait()
+            UIStroke.Color = rgb; Title.TextColor3 = rgb; task.wait()
         end
     end)
-    return self
-end
 
-function CatLib:CreateButton(text, callback)
-    local btn = Instance.new("TextButton", self.MainContainer)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.BackgroundTransparency = 0.3
-    btn.Text = text
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 12
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
-    local s = Instance.new("UIStroke", btn)
-    s.Thickness = 1.2; s.Color = Color3.new(1,1,1); s.Transparency = 0.8
-    
-    btn.MouseButton1Click:Connect(function() callback(btn) end)
-    return btn
+    return main -- 回傳 ScreenGui
 end
 
 return CatLib
