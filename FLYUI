@@ -4,15 +4,15 @@ CatLib.__index = CatLib
 function CatLib.Init()
     local self = setmetatable({}, CatLib)
     
+    -- === 完全是你原本的 UI 代碼 ===
     local main = Instance.new("ScreenGui")
-    main.Name = "NekoLibrary_V12"
+    main.Name = "NekoFlyUI_V12_CleanText"
     main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     main.ResetOnSpawn = false
     self.MainGui = main
 
-    -- === 主面板 (採用 V12 的 210x130 比例與深色背景) ===
     local Frame = Instance.new("Frame", main)
-    Frame.Size = UDim2.new(0, 210, 0, 150) -- 稍微加高一點點以容納分頁
+    Frame.Size = UDim2.new(0, 210, 0, 130) -- 保留你最滿意的尺寸
     Frame.Position = UDim2.new(0.5, -105, 0.4, 0)
     Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     Frame.BackgroundTransparency = 0.25 
@@ -21,13 +21,10 @@ function CatLib.Init()
     self.MainFrame = Frame
 
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 20)
+    local UIStroke = Instance.new("UIStroke", Frame)
+    UIStroke.Thickness = 3
+    UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    local Stroke = Instance.new("UIStroke", Frame)
-    Stroke.Thickness = 3
-    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    self.MainStroke = Stroke
-
-    -- === 頂部列 (🐱 NYAN PROTOCOL 🐾) ===
     local TopBar = Instance.new("Frame", Frame)
     TopBar.Size = UDim2.new(1, 0, 0, 35)
     TopBar.BackgroundTransparency = 1
@@ -38,33 +35,29 @@ function CatLib.Init()
     Title.Font = Enum.Font.GothamBold
     Title.TextSize = 11
     Title.BackgroundTransparency = 1
-    self.MainTitle = Title
 
-    -- === 分頁切換容器 (頂部小列) ===
-    local TabContainer = Instance.new("ScrollingFrame", Frame)
-    TabContainer.Size = UDim2.new(1, -20, 0, 25)
-    TabContainer.Position = UDim2.new(0, 10, 0, 35)
-    TabContainer.BackgroundTransparency = 1
-    TabContainer.ScrollBarThickness = 0
-    TabContainer.CanvasSize = UDim2.new(2, 0, 0, 0)
-    local TabList = Instance.new("UIListLayout", TabContainer)
-    TabList.FillDirection = Enum.FillDirection.Horizontal
-    TabList.Padding = UDim.new(0, 5)
-    self.TabContainer = TabContainer
+    -- 下面這兩個按鈕是你設計的裝飾/功能按鈕
+    local MiniBtn = Instance.new("TextButton", TopBar)
+    MiniBtn.Text = "🐱"; MiniBtn.Size = UDim2.new(0,30,0,30); MiniBtn.Position = UDim2.new(0,8,0,8); MiniBtn.BackgroundTransparency = 1; MiniBtn.TextSize = 22
+    
+    local CloseBtn = Instance.new("TextButton", TopBar)
+    CloseBtn.Text = "🐾"; CloseBtn.Size = UDim2.new(0,30,0,30); CloseBtn.Position = UDim2.new(1,-38,0,8); CloseBtn.BackgroundTransparency = 1; CloseBtn.TextSize = 20
 
-    -- === 內容容器 (放置功能按鈕) ===
-    local PageContainer = Instance.new("Frame", Frame)
-    PageContainer.Size = UDim2.new(1, -20, 1, -70)
-    PageContainer.Position = UDim2.new(0, 10, 0, 65)
-    PageContainer.BackgroundTransparency = 1
-    self.PageContainer = PageContainer
+    -- 這是你的按鈕放置區 (ActionRow)
+    local ActionRow = Instance.new("Frame", Frame)
+    ActionRow.Size = UDim2.new(0, 190, 0, 40)
+    ActionRow.Position = UDim2.new(0.5, -95, 0, 85)
+    ActionRow.BackgroundTransparency = 1
+    self.ActionRow = ActionRow
 
-    -- RGB 動態效果
+    -- === 保留你的 RGB 邏輯 ===
     task.spawn(function()
         while main.Parent do
             local rgb = Color3.fromHSV(tick() % 5 / 5, 0.7, 1)
-            Stroke.Color = rgb
+            UIStroke.Color = rgb
             Title.TextColor3 = rgb
+            MiniBtn.TextColor3 = rgb
+            CloseBtn.TextColor3 = rgb
             task.wait()
         end
     end)
@@ -72,71 +65,27 @@ function CatLib.Init()
     return self
 end
 
--- === 建立分頁 (按鈕樣式套用 V12) ===
-function CatLib:CreateTab(name, isFirst)
-    local tabBtn = Instance.new("TextButton", self.TabContainer)
-    tabBtn.Size = UDim2.new(0, 60, 1, 0)
-    tabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    tabBtn.BackgroundTransparency = 0.4
-    tabBtn.Text = name
-    tabBtn.TextColor3 = Color3.new(1,1,1)
-    tabBtn.Font = Enum.Font.GothamBold
-    tabBtn.TextSize = 10
-    Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 8)
-
-    local page = Instance.new("ScrollingFrame", self.PageContainer)
-    page.Size = UDim2.new(1, 0, 1, 0)
-    page.BackgroundTransparency = 1
-    page.Visible = isFirst or false
-    page.ScrollBarThickness = 0
-    page.CanvasSize = UDim2.new(0, 0, 2, 0)
-    Instance.new("UIListLayout", page).Padding = UDim.new(0, 5)
-
-    tabBtn.MouseButton1Click:Connect(function()
-        for _, p in pairs(self.PageContainer:GetChildren()) do 
-            if p:IsA("ScrollingFrame") then p.Visible = false end 
-        end
-        page.Visible = true
-    end)
-
-    return page
+-- 為了不讓主腳本報錯，我們保留這個函數，但它直接回傳你的 ActionRow
+function CatLib:CreateTab()
+    return self.ActionRow
 end
 
--- === 建立資訊標籤 ===
-function CatLib:CreateInfo(parent, icon, text)
-    local info = Instance.new("TextLabel", parent)
-    info.Size = UDim2.new(1, 0, 0, 25)
-    info.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    info.BackgroundTransparency = 0.5
-    info.Text = icon .. " " .. text
-    info.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    info.Font = Enum.Font.Gotham
-    info.TextSize = 10
-    Instance.new("UICorner", info).CornerRadius = UDim.new(0, 8)
-end
-
--- === 建立按鈕 (完全採用 V12 的 applyNekoStyle 樣式) ===
+-- 按鈕完全使用你原本的 applyNekoStyle
 function CatLib:CreateButton(parent, text, callback)
     local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(1, 0, 0, 32)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.BackgroundTransparency = 0.3
+    btn.Size = UDim2.new(0, 60, 1, 0) -- 配合你 ActionRow 的佈局
+    btn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    btn.BackgroundTransparency = 0.2
     btn.Text = text
     btn.TextColor3 = Color3.new(1,1,1)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 12
-    
-    -- V12 特色圓角與邊框
+
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
     local s = Instance.new("UIStroke", btn)
-    s.Thickness = 1.2
-    s.Color = Color3.new(1, 1, 1)
-    s.Transparency = 0.8
+    s.Thickness = 1.2; s.Color = Color3.new(1,1,1); s.Transparency = 0.8
 
-    btn.MouseButton1Click:Connect(function()
-        callback(btn)
-    end)
-
+    btn.MouseButton1Click:Connect(function() callback(btn) end)
     return btn
 end
 
