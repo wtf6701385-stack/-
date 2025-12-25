@@ -20,6 +20,7 @@ function CatLib.Init()
     self.MainFrame = Frame
 
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 18)
+
     local Stroke = Instance.new("UIStroke", Frame)
     Stroke.Thickness = 3
     Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -81,7 +82,9 @@ function CatLib:CreateTab(name, isFirst)
     Instance.new("UIListLayout", page).Padding = UDim.new(0, 6)
 
     tabBtn.MouseButton1Click:Connect(function()
-        for _, p in pairs(self.PageContainer:GetChildren()) do p.Visible = false end
+        for _, p in pairs(self.PageContainer:GetChildren()) do 
+            if p:IsA("ScrollingFrame") then p.Visible = false end 
+        end
         page.Visible = true
     end)
 
@@ -118,6 +121,7 @@ function CatLib:CreateButton(parent, text, callback)
     btn.MouseButton1Click:Connect(function()
         callback(btn)
     end)
+
     return btn
 end
 
