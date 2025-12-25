@@ -3,12 +3,14 @@
 -- 引用 Orion 庫
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
+-- 確保建立新視窗前清除舊的，防止畫面混亂
+pcall(function() game:GetService("CoreGui").Orion:Destroy() end)
+
 -- 使用全域變數，確保主腳本也能讀取到
 _G.CatSpeedActive = _G.CatSpeedActive or false
 _G.CatSpeedValue = _G.CatSpeedValue or 50 -- 默認 50
 
 -- 核心速度邏輯 (TranslateBy 原理)
--- 為了防止重複加載導致速度無限疊加，先檢查是否已有邏輯在跑
 if not _G.SpeedLogicStarted then
     _G.SpeedLogicStarted = true
     task.spawn(function()
@@ -20,7 +22,6 @@ if not _G.SpeedLogicStarted then
                 local char = player.Character
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 if char and hum and hum.MoveDirection.Magnitude > 0 then
-                    -- 速度原理：座標平移
                     char:TranslateBy(hum.MoveDirection * (_G.CatSpeedValue / 10))
                 end
             end
@@ -41,18 +42,22 @@ Tab:AddToggle({
 	end    
 })
 
--- 滑動條 (調整數值)
-Tab:AddSlider({
-	Name = "調整速度倍率",
-	Min = 1,
-	Max = 300,
-	Default = _G.CatSpeedValue,
-	Color = Color3.fromRGB(255, 85, 0),
-	Increment = 1,
-	ValueName = "倍率",
-	Callback = function(Value)
-		_G.CatSpeedValue = Value
-	end    
+-- 【這裡改成了輸入框】
+Tab:AddInput({
+	Name = "輸入速度倍率",
+	Default = tostring(_G.CatSpeedValue),
+	PlaceholderText = "目前速度: " .. _G.CatSpeedValue,
+	ClearTextOnFocus = true, -- 點擊框框時自動清空文字，方便輸入
+	Callback = function(Text)
+		local num = tonumber(Text)
+		if num then
+			_G.CatSpeedValue = num
+			print("速度已更換為: " .. num)
+		else
+			-- 如果輸入的不是數字，就彈出警告（選配）
+			print("請輸入有效的數字！")
+		end
+	end	  
 })
 
 OrionLib:Init()
