@@ -5,52 +5,61 @@ function CatLib.Init()
     local self = setmetatable({}, CatLib)
     
     local main = Instance.new("ScreenGui")
-    main.Name = "NekoLibrary"
+    main.Name = "NekoLibrary_V12"
     main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     main.ResetOnSpawn = false
     self.MainGui = main
 
+    -- === 主面板 (採用 V12 的 210x130 比例與深色背景) ===
     local Frame = Instance.new("Frame", main)
-    Frame.Size = UDim2.new(0, 360, 0, 240)
-    Frame.Position = UDim2.new(0.5, -180, 0.4, 0)
+    Frame.Size = UDim2.new(0, 210, 0, 150) -- 稍微加高一點點以容納分頁
+    Frame.Position = UDim2.new(0.5, -105, 0.4, 0)
     Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    Frame.BackgroundTransparency = 0.2
+    Frame.BackgroundTransparency = 0.25 
     Frame.Active = true
     Frame.Draggable = true
     self.MainFrame = Frame
 
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 18)
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 20)
 
     local Stroke = Instance.new("UIStroke", Frame)
     Stroke.Thickness = 3
     Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    self.MainStroke = Stroke
 
+    -- === 頂部列 (🐱 NYAN PROTOCOL 🐾) ===
     local TopBar = Instance.new("Frame", Frame)
-    TopBar.Size = UDim2.new(1, 0, 0, 40)
+    TopBar.Size = UDim2.new(1, 0, 0, 35)
     TopBar.BackgroundTransparency = 1
     
     local Title = Instance.new("TextLabel", TopBar)
     Title.Size = UDim2.new(1, 0, 1, 0)
-    Title.Text = "🐱 NEKO PROTOCOL 🐾"
+    Title.Text = "NYAN PROTOCOL"
     Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 14
+    Title.TextSize = 11
     Title.BackgroundTransparency = 1
+    self.MainTitle = Title
 
+    -- === 分頁切換容器 (頂部小列) ===
     local TabContainer = Instance.new("ScrollingFrame", Frame)
-    TabContainer.Size = UDim2.new(0, 95, 0, 180)
-    TabContainer.Position = UDim2.new(0, 10, 0, 45)
+    TabContainer.Size = UDim2.new(1, -20, 0, 25)
+    TabContainer.Position = UDim2.new(0, 10, 0, 35)
     TabContainer.BackgroundTransparency = 1
     TabContainer.ScrollBarThickness = 0
+    TabContainer.CanvasSize = UDim2.new(2, 0, 0, 0)
     local TabList = Instance.new("UIListLayout", TabContainer)
+    TabList.FillDirection = Enum.FillDirection.Horizontal
     TabList.Padding = UDim.new(0, 5)
     self.TabContainer = TabContainer
 
+    -- === 內容容器 (放置功能按鈕) ===
     local PageContainer = Instance.new("Frame", Frame)
-    PageContainer.Size = UDim2.new(0, 235, 0, 180)
-    PageContainer.Position = UDim2.new(0, 115, 0, 45)
+    PageContainer.Size = UDim2.new(1, -20, 1, -70)
+    PageContainer.Position = UDim2.new(0, 10, 0, 65)
     PageContainer.BackgroundTransparency = 1
     self.PageContainer = PageContainer
 
+    -- RGB 動態效果
     task.spawn(function()
         while main.Parent do
             local rgb = Color3.fromHSV(tick() % 5 / 5, 0.7, 1)
@@ -63,15 +72,16 @@ function CatLib.Init()
     return self
 end
 
+-- === 建立分頁 (按鈕樣式套用 V12) ===
 function CatLib:CreateTab(name, isFirst)
     local tabBtn = Instance.new("TextButton", self.TabContainer)
-    tabBtn.Size = UDim2.new(1, 0, 0, 32)
-    tabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    tabBtn.Size = UDim2.new(0, 60, 1, 0)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     tabBtn.BackgroundTransparency = 0.4
     tabBtn.Text = name
     tabBtn.TextColor3 = Color3.new(1,1,1)
     tabBtn.Font = Enum.Font.GothamBold
-    tabBtn.TextSize = 12
+    tabBtn.TextSize = 10
     Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 8)
 
     local page = Instance.new("ScrollingFrame", self.PageContainer)
@@ -79,7 +89,8 @@ function CatLib:CreateTab(name, isFirst)
     page.BackgroundTransparency = 1
     page.Visible = isFirst or false
     page.ScrollBarThickness = 0
-    Instance.new("UIListLayout", page).Padding = UDim.new(0, 6)
+    page.CanvasSize = UDim2.new(0, 0, 2, 0)
+    Instance.new("UIListLayout", page).Padding = UDim.new(0, 5)
 
     tabBtn.MouseButton1Click:Connect(function()
         for _, p in pairs(self.PageContainer:GetChildren()) do 
@@ -91,32 +102,36 @@ function CatLib:CreateTab(name, isFirst)
     return page
 end
 
+-- === 建立資訊標籤 ===
 function CatLib:CreateInfo(parent, icon, text)
     local info = Instance.new("TextLabel", parent)
-    info.Size = UDim2.new(1, -10, 0, 28)
-    info.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    info.Size = UDim2.new(1, 0, 0, 25)
+    info.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     info.BackgroundTransparency = 0.5
     info.Text = icon .. " " .. text
-    info.TextColor3 = Color3.new(0.85, 0.85, 0.85)
+    info.TextColor3 = Color3.new(0.8, 0.8, 0.8)
     info.Font = Enum.Font.Gotham
-    info.TextSize = 12
-    Instance.new("UICorner", info).CornerRadius = UDim.new(0, 6)
+    info.TextSize = 10
+    Instance.new("UICorner", info).CornerRadius = UDim.new(0, 8)
 end
 
+-- === 建立按鈕 (完全採用 V12 的 applyNekoStyle 樣式) ===
 function CatLib:CreateButton(parent, text, callback)
     local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(1, -10, 0, 38)
-    btn.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
+    btn.Size = UDim2.new(1, 0, 0, 32)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     btn.BackgroundTransparency = 0.3
-    btn.Text = "  🐱 " .. text
+    btn.Text = text
     btn.TextColor3 = Color3.new(1,1,1)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 13
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+    btn.TextSize = 12
     
+    -- V12 特色圓角與邊框
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
     local s = Instance.new("UIStroke", btn)
-    s.Transparency = 0.8; s.Color = Color3.new(1,1,1)
+    s.Thickness = 1.2
+    s.Color = Color3.new(1, 1, 1)
+    s.Transparency = 0.8
 
     btn.MouseButton1Click:Connect(function()
         callback(btn)
