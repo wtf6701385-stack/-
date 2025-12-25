@@ -1,9 +1,13 @@
 -- 1. 加載 GitHub 上的貓貓 UI 引擎
 local CatLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))().Init()
 
--- 2. 初始化全域變數與速度設定
-_G.PVP, _G.MOB, _G.ESP = false, false, false
-_G.CatSpeedValue = 50 -- 你可以在這裡先設定好想要的速度數字
+-- 2. 初始化全域變數
+_G.PVP = false
+_G.MOB = false
+_G.ESP = false
+-- 這是給 NEKOSPD 使用的同步變數
+_G.CatSpeedActive = false -- 預設不開啟加速，由 Orion UI 控制
+_G.CatSpeedValue = 50     -- 預設滑動條數值
 
 -- 3. 建立分頁
 local p0 = CatLib:CreateTab("貓公告", true)
@@ -14,7 +18,7 @@ local p2 = CatLib:CreateTab("貓召喚", false)
 CatLib:CreateInfo(p0, " 🐾 "," 歡迎使用貓貓腳本 ")
 CatLib:CreateInfo(p0, " 🐾 ", " 不要點太快謝謝您 ")
 
--- 5. 貓功能分頁 (已加入第四個按鈕：貓貓神速)
+-- 5. 貓功能分頁 (包含 PVP/MOB/ESP 以及連動 Orion 的神速按鈕)
 local btnPVP, btnMOB
 
 btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
@@ -45,8 +49,9 @@ CatLib:CreateButton(p1, "透視對手 : OFF", function(self)
     self.Text = "  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
 end)
 
--- 這裡是新增的第四個按鈕
+-- 【關鍵按鈕】：啟動帶有滑動條的 Orion 速度面板
 CatLib:CreateButton(p1, "貓貓神速 : 啟動", function() 
+    -- 執行你剛剛準備好的 Orion 滑動條腳本網址
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
 end)
 
