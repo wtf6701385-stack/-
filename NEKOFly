@@ -1,1 +1,9 @@
-loadstring(game:HttpGet("loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/FLYUI"))()"))().Init()
+-- 這段代碼放在你的 A 檔案中，用來遠端開啟 FLYUI
+local success, err = pcall(function()
+    -- 抓取 FLYUI 並執行它的 Init 函數
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/FLYUI"))().Init()
+end)
+
+if not success then
+    warn("喵！載入 FLYUI 失敗: " .. tostring(err))
+end
