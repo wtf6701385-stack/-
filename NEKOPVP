@@ -1,13 +1,84 @@
--- [[ 核心设置 ]]
-local MAX_SCAN_COUNT = 30 -- 【新增】每次扫描最多处理的目标数，防止扫描过多导致卡顿
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Player = Players.LocalPlayer
+local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+local RegAttack = Net:WaitForChild("RE/RegisterAttack")
+local RegHit = Net:WaitForChild("RE/RegisterHit")
+
+-- 配置
+local MAX_SCAN_COUNT = 30 
 local ATTACK_SPEED_PLAYER = 0.06
 local ATTACK_SPEED_NPC = 0.1
 
--- ... (前面的服务和函数定义保持不变) ...
+-- 工具函数
+local function GetRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")) end
+local function IsAlive(c) 
+    local h = c and c:FindFirstChildOfClass("Humanoid")
+    return h and h.Health > 0 
+end
 
+-- ==========================================
+-- 【第 2 步：扫描层】只负责找模型
+-- ==========================================
+local function ScanEnvironment(myPos, char)
+    local found = {}
+    local count = 0
+    local folders = {
+        workspace:FindFirstChild("Characters"), 
+        workspace:FindFirstChild("Enemies"), 
+        workspace:FindFirstChild("NPCs")
+    }
+
+    for _, folder in ipairs(folders) do
+        if folder then
+            local children = folder:GetChildren()
+            for i = 1, #children do
+                if count >= MAX_SCAN_COUNT then break end
+                local m = children[i]
+                if m ~= char and IsAlive(m) then
+                    local tr = GetRoot(m)
+                    if tr and (tr.Position - myPos).Magnitude <= 1500 then
+                        table.insert(found, m)
+                        count = count + 1
+                    end
+                end
+            end
+        end
+        if count >= MAX_SCAN_COUNT then break end
+    end
+    return found
+end
+
+-- ==========================================
+-- 【第 3 步：准备发包层】纯转换格式，不带逻辑
+-- ==========================================
+local function PreparePackage(models)
+    local hitList = {}
+    for i = 1, #models do
+        local m = models[i]
+        local root = GetRoot(m)
+        if root then
+            table.insert(hitList, {m, root})
+        end
+    end
+    return hitList
+end
+
+-- ==========================================
+-- 【第 4 步：发包层】纯执行通信
+-- ==========================================
+local function SendAttack(targetPart, list)
+    RegAttack:FireServer(0)
+    RegHit:FireServer(targetPart, list)
+end
+
+-- ==========================================
+-- 【第 1 步：核心控制层】
+-- ==========================================
 task.spawn(function()
     while true do
-        local currentWait = 0.1 -- 默认无目标时的等待
+        local waitTime = 0.1 
 
         if _G.PVP then
             local char = Player.Character
@@ -15,60 +86,25 @@ task.spawn(function()
             local tool = char and char:FindFirstChildOfClass("Tool")
 
             if tool and root then
-                local allTargets = {}
-                local myPos = root.Position
-                local scannedCount = 0 -- 【新增】当前已扫描计数器
+                -- 1. 扫描获取原始模型
+                local rawModels = ScanEnvironment(root.Position, char)
                 
-                local folders = {
-                    workspace:FindFirstChild("Characters"), 
-                    workspace:FindFirstChild("Enemies"), 
-                    workspace:FindFirstChild("NPCs")
-                }
-
-                -- 开始扫描文件夹
-                for _, folder in ipairs(folders) do
-                    if folder then
-                        local children = folder:GetChildren()
-                        for i = 1, #children do
-                            -- 【关键改动】如果已经找够了数量，直接跳出本文件夹的循环
-                            if scannedCount >= MAX_SCAN_COUNT then break end
-
-                            local m = children[i]
-                            if m ~= char and IsAlive(m) then
-                                local tr = GetRoot(m)
-                                if tr and (tr.Position - myPos).Magnitude <= 1500 then
-                                    local isPlayer = Players:GetPlayerFromCharacter(m) ~= nil
-                                    table.insert(allTargets, {Model = m, Root = tr, IsPlayer = isPlayer})
-                                    
-                                    scannedCount = scannedCount + 1 -- 增加计数
-                                end
-                            end
-                        end
-                    end
-                    -- 如果已经达到上限，停止扫描后续文件夹
-                    if scannedCount >= MAX_SCAN_COUNT then break end
-                end
-
-                -- 执行攻击逻辑 (保持不变)
-                if #allTargets > 0 then
-                    local targetData = allTargets[1]
-                    RegAttack:FireServer(0)
+                if #rawModels > 0 then
+                    -- 2. 转换数据包
+                    local finalHitList = PreparePackage(rawModels)
                     
-                    local hitList = {}
-                    for i = 1, #allTargets do 
-                        table.insert(hitList, {allTargets[i].Model, allTargets[i].Root}) 
-                    end
-                    
-                    RegHit:FireServer(targetData.Root, hitList)
-
-                    if targetData.IsPlayer then
-                        currentWait = ATTACK_SPEED_PLAYER
-                    else
-                        currentWait = ATTACK_SPEED_NPC
+                    -- 3. 执行发包 (取第一个目标的 RootPart 作为主目标)
+                    if #finalHitList > 0 then
+                        local primaryRoot = finalHitList[1][2]
+                        SendAttack(primaryRoot, finalHitList)
+                        
+                        -- 4. 决定下次循环速度 (直接在核心层判断第一个目标)
+                        local isPlayer = Players:GetPlayerFromCharacter(rawModels[1]) ~= nil
+                        waitTime = isPlayer and ATTACK_SPEED_PLAYER or ATTACK_SPEED_NPC
                     end
                 end
             end
         end
-        task.wait(currentWait)
+        task.wait(waitTime)
     end
 end)
