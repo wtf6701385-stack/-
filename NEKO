@@ -184,6 +184,8 @@ btnESP=CreateButton(p1,"透視對手 : OFF",function(self)
 end)
 
 CreateButton(p2,"召喚飛行",function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
+-- 以下為新增的按鈕
+CreateButton(p2,"落葉中心",function() loadstring(game:HttpGet("https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/%E8%90%BD%E5%8F%B6%E4%B8%AD%E5%BF%83%E6%B7%B7%E6%B7%86.txt"))() end)
 
 local MiniBtn=Instance.new("TextButton",MainFrame)
 MiniBtn.Size=UDim2.new(0,30,0,30)
