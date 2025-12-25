@@ -1,0 +1,31 @@
+-- [[ 雲端偵測模組：負責掃描與找人 ]]
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+
+-- 初始化儲存空間（這張紙用來記下目標）
+_G.TargetCache = { Enemies = {}, Players = {} }
+
+local function GetRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")) end
+local function IsAlive(c)
+    local h = c and c:FindFirstChildOfClass("Humanoid")
+    return h and h.Health > 0
+end
+
+-- 這裡就是你剛才提供的掃描邏輯（怪物+玩家）
+task.spawn(function()
+    local myId = _G.CurrentPvpID
+    while _G.CurrentPvpID == myId and _G.PVP do
+        -- 怪物掃描部分... (省略，內容同你提供的邏輯)
+        -- 把結果存入 _G.TargetCache.Enemies
+        task.wait(0.5)
+    end
+end)
+
+task.spawn(function()
+    local myId = _G.CurrentPvpID
+    while _G.CurrentPvpID == myId and _G.PVP do
+        -- 玩家掃描部分... (省略，內容同你提供的邏輯)
+        -- 把結果存入 _G.TargetCache.Players
+        task.wait(0.03)
+    end
+end)
