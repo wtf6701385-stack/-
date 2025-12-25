@@ -1,94 +1,55 @@
--- [[ 貓貓腳本執行端 - 載入 UI 引擎 ]]
-local success, CatLibRaw = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/FLYUI"))()
-end)
+local CatLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/FLYUI"))().Init()
 
-if not success then return end
-
--- [[ 初始化 UI ]]
-local CatLib = CatLibRaw.Init()
-
--- [[ 這裡完全是你原本的變數 ]]
 local lp = game.Players.LocalPlayer
 local mouse = lp:GetMouse()
-local nowe = false
-local speeds = 1
+local flying = false
+local speed = 1
 local ctrl = {f = 0, b = 0}
 
--- [[ 1. 貓公告分頁 ]]
-local p0 = CatLib:CreateTab("貓公告", true)
-CatLib:CreateInfo(p0, "🐾", "版本: V3.0")
-CatLib:CreateInfo(p0, "🐱", "喵嗚~ 準備起飛！")
-
--- [[ 2. 貓飛行分頁 ]]
-local p1 = CatLib:CreateTab("貓飛行", false)
-local speedDisp = CatLib:CreateButton(p1, "速度: 1", function() end)
-
--- [[ 核心功能：切換飛行 (完全保留你的邏輯) ]]
-CatLib:CreateButton(p1, "貓飛行", function(self)
-    -- 這一段就是你原本 onof.MouseButton1Down 裡面的內容
-    nowe = not nowe
-    self.Text = "  🐱 貓飛行 : " .. (nowe and "ON" or "OFF")
+-- [[ 按鈕 1: 飛行開關 ]]
+CatLib:CreateButton("(=^ω^=)", function(self)
+    flying = not flying
+    self.Text = flying and "FLYING" or "(=^ω^=)"
     
-    if nowe then
+    if flying then
         task.spawn(function()
-            local char = lp.Character
-            local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso")
-            local hum = char:FindFirstChildWhichA("Humanoid")
-            
+            local char = lp.Character or lp.CharacterAdded:Wait()
+            local root = char:WaitForChild("HumanoidRootPart")
             local bg = Instance.new("BodyGyro", root)
-            bg.P = 9e4
             bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-            
             local bv = Instance.new("BodyVelocity", root)
             bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
             
-            hum.PlatformStand = true
-            char.Animate.Disabled = true
-
-            while nowe and char.Parent do
+            char.Humanoid.PlatformStand = true
+            while flying and char.Parent do
                 game:GetService("RunService").RenderStepped:Wait()
-                -- 這是你原本的飛行移動計算
-                bv.velocity = (workspace.CurrentCamera.CFrame.LookVector * (ctrl.f) * (speeds * 20))
+                bv.velocity = (workspace.CurrentCamera.CFrame.LookVector * (ctrl.f) * (speed * 20))
                 bg.cframe = workspace.CurrentCamera.CFrame
             end
-            
-            bg:Destroy()
-            bv:Destroy()
-            hum.PlatformStand = false
-            char.Animate.Disabled = false
+            bg:Destroy(); bv:Destroy()
+            char.Humanoid.PlatformStand = false
         end)
     end
 end)
 
--- [[ 核心功能：速度控制 (完全保留你的 speeds 邏輯) ]]
-CatLib:CreateButton(p1, "+", function()
-    speeds = speeds + 1
-    speedDisp.Text = "  🐱 速度: " .. speeds
+-- [[ 按鈕 2: 速度文字顯示 (這是一個不具備功能只顯示的按鈕) ]]
+local speedBtn = CatLib:CreateButton("Speed: 1", function() end)
+
+-- [[ 按鈕 3 & 4: 速度控制 ]]
+CatLib:CreateButton("Speed +", function()
+    speed = speed + 1
+    speedBtn.Text = "Speed: " .. speed
 end)
 
-CatLib:CreateButton(p1, "-", function()
-    if speeds > 1 then
-        speeds = speeds - 1
-        speedDisp.Text = "  🐱 速度: " .. speeds
-    end
+CatLib:CreateButton("Speed -", function()
+    if speed > 1 then speed = speed - 1 end
+    speedBtn.Text = "Speed: " .. speed
 end)
 
--- [[ 核心功能：上升下降 (完全保留你的 CFrame 位移) ]]
-CatLib:CreateButton(p1, "UP 🐾", function()
-    lp.Character.HumanoidRootPart.CFrame = lp.Character.HumanoidRootPart.CFrame * CFrame.new(0, 1, 0)
-end)
-
-CatLib:CreateButton(p1, "DOWN 🐾", function()
-    lp.Character.HumanoidRootPart.CFrame = lp.Character.HumanoidRootPart.CFrame * CFrame.new(0, -1, 0)
-end)
-
--- [[ 核心功能：按鍵監聽 (完全保留你的 KeyDown/KeyUp) ]]
+-- [[ 核心監聽 ]]
 mouse.KeyDown:Connect(function(key)
-    if key:lower() == "w" then ctrl.f = 1
-    elseif key:lower() == "s" then ctrl.f = -1 end
+    if key:lower() == "w" then ctrl.f = 1 elseif key:lower() == "s" then ctrl.f = -1 end
 end)
-
 mouse.KeyUp:Connect(function(key)
     if key:lower() == "w" or key:lower() == "s" then ctrl.f = 0 end
 end)
