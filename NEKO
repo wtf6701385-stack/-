@@ -4,18 +4,18 @@ local CatLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf670
 -- 2. 初始化全域變數
 _G.PVP, _G.MOB, _G.ESP = false, false, false
 _G.CatSpeedActive = false
-_G.CatSpeedValue = 50 -- 預設速度
+_G.CatSpeedValue = 50 
 
 -- 3. 建立分頁
 local p0 = CatLib:CreateTab("貓公告", true)
 local p1 = CatLib:CreateTab("貓功能", false)
 local p2 = CatLib:CreateTab("貓召喚", false)
 
--- 4. 貓公告內容
+-- 4. 貓公告內容 (保持不變)
 CatLib:CreateInfo(p0, " 🐾 "," 歡迎使用貓貓腳本 ")
 CatLib:CreateInfo(p0, " 🐾 ", " 不要點太快謝謝您 ")
 
--- 5. 貓功能分頁 (包含 PVP/MOB/ESP)
+-- 5. 貓功能分頁
 local btnPVP, btnMOB
 
 btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
@@ -46,8 +46,8 @@ CatLib:CreateButton(p1, "透視對手 : OFF", function(self)
     self.Text = "  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
 end)
 
--- 這裡建立啟動按鈕
-local speedBtn = CatLib:CreateButton(p1, "貓貓神速 : 啟動 (點擊後輸入)", function(self)
+-- 神速啟動按鈕
+CatLib:CreateButton(p1, "貓貓神速 : 啟動/關閉", function(self)
     _G.CatSpeedActive = not _G.CatSpeedActive
     if _G.CatSpeedActive then
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))()
@@ -55,29 +55,49 @@ local speedBtn = CatLib:CreateButton(p1, "貓貓神速 : 啟動 (點擊後輸入
     self.Text = "  🐱 貓貓神速 : " .. (_G.CatSpeedActive and "ON" or "OFF")
 end)
 
--- 【強行嵌入原生輸入框】這段代碼會把輸入框黏在按鈕旁邊
+-- --- 【全自動 UI 偵測與輸入框植入】 ---
 task.spawn(function()
-    local pGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    -- 自動偵測貓貓 UI 框架
-    local screen = pGui:WaitForChild("main", 5) or pGui:FindFirstChildOfClass("ScreenGui")
-    local frame = screen and screen:FindFirstChildOfClass("Frame")
+    local lp = game.Players.LocalPlayer
+    local pGui = lp:WaitForChild("PlayerGui")
     
-    if frame then
+    -- 等待 UI 渲染完成
+    task.wait(2) 
+    
+    local targetFrame = nil
+    -- 遍歷所有 UI 尋找看起來像貓貓 UI 的框架
+    for _, gui in pairs(pGui:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            local f = gui:FindFirstChildOfClass("Frame")
+            if f and f.Visible then
+                targetFrame = f
+                break
+            end
+        end
+    end
+
+    if targetFrame then
         local box = Instance.new("TextBox")
         box.Name = "CatSpeedInput"
-        box.Parent = frame
-        box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        box.Parent = targetFrame
+        box.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        box.BackgroundTransparency = 0.3
         box.TextColor3 = Color3.fromRGB(255, 255, 255)
+        box.BorderSizePixel = 1
+        -- 位置設定在右下角邊緣，比較不會擋到字
+        box.Position = UDim2.new(1, -70, 1, -35) 
         box.Size = UDim2.new(0, 60, 0, 25)
-        -- 這邊的 Position 建議你根據 UI 畫面微調，讓它對齊按鈕
-        box.Position = UDim2.new(0.7, 0, 0.7, 0) 
         box.Text = "50"
         box.PlaceholderText = "速度"
-        box.ZIndex = 100
+        box.Font = Enum.Font.SourceSansBold
+        box.ZIndex = 999
         box.TextScaled = true
         
+        -- 當你在框框打完字按 Enter 或點旁邊時生效
         box.FocusLost:Connect(function()
-            _G.CatSpeedValue = tonumber(box.Text) or 50
+            local n = tonumber(box.Text)
+            if n then
+                _G.CatSpeedValue = n
+            end
         end)
     end
 end)
@@ -86,11 +106,9 @@ end)
 CatLib:CreateButton(p2, "召喚飛行", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
 end)
-
 CatLib:CreateButton(p2, "落葉中心", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/%E8%90%BD%E5%8F%B6%E4%B8%AD%E5%BF%83%E6%B7%B7%E6%B7%86.txt"))() 
 end)
-
 CatLib:CreateButton(p2, "大司馬", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/whenheer/dasimav6/main/dasimaV6.txt"))() 
 end)
