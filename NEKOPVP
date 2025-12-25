@@ -1,133 +1,62 @@
--- [[ Neko x FastAttack 終極整合穩定版 ]]
+-- [[ Neko x FastAttack: Local Combat Execution ]]
 _G.PVP = true
 _G.FastAttack = true
 
--- 自殺協議：確保重複執行時舊腳本自動釋放
-local scriptId = "ElitePvp_" .. tick()
+-- 1. 自殺協議：確保重複執行時舊腳本自動釋放
+local scriptId = "EliteCombat_" .. tick()
 _G.CurrentPvpID = scriptId
 
+-- 2. 載入你的雲端偵測模組 (NEKODET)
+local success, err = pcall(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKODET"))()
+end)
+
+if not success then 
+    warn("❌ 雲端偵測載入失敗: " .. tostring(err))
+    return 
+end
+
+-- 3. 定義遠端事件與環境
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Player = Players.LocalPlayer
-
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- 原始設定數值 (完全保留)
-local Settings = {
-    Distance = 1500,     
-    EnemyRate = 0.5,    
-    PlayerRate = 0.03,  
-    MaxScan = 30,       
-    AttackRate = 0.01   
+-- 本地攻擊參數
+local AttackSettings = {
+    MaxScan = 30,
+    AttackRate = 0.01
 }
 
--- 緩存容器
-local TargetCache = {
-    Enemies = {},
-    Players = {}
-}
-
--- 核心工具函數
-local function GetRoot(c) 
-    return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")) 
-end
-
-local function IsAlive(c)
-    local h = c and c:FindFirstChildOfClass("Humanoid")
-    return h and h.Health > 0
-end
-
----
-
--- [[ 執行緒 1：怪物掃描 ]]
+-- 核心攻擊輸出執行緒
 task.spawn(function()
-    while _G.CurrentPvpID == scriptId and _G.PVP do
-        local temp = {}
-        local char = Player.Character
-        local root = GetRoot(char)
-        local folders = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("NPCs")}
-        
-        if root then
-            local myPos = root.Position
-            for _, folder in ipairs(folders) do
-                if folder then
-                    local children = folder:GetChildren()
-                    for i = 1, #children do
-                        if #temp >= Settings.MaxScan then break end
-                        local m = children[i]
-                        local mRoot = GetRoot(m)
-                        if mRoot and IsAlive(m) then
-                            if (mRoot.Position - myPos).Magnitude <= Settings.Distance then
-                                table.insert(temp, {m, mRoot})
-                            end
-                        end
-                    end
-                end
-                if #temp >= Settings.MaxScan then break end
-            end
-        end
-        TargetCache.Enemies = temp
-        task.wait(Settings.EnemyRate)
-    end
-end)
-
--- [[ 執行緒 2：玩家掃描 ]]
-task.spawn(function()
-    while _G.CurrentPvpID == scriptId and _G.PVP do
-        local temp = {}
-        local char = Player.Character
-        local root = GetRoot(char)
-        local folder = workspace:FindFirstChild("Characters")
-        
-        if root and folder then
-            local myPos = root.Position
-            local children = folder:GetChildren()
-            for i = 1, #children do
-                if #temp >= Settings.MaxScan then break end
-                local m = children[i]
-                if m ~= char then
-                    local mRoot = GetRoot(m)
-                    if mRoot and IsAlive(m) then
-                        if (mRoot.Position - myPos).Magnitude <= Settings.Distance then
-                            table.insert(temp, {m, mRoot})
-                        end
-                    end
-                end
-            end
-        end
-        TargetCache.Players = temp
-        task.wait(Settings.PlayerRate)
-    end
-end)
-
--- [[ 執行緒 3：核心攻擊輸出 ]]
-task.spawn(function()
-    print("Neko 整合模組已啟動 (ID: "..scriptId..")")
+    print("✅ Neko 戰鬥模組已啟動 (ID: "..scriptId..")")
     
     while _G.CurrentPvpID == scriptId and _G.PVP do
         local char = Player.Character
         local tool = char and char:FindFirstChildOfClass("Tool")
         
-        if tool and tool.ToolTip ~= "Gun" then
+        -- 確保雲端數據已就緒且手持近戰武器
+        if _G.TargetCache and tool and tool.ToolTip ~= "Gun" then
             local allTargets = {}
             local primaryPart = nil
             
-            -- 玩家優先整合
-            local pCache = TargetCache.Players
+            -- [優先順序 1] 讀取雲端玩家緩存
+            local pCache = _G.TargetCache.Players or {}
             for i = 1, #pCache do
                 local data = pCache[i]
-                if data[1] and data[1].Parent then -- 確保目標尚未銷毀
+                if data[1] and data[1].Parent then
                     table.insert(allTargets, data)
                     if not primaryPart then primaryPart = data[2] end
                 end
             end
             
-            -- 怪物補位整合
-            local eCache = TargetCache.Enemies
+            -- [優先順序 2] 讀取雲端怪物緩存（補位至 30 個）
+            local eCache = _G.TargetCache.Enemies or {}
             for i = 1, #eCache do
-                if #allTargets >= Settings.MaxScan then break end
+                if #allTargets >= AttackSettings.MaxScan then break end
                 local data = eCache[i]
                 if data[1] and data[1].Parent then
                     table.insert(allTargets, data)
@@ -135,13 +64,13 @@ task.spawn(function()
                 end
             end
 
-            -- 執行遠端調用
-            if primaryPart and primaryPart.Parent and #allTargets > 0 then
+            -- [執行攻擊]
+            if primaryPart and #allTargets > 0 then
                 RegAttack:FireServer(0)
                 RegHit:FireServer(primaryPart, allTargets)
             end
         end
-        task.wait(Settings.AttackRate)
+        task.wait(AttackSettings.AttackRate)
     end
-    print("舊腳本 ("..scriptId..") 已關閉。")
+    print("🛑 舊戰鬥腳本 ("..scriptId..") 已停止。")
 end)
