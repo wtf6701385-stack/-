@@ -4,7 +4,7 @@ local CatLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf670
 -- 2. 初始化全域變數
 _G.PVP, _G.MOB, _G.ESP = false, false, false
 _G.CatSpeedActive = false
-_G.CatSpeedValue = 50 -- 預設速度
+_G.CatSpeedValue = 50 
 
 -- 3. 建立分頁
 local p0 = CatLib:CreateTab("貓公告", true)
@@ -46,10 +46,71 @@ CatLib:CreateButton(p1, "透視對手 : OFF", function(self)
     self.Text = "  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
 end)
 
--- 【召喚按鈕】：點擊後會彈出帶有輸入框的 Orion 面板
-CatLib:CreateButton(p1, "貓貓神速 : 開啟速度控制台", function() 
-    -- 直接執行你的 Orion 輸入框腳本
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
+-- 【重點：貓貓神速按鈕 + 自動嵌入輸入框】
+local speedBtn = CatLib:CreateButton(p1, "貓貓神速 : 停止  ", function(self)
+    _G.CatSpeedActive = not _G.CatSpeedActive
+    if _G.CatSpeedActive then
+        -- 啟動加速循環邏輯
+        task.spawn(function()
+            local hb = game:GetService("RunService").Heartbeat
+            while _G.CatSpeedActive do
+                hb:Wait()
+                local char = game.Players.LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                if char and hum and hum.MoveDirection.Magnitude > 0 then
+                    char:TranslateBy(hum.MoveDirection * (_G.CatSpeedValue / 10))
+                end
+            end
+        end)
+    end
+    self.Text = "  🐱 貓貓神速 : " .. (_G.CatSpeedActive and "開啟" or "停止") .. "  "
+end)
+
+-- 這段代碼會自動在按鈕上「挖」一個輸入框出來
+task.spawn(function()
+    task.wait(1) -- 等待 UI 渲染
+    local lp = game.Players.LocalPlayer
+    local pGui = lp:WaitForChild("PlayerGui")
+    
+    -- 遍歷尋找剛剛那個按鈕
+    local target = nil
+    for _, v in pairs(pGui:GetDescendants()) do
+        if v:IsA("TextButton") and v.Text:find("貓貓神速") then
+            target = v
+            break
+        end
+    end
+    
+    if target then
+        local box = Instance.new("TextBox")
+        box.Name = "SpeedValInput"
+        box.Parent = target
+        -- 讓輸入框靠右對齊
+        box.Position = UDim2.new(1, -60, 0, 5)
+        box.Size = UDim2.new(0, 50, 1, -10)
+        box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        box.TextColor3 = Color3.fromRGB(255, 170, 0)
+        box.Text = tostring(_G.CatSpeedValue)
+        box.PlaceholderText = "數值"
+        box.Font = Enum.Font.SourceSansBold
+        box.TextScaled = true
+        box.ZIndex = 500
+        
+        -- 圓角修飾
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 4)
+        corner.Parent = box
+
+        -- 輸入偵測
+        box.FocusLost:Connect(function()
+            local num = tonumber(box.Text)
+            if num then
+                _G.CatSpeedValue = num
+            else
+                box.Text = tostring(_G.CatSpeedValue)
+            end
+        end)
+    end
 end)
 
 -- 6. 貓召喚分頁
