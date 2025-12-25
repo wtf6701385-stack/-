@@ -1,60 +1,99 @@
+-- [[ 获取必要的系统服务 ]]
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- [[ 定义本地玩家及远程事件路径 ]]
 local Player = Players.LocalPlayer
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
-local RegAttack = Net:WaitForChild("RE/RegisterAttack")
-local RegHit = Net:WaitForChild("RE/RegisterHit")
-local function GetRoot(c)return c and(c:FindFirstChild("HumanoidRootPart")or c:FindFirstChild("Head"))end
-local function IsAlive(c)local h=c and c:FindFirstChildOfClass("Humanoid")return h and h.Health>0 end
+local RegAttack = Net:WaitForChild("RE/RegisterAttack") -- 注册攻击事件
+local RegHit = Net:WaitForChild("RE/RegisterHit")       -- 注册命中事件
+
+-- [[ 设置不同目标的攻击速率（数值越小攻击越快） ]]
+local ATTACK_SPEED_PLAYER = 0.06 -- 攻击玩家时的等待间隔
+local ATTACK_SPEED_NPC = 0.1    -- 攻击 NPC 时的等待间隔
+
+-- [[ 工具函数：获取目标的 RootPart（躯干或头部） ]]
+local function GetRoot(c) 
+    return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")) 
+end
+
+-- [[ 工具函数：检查目标是否存活且有生命值 ]]
+local function IsAlive(c) 
+    local h = c and c:FindFirstChildOfClass("Humanoid")
+    return h and h.Health > 0 
+end
+
+-- [[ 开启异步线程运行攻击逻辑 ]]
 task.spawn(function()
-while true do
-if _G.PVP then
-local char = Player.Character
-local root = GetRoot(char)
-local tool = char and char:FindFirstChildOfClass("Tool")
-if tool and root then
-local targets = {}
-local playersFound = {}
-local npcsFound = {}
-local myPos = root.Position
-local charFolder = workspace:FindFirstChild("Characters")
-local otherFolders = {workspace:FindFirstChild("Enemies"),workspace:FindFirstChild("NPCs")}
-if charFolder then
-for _,m in ipairs(charFolder:GetChildren())do
-if m~=char and IsAlive(m)then
-local tr = GetRoot(m)
-if tr and(tr.Position-myPos).Magnitude <= 1500 then
-table.insert(playersFound,{m,tr})
-end
-end
-end
-end
-if #playersFound == 0 then
-for _,f in ipairs(otherFolders)do
-if f then
-for _,m in ipairs(f:GetChildren())do
-if IsAlive(m)then
-local tr = GetRoot(m)
-if tr and(tr.Position-myPos).Magnitude <= 1500 then
-table.insert(npcsFound,{m,tr})
-end
-end
-end
-end
-end
-end
-if #playersFound > 0 then
-targets = playersFound
-elseif #npcsFound > 0 then
-targets = npcsFound
-end
-if #targets > 0 then
-RegAttack:FireServer(0)
-RegHit:FireServer(targets[1][2],targets)
-end
-end
-end
-RunService.Heartbeat:Wait()
-end
+    while true do
+        -- 每一轮循环默认的基础等待（极短），用于防止脚本卡死
+        local currentWait = 0.01
+
+        -- 只有在全局变量 _G.PVP 开启时才运行
+        if _G.PVP then
+            local char = Player.Character
+            local root = GetRoot(char)
+            local tool = char and char:FindFirstChildOfClass("Tool")
+
+            -- 必须手上拿着工具（武器）且自己活着
+            if tool and root then
+                local allTargets = {} -- 存储符合条件的目标列表
+                local myPos = root.Position
+                
+                -- 指定要扫描的所有文件夹路径
+                local folders = {
+                    workspace:FindFirstChild("Characters"), 
+                    workspace:FindFirstChild("Enemies"), 
+                    workspace:FindFirstChild("NPCs")
+                }
+
+                -- 遍历所有指定的文件夹
+                for _, folder in ipairs(folders) do
+                    if folder then
+                        for _, m in ipairs(folder:GetChildren()) do
+                            -- 排除自己，并确认目标存活
+                            if m ~= char and IsAlive(m) then
+                                local tr = GetRoot(m)
+                                -- 距离判断：1500 单位以内
+                                if tr and (tr.Position - myPos).Magnitude <= 1500 then
+                                    -- 判断该目标是否为玩家
+                                    local isPlayer = Players:GetPlayerFromCharacter(m) ~= nil
+                                    -- 将目标信息存入临时表格
+                                    table.insert(allTargets, {Model = m, Root = tr, IsPlayer = isPlayer})
+                                end
+                            end
+                        end
+                    end
+                end
+
+                -- 如果范围内找到了目标
+                if #allTargets > 0 then
+                    -- 默认选取扫描到的第一个目标作为主要攻击点
+                    local targetData = allTargets[1]
+                    
+                    -- 发送攻击动作信号
+                    RegAttack:FireServer(0)
+                    
+                    -- 构造命中的目标列表（按原始格式：{ {模型, 部位}, ... }）
+                    local hitList = {}
+                    for _, t in ipairs(allTargets) do 
+                        table.insert(hitList, {t.Model, t.Root}) 
+                    end
+                    
+                    -- 发送命中信号，带上第一个目标的 RootPart 和完整的命中列表
+                    RegHit:FireServer(targetData.Root, hitList)
+
+                    -- 根据第一个目标的类型（玩家或 NPC）应用不同的等待间隔
+                    if targetData.IsPlayer then
+                        currentWait = ATTACK_SPEED_PLAYER
+                    else
+                        currentWait = ATTACK_SPEED_NPC
+                    end
+                end
+            end
+        end
+        
+        -- 根据上面判断的速率进行等待，然后进入下一轮扫描
+        task.wait(currentWait)
+    end
 end)
