@@ -1,110 +1,34 @@
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- 在脚本最前面加一个变量
+local ScriptID = "NekoPVP_" .. tick() -- 给当前运行的脚本一个唯一身份
+_G.CurrentPvpID = ScriptID -- 告诉全局：现在是我在跑
 
-local Player = Players.LocalPlayer
-local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
-local RegAttack = Net:WaitForChild("RE/RegisterAttack")
-local RegHit = Net:WaitForChild("RE/RegisterHit")
-
--- 配置
-local MAX_SCAN_COUNT = 30 
-local ATTACK_SPEED_PLAYER = 0.06
-local ATTACK_SPEED_NPC = 0.1
-
--- 工具函数
-local function GetRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")) end
-local function IsAlive(c) 
-    local h = c and c:FindFirstChildOfClass("Humanoid")
-    return h and h.Health > 0 
-end
-
--- ==========================================
--- 【第 2 步：扫描层】只负责找模型
--- ==========================================
-local function ScanEnvironment(myPos, char)
-    local found = {}
-    local count = 0
-    local folders = {
-        workspace:FindFirstChild("Characters"), 
-        workspace:FindFirstChild("Enemies"), 
-        workspace:FindFirstChild("NPCs")
-    }
-
-    for _, folder in ipairs(folders) do
-        if folder then
-            local children = folder:GetChildren()
-            for i = 1, #children do
-                if count >= MAX_SCAN_COUNT then break end
-                local m = children[i]
-                if m ~= char and IsAlive(m) then
-                    local tr = GetRoot(m)
-                    if tr and (tr.Position - myPos).Magnitude <= 1500 then
-                        table.insert(found, m)
-                        count = count + 1
-                    end
-                end
-            end
-        end
-        if count >= MAX_SCAN_COUNT then break end
-    end
-    return found
-end
-
--- ==========================================
--- 【第 3 步：准备发包层】纯转换格式，不带逻辑
--- ==========================================
-local function PreparePackage(models)
-    local hitList = {}
-    for i = 1, #models do
-        local m = models[i]
-        local root = GetRoot(m)
-        if root then
-            table.insert(hitList, {m, root})
-        end
-    end
-    return hitList
-end
-
--- ==========================================
--- 【第 4 步：发包层】纯执行通信
--- ==========================================
-local function SendAttack(targetPart, list)
-    RegAttack:FireServer(0)
-    RegHit:FireServer(targetPart, list)
-end
+-- ... (中间的扫描、打包、发包函数保持不变) ...
 
 -- ==========================================
 -- 【第 1 步：核心控制层】
 -- ==========================================
 task.spawn(function()
-    while true do
+    -- 只有当 ID 匹配且全局开关开启时才运行
+    while _G.PVP and _G.CurrentPvpID == ScriptID do
         local waitTime = 0.1 
 
-        if _G.PVP then
-            local char = Player.Character
-            local root = GetRoot(char)
-            local tool = char and char:FindFirstChildOfClass("Tool")
+        local char = Player.Character
+        local root = GetRoot(char)
+        local tool = char and char:FindFirstChildOfClass("Tool")
 
-            if tool and root then
-                -- 1. 扫描获取原始模型
-                local rawModels = ScanEnvironment(root.Position, char)
-                
-                if #rawModels > 0 then
-                    -- 2. 转换数据包
-                    local finalHitList = PreparePackage(rawModels)
-                    
-                    -- 3. 执行发包 (取第一个目标的 RootPart 作为主目标)
-                    if #finalHitList > 0 then
-                        local primaryRoot = finalHitList[1][2]
-                        SendAttack(primaryRoot, finalHitList)
-                        
-                        -- 4. 决定下次循环速度 (直接在核心层判断第一个目标)
-                        local isPlayer = Players:GetPlayerFromCharacter(rawModels[1]) ~= nil
-                        waitTime = isPlayer and ATTACK_SPEED_PLAYER or ATTACK_SPEED_NPC
-                    end
+        if tool and root then
+            local rawModels = ScanEnvironment(root.Position, char)
+            if #rawModels > 0 then
+                local finalHitList = PreparePackage(rawModels)
+                if #finalHitList > 0 then
+                    local primaryRoot = finalHitList[1][2]
+                    SendAttack(primaryRoot, finalHitList)
+                    local isPlayer = Players:GetPlayerFromCharacter(rawModels[1]) ~= nil
+                    waitTime = isPlayer and ATTACK_SPEED_PLAYER or ATTACK_SPEED_NPC
                 end
             end
         end
         task.wait(waitTime)
     end
+    print("猫猫打架脚本已安全退出") -- 退出循环后的提示
 end)
