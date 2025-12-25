@@ -1,7 +1,14 @@
--- 這段代碼放在你的 A 檔案中，用來遠端開啟 FLYUI
+-- 這放在你的 A 檔案（啟動器）
 local success, err = pcall(function()
-    -- 抓取 FLYUI 並執行它的 Init 函數
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/FLYUI"))().Init()
+    local targetURL = "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/FLYUI"
+    local rawData = game:HttpGet(targetURL)
+    local func = loadstring(rawData)
+    
+    if func then
+        func().Init()
+    else
+        error("無法解析腳本內容（可能是連結錯誤）")
+    end
 end)
 
 if not success then
