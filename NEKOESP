@@ -1,61 +1,110 @@
--- [[ Neko ESP 透視模組 ]]
+-- [[ Neko ESP 穩定修復版 ]]
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
 local player = Players.LocalPlayer
 
-local scriptId = "NekoESP_" .. tick()
+-- 防止腳本重複運行衝突
+local scriptId = "NekoESP_v2_" .. tick()
 _G.CurrentESP_ID = scriptId
 
-local gui = player:WaitForChild("PlayerGui"):FindFirstChild("CatCat_Final_Neko") or player:WaitForChild("PlayerGui"):FindFirstChild("CatCat_Qin_UI") or Instance.new("ScreenGui", player.PlayerGui)
-local ESPF = gui:FindFirstChild("ESP_Folder") or Instance.new("Folder", gui)
-ESPF.Name = "ESP_Folder"
-local ESPM, ESPC = {}, {}
-
-local function getRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso")) end
-local function clearE(p) if ESPM[p] then ESPM[p]:Destroy(); ESPM[p] = nil end end
-
-local function attE(p, char)
-    clearE(p)
-    local hrp = getRoot(char)
-    if not hrp then return end
-    local bb = Instance.new("BillboardGui", ESPF)
-    bb.Adornee = hrp; bb.AlwaysOnTop = true; bb.Size = UDim2.new(0, 200, 0, 40); bb.ExtentsOffset = Vector3.new(0, 3, 0)
-    local txt = Instance.new("TextLabel", bb)
-    txt.Size = UDim2.new(1, 0, 1, 0); txt.BackgroundTransparency = 1; txt.TextColor3 = Color3.new(1, 1, 1); txt.TextStrokeTransparency = 0; txt.Font = Enum.Font.SourceSansBold; txt.TextSize = 14
-    ESPM[p] = bb
-    task.spawn(function()
-        while _G.CurrentESP_ID == scriptId and (_G.ESP or _G.ESP_ENABLED) and bb.Parent and p.Character do
-            local me, tg = getRoot(player.Character), getRoot(p.Character)
-            if me and tg then txt.Text = p.Name .. " [" .. math.floor((me.Position - tg.Position).Magnitude) .. "m]" end
-            task.wait(0.2)
-        end
-        clearE(p)
-    end)
+-- 創建存放 ESP 的容器
+local ESP_Folder = CoreGui:FindFirstChild("Neko_ESP_Storage")
+if not ESP_Folder then
+    ESP_Folder = Instance.new("Folder", CoreGui)
+    ESP_Folder.Name = "Neko_ESP_Storage"
 end
 
-local function hookP(p)
+local function getRoot(char)
+    return char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+end
+
+local function clearESP(p)
+    local old = ESP_Folder:FindFirstChild(p.Name)
+    if old then old:Destroy() end
+end
+
+local function createESP(p)
     if p == player then return end
-    if (_G.ESP or _G.ESP_ENABLED) and p.Character then attE(p, p.Character) end
-    if ESPC[p] then ESPC[p]:Disconnect() end
-    ESPC[p] = p.CharacterAdded:Connect(function(c) 
-        if _G.CurrentESP_ID ~= scriptId then if ESPC[p] then ESPC[p]:Disconnect() end return end
-        if (_G.ESP or _G.ESP_ENABLED) then task.wait(0.5); attE(p, c) end 
+    clearESP(p)
+
+    local function setup()
+        local char = p.Character
+        if not char then return end
+        local hrp = getRoot(char)
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hrp or not hum then return end
+
+        local bb = Instance.new("BillboardGui", ESP_Folder)
+        bb.Name = p.Name
+        bb.Adornee = hrp
+        bb.AlwaysOnTop = true
+        bb.Size = UDim2.new(0, 200, 0, 50)
+        bb.ExtentsOffset = Vector3.new(0, 3, 0)
+
+        local txt = Instance.new("TextLabel", bb)
+        txt.Size = UDim2.new(1, 0, 1, 0)
+        txt.BackgroundTransparency = 1
+        txt.TextColor3 = Color3.new(1, 1, 1)
+        txt.TextStrokeTransparency = 0
+        txt.Font = Enum.Font.SourceSansBold
+        txt.TextSize = 14
+
+        -- 獨立的刷新線程
+        task.spawn(function()
+            while _G.CurrentESP_ID == scriptId and (_G.ESP or _G.ESP_ENABLED) and char.Parent and hum.Health > 0 do
+                local myHrp = getRoot(player.Character)
+                local dist = myHrp and math.floor((myHrp.Position - hrp.Position).Magnitude) or 0
+                
+                txt.Text = string.format("%s\n[ %d HP ] • [ %dm ]", p.Name, math.floor(hum.Health), dist)
+                
+                -- 根據距離變色：近處紅色，遠處綠色
+                if dist < 50 then
+                    txt.TextColor3 = Color3.fromRGB(255, 80, 80)
+                else
+                    txt.TextColor3 = Color3.fromRGB(80, 255, 80)
+                end
+                task.wait(0.1)
+            end
+            bb:Destroy()
+        end)
+    end
+
+    p.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if _G.ESP or _G.ESP_ENABLED then setup() end
     end)
+    
+    setup()
 end
 
-for _, p in ipairs(Players:GetPlayers()) do hookP(p) end
-local pAdded = Players.PlayerAdded:Connect(hookP)
-local pRemoving = Players.PlayerRemoving:Connect(function(p) clearE(p); if ESPC[p] then ESPC[p]:Disconnect(); ESPC[p] = nil end end)
+-- 啟動與監控邏輯
+local function toggleESP()
+    if _G.ESP or _G.ESP_ENABLED then
+        for _, p in ipairs(Players:GetPlayers()) do
+            createESP(p)
+        end
+    else
+        ESP_Folder:ClearAllChildren()
+    end
+end
 
+-- 監聽玩家進出
+Players.PlayerAdded:Connect(createESP)
+Players.PlayerRemoving:Connect(clearESP)
+
+-- 循環監測開關狀態 (當 _G.ESP 改變時自動反應)
 task.spawn(function()
-    local last = false
+    local lastState = false
     while _G.CurrentESP_ID == scriptId do
-        local current = (_G.ESP or _G.ESP_ENABLED)
-        if current ~= last then
-            last = current
-            if not last then for p in pairs(ESPM) do clearE(p) end else for _, p in ipairs(Players:GetPlayers()) do hookP(p) end end
+        local currentState = (_G.ESP or _G.ESP_ENABLED)
+        if currentState ~= lastState then
+            lastState = currentState
+            toggleESP()
         end
         task.wait(0.5)
     end
-    pAdded:Disconnect(); pRemoving:Disconnect()
-    for p in pairs(ESPC) do if ESPC[p] then ESPC[p]:Disconnect() end end
 end)
+
+-- 初始執行
+toggleESP()
