@@ -1,238 +1,54 @@
-local UserInputService=game:GetService("UserInputService")
-local RunService=game:GetService("RunService")
-local Players=game:GetService("Players")
-local player=Players.LocalPlayer
-local CoreGui=game:GetService("CoreGui")
+-- 1. 加載 GitHub 上的貓貓 UI 引擎
+local CatLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))().Init()
 
-_G.PVP,_G.MOB,_G.ESP=false,false,false
-_G.CurrentPvpID, _G.CurrentMobID, _G.CurrentESP_ID=nil,nil,nil
+-- 2. 初始化全域變數與鏡頭設定 (保持原邏輯)
+_G.PVP, _G.MOB, _G.ESP = false, false, false
 
-if CoreGui:FindFirstChild("CatCat_Final_Neko") then CoreGui.CatCat_Final_Neko:Destroy() end
+-- 3. 建立分頁
+local p0 = CatLib:CreateTab("貓公告", true)
+local p1 = CatLib:CreateTab("貓功能", false)
+local p2 = CatLib:CreateTab("貓召喚", false)
 
-local cameraActive=true 
-task.spawn(function()
-    local function apply() player.CameraMaxZoomDistance=1000 end
-    apply()
-    local conn=player.CharacterAdded:Connect(function() task.wait(1) apply() end)
-    while cameraActive and task.wait(1) do 
-        if player.CameraMaxZoomDistance~=1000 then apply() end 
-    end
-    conn:Disconnect()
-end)
+-- 4. 貓公告內容
+CatLib:CreateInfo(p0, " 🐾 "," 歡迎使用貓貓腳本 ")
+CatLib:CreateInfo(p0, " 🐾 ", " 不要點太快謝謝您 ")
 
-local gui=Instance.new("ScreenGui",CoreGui)
-gui.Name="CatCat_Final_Neko"
-gui.ResetOnSpawn=false
+-- 5. 貓功能分頁 (PVP/MOB 互斥邏輯完整保留)
+local btnPVP, btnMOB
 
-local function getRainbowColor(offset)
-    local t=tick()*0.5+(offset or 0)
-    return Color3.fromHSV(t%1,0.6,1)
-end
-
-local function getContrast(c)
-    return(0.299*c.R+0.587*c.G+0.114*c.B)>0.5 and Color3.new(0,0,0) or Color3.new(1,1,1)
-end
-
-local MainFrame=Instance.new("Frame",gui)
-MainFrame.Size=UDim2.new(0,380,0,240)
-MainFrame.Position=UDim2.new(0.5,-190,0.5,-120)
-MainFrame.BackgroundColor3=Color3.fromRGB(15,15,17)
-MainFrame.BorderSizePixel=0
-MainFrame.Active=true
-MainFrame.Draggable=true
-MainFrame.ClipsDescendants=true
-
-local Corner=Instance.new("UICorner",MainFrame)
-Corner.CornerRadius=UDim.new(0,12)
-
-local MainStroke=Instance.new("UIStroke",MainFrame)
-MainStroke.Thickness=2.5
-MainStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
-
-local ContentHolder=Instance.new("Frame",MainFrame)
-ContentHolder.Size=UDim2.new(1,0,1,0)
-ContentHolder.BackgroundTransparency=1
-
-local Title=Instance.new("TextLabel",ContentHolder)
-Title.Size=UDim2.new(1,-100,0,35)
-Title.Position=UDim2.new(0,15,0,5)
-Title.Text=" ฅ^•ﻌ•^ฅ  "
-Title.TextColor3=Color3.new(1,1,1)
-Title.Font=Enum.Font.GothamBold
-Title.TextSize=14
-Title.TextXAlignment="Left"
-Title.BackgroundTransparency=1
-
-local TabBar=Instance.new("Frame",ContentHolder)
-TabBar.Size=UDim2.new(0,100,1,-60)
-TabBar.Position=UDim2.new(0,12,0,45)
-TabBar.BackgroundTransparency=1
-Instance.new("UIListLayout",TabBar).Padding=UDim.new(0,6)
-
-local PageContainer=Instance.new("Frame",ContentHolder)
-PageContainer.Size=UDim2.new(1,-135,1,-65)
-PageContainer.Position=UDim2.new(0,125,0,50)
-PageContainer.BackgroundTransparency=1
-
-local FeatureStrokes={}
-
-local function CreateTab(name,isDefault)
-    local Page=Instance.new("ScrollingFrame",PageContainer)
-    Page.Size=UDim2.new(1,0,1,0)
-    Page.BackgroundTransparency=1
-    Page.Visible=isDefault or false
-    Page.ScrollBarThickness=0
-    Page.CanvasSize=UDim2.new(0,0,0,0)
-    Instance.new("UIListLayout",Page).Padding=UDim.new(0,8)
-    local TabBtn=Instance.new("TextButton",TabBar)
-    TabBtn.Size=UDim2.new(1,0,0,32)
-    TabBtn.BackgroundColor3=Color3.fromRGB(30,28,35)
-    TabBtn.Text=name
-    TabBtn.TextColor3=isDefault and Color3.new(1,1,1) or Color3.new(0.5,0.5,0.5)
-    TabBtn.Font=Enum.Font.GothamMedium
-    TabBtn.TextSize=11
-    Instance.new("UICorner",TabBtn).CornerRadius=UDim.new(0,6)
-    TabBtn.MouseButton1Click:Connect(function()
-        for _,p in pairs(PageContainer:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible=false end end
-        for _,b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.TextColor3=Color3.new(0.5,0.5,0.5) end end
-        Page.Visible=true
-        TabBtn.TextColor3=Color3.new(1,1,1)
-    end)
-    return Page
-end
-
-local function CreateButton(parent,text,callback)
-    local btn=Instance.new("TextButton",parent)
-    btn.Size=UDim2.new(0.95,0,0,38)
-    btn.BackgroundColor3=Color3.fromRGB(25,23,28)
-    btn.Text="  🐱 "..text
-    btn.TextColor3=Color3.new(1,1,1)
-    btn.Font=Enum.Font.GothamMedium
-    btn.TextSize=12
-    btn.TextXAlignment="Left"
-    Instance.new("UICorner",btn)
-    local s=Instance.new("UIStroke",btn)
-    s.Thickness=1.2
-    s.Transparency=0.6
-    btn.MouseButton1Click:Connect(function() if callback then callback(btn) end end)
-    table.insert(FeatureStrokes,s)
-    parent.CanvasSize=UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y+10)
-    return btn
-end
-
-local function CreateInfo(parent, title, desc)
-    local frame = Instance.new("Frame", parent)
-    frame.Size = UDim2.new(0.95, 0, 0, 60)
-    frame.BackgroundColor3 = Color3.fromRGB(20, 18, 23)
-    Instance.new("UICorner", frame)
-    local t = Instance.new("TextLabel", frame)
-    t.Size = UDim2.new(1, -10, 0, 25)
-    t.Position = UDim2.new(0, 8, 0, 5)
-    t.Text = title
-    t.TextColor3 = Color3.fromRGB(255, 200, 200)
-    t.Font = Enum.Font.GothamBold
-    t.TextSize = 12
-    t.BackgroundTransparency = 1
-    t.TextXAlignment = "Left"
-    local d = Instance.new("TextLabel", frame)
-    d.Size = UDim2.new(1, -10, 0, 25)
-    d.Position = UDim2.new(0, 8, 0, 28)
-    d.Text = desc
-    d.TextColor3 = Color3.fromRGB(200, 200, 200)
-    d.Font = Enum.Font.Gotham
-    d.TextSize = 11
-    d.BackgroundTransparency = 1
-    d.TextXAlignment = "Left"
-    parent.CanvasSize = UDim2.new(0, 0, 0, parent.UIListLayout.AbsoluteContentSize.Y + 10)
-end
-
-local p0=CreateTab("貓公告",true)
-local p1=CreateTab("貓功能",false)
-local p2=CreateTab("貓召喚",false)
-
-CreateInfo(p0, " 🐾 "," 歡迎使用貓貓腳本 ")
-CreateInfo(p0, " 🐾 ", " 不要點太快謝謝您 ")
-
-local btnPVP,btnMOB,btnESP
-
-btnPVP=CreateButton(p1,"打架模式 : OFF",function(self)
-    _G.PVP=not _G.PVP
+btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
+    _G.PVP = not _G.PVP
     if _G.PVP then 
-        _G.MOB=false 
-        if btnMOB then btnMOB.Text="  🐱 刷怪模式 : OFF" end
+        _G.MOB = false 
+        if btnMOB then btnMOB.Text = "  🐱 刷怪模式 : OFF" end
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"))()
     end
-    self.Text="  🐱 打架模式 : "..(_G.PVP and "ON" or "OFF")
+    self.Text = "  🐱 打架模式 : "..(_G.PVP and "ON" or "OFF")
 end)
 
-btnMOB=CreateButton(p1,"刷怪模式 : OFF",function(self)
-    _G.MOB=not _G.MOB
+btnMOB = CatLib:CreateButton(p1, "刷怪模式 : OFF", function(self)
+    _G.MOB = not _G.MOB
     if _G.MOB then 
-        _G.PVP=false 
-        if btnPVP then btnPVP.Text="  🐱 打架模式 : OFF" end
+        _G.PVP = false 
+        if btnPVP then btnPVP.Text = "  🐱 打架模式 : OFF" end
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"))()
     end
-    self.Text="  🐱 刷怪模式 : "..(_G.MOB and "ON" or "OFF")
+    self.Text = "  🐱 刷怪模式 : "..(_G.MOB and "ON" or "OFF")
 end)
 
-btnESP=CreateButton(p1,"透視對手 : OFF",function(self)
-    _G.ESP=not _G.ESP
+CatLib:CreateButton(p1, "透視對手 : OFF", function(self)
+    _G.ESP = not _G.ESP
     if _G.ESP then 
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()
     end
-    self.Text="  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
+    self.Text = "  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
 end)
 
-CreateButton(p2,"召喚飛行",function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
--- 以下為新增的按鈕
-CreateButton(p2,"落葉中心",function() loadstring(game:HttpGet("https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/%E8%90%BD%E5%8F%B6%E4%B8%AD%E5%BF%83%E6%B7%B7%E6%B7%86.txt"))() end)
-
-local MiniBtn=Instance.new("TextButton",MainFrame)
-MiniBtn.Size=UDim2.new(0,30,0,30)
-MiniBtn.Position=UDim2.new(1,-40,0,5)
-MiniBtn.Text="miu"
-MiniBtn.TextColor3=Color3.fromRGB(200,200,200)
-MiniBtn.BackgroundTransparency=1
-MiniBtn.Font=Enum.Font.GothamBold
-MiniBtn.TextSize=14
-MiniBtn.ZIndex=10
-
-local RestoreBtn=Instance.new("TextButton",MainFrame)
-RestoreBtn.Size=UDim2.new(1,0,1,0)
-RestoreBtn.BackgroundTransparency=1
-RestoreBtn.Text="[ 🐾 摸我還原 🐾 ]"
-RestoreBtn.Font=Enum.Font.GothamBold
-RestoreBtn.TextSize=14
-RestoreBtn.Visible=false
-
-MiniBtn.MouseButton1Click:Connect(function()
-    ContentHolder.Visible=false
-    MiniBtn.Visible=false
-    MainFrame.BackgroundTransparency=0.5
-    MainFrame:TweenSize(UDim2.new(0,140,0,45),"Out","Quart",0.3,true)
-    RestoreBtn.Visible=true
+-- 6. 貓召喚分頁 (包含落葉中心)
+CatLib:CreateButton(p2, "召喚飛行", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
 end)
 
-RestoreBtn.MouseButton1Click:Connect(function()
-    RestoreBtn.Visible=false
-    MainFrame:TweenSize(UDim2.new(0,380,0,240),"Out","Quart",0.3,true,function()
-        ContentHolder.Visible=true
-        MiniBtn.Visible=true
-        MainFrame.BackgroundTransparency=0
-    end)
-end)
-
-local renderConn=RunService.RenderStepped:Connect(function()
-    if not gui.Parent then return end
-    local rainbow=getRainbowColor(0)
-    MainStroke.Color=rainbow
-    RestoreBtn.TextColor3=getContrast(MainFrame.BackgroundColor3)
-    for _,s in pairs(FeatureStrokes) do s.Color=rainbow end
-end)
-
-gui.AncestryChanged:Connect(function()
-    if not gui.Parent then 
-        renderConn:Disconnect()
-        cameraActive=false
-    end
+CatLib:CreateButton(p2, "落葉中心", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/%E8%90%BD%E5%8F%B6%E4%B8%AD%E5%BF%83%E6%B7%B7%E6%B7%86.txt"))() 
 end)
