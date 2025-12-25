@@ -1,25 +1,36 @@
 -- ==========================================
--- Kexuan Zenith | 純淨自動 V4 (GitHub 執行版)
+-- Kexuan Zenith | 核心自動 V4 (純淨版)
 -- ==========================================
 
-_G.AutoV4 = true 
+-- 1. 設定全域開關 (預設執行即開啟)
+_G.AutoV4 = true
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
-print("Kexuan Zenith: 正在後台運行自動 V4...")
-
-RunService.Heartbeat:Connect(function()
+-- 2. 核心邏輯 (完全保留你要求的原始高頻偵測)
+local Connection
+Connection = RunService.Heartbeat:Connect(function()
+    -- 如果全域變數被設為 false，則會停止發送請求
     if _G.AutoV4 then
         pcall(function()
             local char = LocalPlayer.Character
             local backpack = LocalPlayer:FindFirstChild("Backpack")
+            
+            -- 雙路徑偵測：同時找角色和背包
             local awake = (char and char:FindFirstChild("Awakening")) or (backpack and backpack:FindFirstChild("Awakening"))
             
             if awake then
+                -- 向伺服器發送變身指令
                 awake.RemoteFunction:InvokeServer(true)
             end
         end)
     end
 end)
+
+-- 3. 輸出啟動訊息到控制台 (F9)
+print("-------------------------------")
+print("Kexuan Zenith: 自動 V4 已啟動!")
+print("提示: 輸入 _G.AutoV4 = false 可停止")
+print("-------------------------------")
