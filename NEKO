@@ -1,9 +1,9 @@
 -- 1. 加載 GitHub 上的貓貓 UI 引擎
 local CatLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))().Init()
 
--- 2. 初始化全域變數與鏡頭設定
+-- 2. 初始化全域變數與速度設定
 _G.PVP, _G.MOB, _G.ESP = false, false, false
-_G.CatSpeedValue = 16 -- 預設速度變數
+_G.CatSpeedValue = 50 -- 你可以在這裡先設定好想要的速度數字
 
 -- 3. 建立分頁
 local p0 = CatLib:CreateTab("貓公告", true)
@@ -14,7 +14,7 @@ local p2 = CatLib:CreateTab("貓召喚", false)
 CatLib:CreateInfo(p0, " 🐾 "," 歡迎使用貓貓腳本 ")
 CatLib:CreateInfo(p0, " 🐾 ", " 不要點太快謝謝您 ")
 
--- 5. 貓功能分頁 (PVP/MOB 互斥邏輯完整保留)
+-- 5. 貓功能分頁 (已加入第四個按鈕：貓貓神速)
 local btnPVP, btnMOB
 
 btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
@@ -45,6 +45,11 @@ CatLib:CreateButton(p1, "透視對手 : OFF", function(self)
     self.Text = "  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
 end)
 
+-- 這裡是新增的第四個按鈕
+CatLib:CreateButton(p1, "貓貓神速 : 啟動", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
+end)
+
 -- 6. 貓召喚分頁
 CatLib:CreateButton(p2, "召喚飛行", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
@@ -56,14 +61,4 @@ end)
 
 CatLib:CreateButton(p2, "大司馬", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/whenheer/dasimav6/main/dasimaV6.txt"))() 
-end)
-
--- --- 這是你新要求加入的部分，位置完全符合你的要求 ---
-
-CatLib:CreateInput(p2, "貓貓神速 (輸入數值)", function(value)
-    _G.CatSpeedValue = tonumber(value) or 16
-end)
-
-CatLib:CreateButton(p2, "啟動貓神速", function() 
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
 end)
