@@ -1,0 +1,58 @@
+-- 引用外部 UI 庫 (Orion Library)
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+
+-- 1. 核心速度變數
+local SpeedConfig = {
+    Enabled = false,
+    Multiplier = 5
+}
+
+-- 2. 核心速度邏輯 (TranslateBy)
+task.spawn(function()
+    local RunService = game:GetService("RunService")
+    local player = game.Players.LocalPlayer
+    
+    RunService.Heartbeat:Connect(function()
+        if SpeedConfig.Enabled then
+            local char = player.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if char and hum and hum.MoveDirection.Magnitude > 0 then
+                char:TranslateBy(hum.MoveDirection * (SpeedConfig.Multiplier / 10))
+            end
+        end
+    end)
+end)
+
+-- 3. 建立外部 UI 視窗
+local Window = OrionLib:MakeWindow({Name = "貓貓速度控制台", HidePremium = false, SaveConfig = true, ConfigFolder = "CatSpeed"})
+
+local Tab = Window:MakeTab({
+	Name = "主要功能",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+-- 速度切換開關
+Tab:AddToggle({
+	Name = "開啟加速",
+	Default = false,
+	Callback = function(Value)
+		SpeedConfig.Enabled = Value
+	end    
+})
+
+-- 數值調整滑軌 (這就是你要的調整數值的地方)
+Tab:AddSlider({
+	Name = "速度倍率",
+	Min = 1,
+	Max = 100,
+	Default = 5,
+	Color = Color3.fromRGB(255,255,255),
+	Increment = 1,
+	ValueName = "倍率",
+	Callback = function(Value)
+		SpeedConfig.Multiplier = Value -- 當你滑動時，數值會自動存入變數
+	end    
+})
+
+OrionLib:Init() -- 初始化 UI
