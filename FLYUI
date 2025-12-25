@@ -1,37 +1,68 @@
 local CatLib = {}
 
 function CatLib.Init()
+    -- [[ 1. 建立 V12 UI 外殼 (不影響功能) ]]
     local main = Instance.new("ScreenGui")
-    main.Name = "NekoFly_V12_Logic"
+    main.Name = "NekoFly_V12"
     main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     main.ResetOnSpawn = false
 
-    local speaker = game:GetService("Players").LocalPlayer
-    local mouse = speaker:GetMouse()
-    local speeds = 1
-    local nowe = false
-    local tpwalking = false
-
-    -- [ UI 部分保持 V12 黑色外觀 ]
     local Frame = Instance.new("Frame", main)
     Frame.Size = UDim2.new(0, 210, 0, 130)
     Frame.Position = UDim2.new(0.5, -105, 0.4, 0)
     Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    Frame.BackgroundTransparency = 0.25 
+    Frame.BackgroundTransparency = 0.2
     Frame.Active = true; Frame.Draggable = true
     Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 20)
     local Stroke = Instance.new("UIStroke", Frame)
-    Stroke.Thickness = 3; Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    
-    -- (省略按鈕 UI 創建代碼，保持跟之前一樣的按鈕變數名: up, down, onof, plus, mine, speedDisp)
-    -- ... [請插入之前的 UI 按鈕代碼] ...
+    Stroke.Thickness = 3
 
-    -- [[ 核心功能區：完全照抄你給我的原始邏輯 ]]
+    local Title = Instance.new("TextLabel", Frame)
+    Title.Size = UDim2.new(1, 0, 0, 35); Title.Text = "NYAN V12 - ORIGINAL LOGIC"; Title.TextColor3 = Color3.new(1,1,1)
+    Title.BackgroundTransparency = 1; Title.Font = Enum.Font.GothamBold; Title.TextSize = 10
+
+    -- 建立與你代碼對應的變數名，這樣邏輯才不會斷掉
+    local speed = Instance.new("TextLabel", Frame) -- 對應你原始的 speed 顯示
+    speed.Size = UDim2.new(0, 80, 0, 30); speed.Position = UDim2.new(0.5, -40, 0, 45)
+    speed.Text = "1"; speed.TextColor3 = Color3.new(1,1,1); speed.BackgroundTransparency = 0.5
+
+    local plus = Instance.new("TextButton", Frame) -- 對應你原始的 plus
+    plus.Text = "+"; plus.Size = UDim2.new(0, 30, 0, 30); plus.Position = UDim2.new(1, -40, 0, 45)
+
+    local mine = Instance.new("TextButton", Frame) -- 對應你原始的 mine
+    mine.Text = "-"; mine.Size = UDim2.new(0, 30, 0, 30); mine.Position = UDim2.new(0, 10, 0, 45)
+
+    local onof = Instance.new("TextButton", Frame) -- 對應你原始的 onof
+    onof.Text = "貓飛行"; onof.Size = UDim2.new(0, 70, 0, 35); onof.Position = UDim2.new(0.5, -35, 0, 85)
+
+    local up = Instance.new("TextButton", Frame) -- 對應你原始的 up
+    up.Text = "UP"; up.Size = UDim2.new(0, 50, 0, 35); up.Position = UDim2.new(0, 10, 0, 85)
+
+    local down = Instance.new("TextButton", Frame) -- 對應你原始的 down
+    down.Text = "DOWN"; down.Size = UDim2.new(0, 50, 0, 35); down.Position = UDim2.new(1, -60, 0, 85)
+
+    -- [[ 2. 你的 100% 原始邏輯開始 (完全搬運) ]]
     
+    local speeds = 1
+    local speaker = game:GetService("Players").LocalPlayer
+    local nowe = false
+    local tpwalking = false
+
+    -- RGB 效果 (照抄你的，但適配新 UI)
+    task.spawn(function()
+        while main.Parent do
+            local hue = tick() % 5 / 5
+            local color = Color3.fromHSV(hue, 0.6, 1)
+            Frame.BackgroundColor3 = color
+            Stroke.Color = color
+            task.wait()
+        end
+    end)
+
+    -- 核心啟動按鈕 (完全照抄你的邏輯結構)
     onof.MouseButton1Down:connect(function()
         if nowe == true then
             nowe = false
-            -- 關閉時的還原邏輯 (完全照抄)
             speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,true)
             speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,true)
             speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying,true)
@@ -50,7 +81,6 @@ function CatLib.Init()
             speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
         else 
             nowe = true
-            -- 啟動時的 tpwalking 疊加邏輯 (完全照抄)
             for i = 1, speeds do
                 spawn(function()
                     local hb = game:GetService("RunService").Heartbeat	
@@ -67,9 +97,10 @@ function CatLib.Init()
             game.Players.LocalPlayer.Character.Animate.Disabled = true
             local Char = game.Players.LocalPlayer.Character
             local Hum = Char:FindFirstChildOfClass("Humanoid") or Char:FindFirstChildOfClass("AnimationController")
-            for i,v in next, Hum:GetPlayingAnimationTracks() do v:AdjustSpeed(0) end
-            
-            -- 禁用狀態邏輯 (完全照抄)
+
+            for i,v in next, Hum:GetPlayingAnimationTracks() do
+                v:AdjustSpeed(0)
+            end
             speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,false)
             speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown,false)
             speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying,false)
@@ -88,58 +119,102 @@ function CatLib.Init()
             speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
         end
 
-        -- BodyVelocity 飛行控制 (分 R6/R15，完全照抄你的邏輯)
-        local rootPartName = (game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RigType == Enum.HumanoidRigType.R6) and "Torso" or "UpperTorso"
-        local torso = speaker.Character:WaitForChild(rootPartName)
-        local ctrl = {f = 0, b = 0, l = 0, r = 0}
-        local lastctrl = {f = 0, b = 0, l = 0, r = 0}
-        local maxspeed = 50
-        local speed = 0
+        -- 原始飛行 BodyVelocity 判斷 (R6/R15)
+        if game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid").RigType == Enum.HumanoidRigType.R6 then
+            local plr = game.Players.LocalPlayer
+            local torso = plr.Character.Torso
+            local ctrl = {f = 0, b = 0, l = 0, r = 0}
+            local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+            local maxspeed = 50
+            local speed = 0
+            local bg = Instance.new("BodyGyro", torso)
+            bg.P = 9e4; bg.maxTorque = Vector3.new(9e9, 9e9, 9e9); bg.cframe = torso.CFrame
+            local bv = Instance.new("BodyVelocity", torso)
+            bv.velocity = Vector3.new(0,0.1,0); bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
 
-        -- 這是你的 WASD 鍵盤控制連結
-        local k1 = mouse.KeyDown:connect(function(key)
-            if key:lower() == "w" then ctrl.f = 1 elseif key:lower() == "s" then ctrl.f = -1 elseif key:lower() == "a" then ctrl.l = -1 elseif key:lower() == "d" then ctrl.r = 1 end
-        end)
-        local k2 = mouse.KeyUp:connect(function(key)
-            if key:lower() == "w" then ctrl.f = 0 elseif key:lower() == "s" then ctrl.f = 0 elseif key:lower() == "a" then ctrl.l = 0 elseif key:lower() == "d" then ctrl.r = 0 end
-        end)
+            spawn(function()
+                local m = plr:GetMouse()
+                m.KeyDown:connect(function(k) if k:lower()=="w" then ctrl.f=1 elseif k:lower()=="s" then ctrl.f=-1 elseif k:lower()=="a" then ctrl.l=-1 elseif k:lower()=="d" then ctrl.r=1 end end)
+                m.KeyUp:connect(function(k) if k:lower()=="w" then ctrl.f=0 elseif k:lower()=="s" then ctrl.f=0 elseif k:lower()=="a" then ctrl.l=0 elseif k:lower()=="d" then ctrl.r=0 end end)
+            end)
 
-        local bg = Instance.new("BodyGyro", torso)
-        bg.P = 9e4; bg.maxTorque = Vector3.new(9e9, 9e9, 9e9); bg.cframe = torso.CFrame
-        local bv = Instance.new("BodyVelocity", torso)
-        bv.velocity = Vector3.new(0,0.1,0); bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-
-        if nowe == true then speaker.Character.Humanoid.PlatformStand = true end
-
-        while nowe == true or game:GetService("Players").LocalPlayer.Character.Humanoid.Health == 0 do
-            game:GetService("RunService").RenderStepped:Wait()
-            if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
-                speed = speed+.5+(speed/maxspeed)
-                if speed > maxspeed then speed = maxspeed end
-            elseif not (ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0) and speed ~= 0 then
-                speed = speed-1
-                if speed < 0 then speed = 0 end
-            end
-            if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+            if nowe == true then plr.Character.Humanoid.PlatformStand = true end
+            while nowe == true do
+                game:GetService("RunService").RenderStepped:Wait()
+                if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+                    speed = speed+.5+(speed/maxspeed)
+                    if speed > maxspeed then speed = maxspeed end
+                elseif speed ~= 0 then
+                    speed = speed-1
+                    if speed < 0 then speed = 0 end
+                end
                 bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
-                lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
-            elseif (ctrl.l + ctrl.r) == 0 and (ctrl.f + ctrl.b) == 0 and speed ~= 0 then
-                bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (lastctrl.f+lastctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(lastctrl.l+lastctrl.r,(lastctrl.f+lastctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
-            else
-                bv.velocity = Vector3.new(0,0,0)
+                bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
             end
-            bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
+            bg:Destroy(); bv:Destroy(); plr.Character.Humanoid.PlatformStand = false
+        else
+            -- R15 邏輯 (完全照抄)
+            local plr = game.Players.LocalPlayer
+            local UpperTorso = plr.Character.UpperTorso
+            local ctrl = {f = 0, b = 0, l = 0, r = 0}
+            local maxspeed = 50
+            local speed = 0
+            local bg = Instance.new("BodyGyro", UpperTorso)
+            bg.P = 9e4; bg.maxTorque = Vector3.new(9e9, 9e9, 9e9); bg.cframe = UpperTorso.CFrame
+            local bv = Instance.new("BodyVelocity", UpperTorso)
+            bv.velocity = Vector3.new(0,0.1,0); bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
+            spawn(function()
+                local m = plr:GetMouse()
+                m.KeyDown:connect(function(k) if k:lower()=="w" then ctrl.f=1 elseif k:lower()=="s" then ctrl.f=-1 elseif k:lower()=="a" then ctrl.l=-1 elseif k:lower()=="d" then ctrl.r=1 end end)
+                m.KeyUp:connect(function(k) if k:lower()=="w" then ctrl.f=0 elseif k:lower()=="s" then ctrl.f=0 elseif k:lower()=="a" then ctrl.l=0 elseif k:lower()=="d" then ctrl.r=0 end end)
+            end)
+
+            if nowe == true then plr.Character.Humanoid.PlatformStand = true end
+            while nowe == true do
+                wait()
+                if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+                    speed = speed+.5+(speed/maxspeed)
+                    if speed > maxspeed then speed = maxspeed end
+                elseif speed ~= 0 then
+                    speed = speed-1
+                    if speed < 0 then speed = 0 end
+                end
+                bv.velocity = ((game.Workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((game.Workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - game.Workspace.CurrentCamera.CoordinateFrame.p))*speed
+                bg.cframe = game.Workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
+            end
+            bg:Destroy(); bv:Destroy(); plr.Character.Humanoid.PlatformStand = false
         end
-        -- 清理工作
-        k1:Disconnect(); k2:Disconnect()
-        bg:Destroy(); bv:Destroy()
-        speaker.Character.Humanoid.PlatformStand = false
-        game.Players.LocalPlayer.Character.Animate.Disabled = false
-        tpwalking = false
     end)
 
-    -- [其餘 plus/mine/up/down 邏輯維持原樣]
-    -- ...
+    -- UP/DOWN 原始位移 (完全照抄)
+    local tis, dis
+    up.MouseButton1Down:connect(function()
+        tis = up.MouseEnter:connect(function()
+            while tis do wait(); game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame *= CFrame.new(0,1,0) end
+        end)
+    end)
+    up.MouseLeave:connect(function() if tis then tis:Disconnect(); tis = nil end end)
+
+    down.MouseButton1Down:connect(function()
+        dis = down.MouseEnter:connect(function()
+            while dis do wait(); game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame *= CFrame.new(0,-1,0) end
+        end)
+    end)
+    down.MouseLeave:connect(function() if dis then dis:Disconnect(); dis = nil end end)
+
+    -- 速度增減 (完全照抄)
+    plus.MouseButton1Down:connect(function()
+        speeds = speeds + 1
+        speed.Text = speeds
+    end)
+    mine.MouseButton1Down:connect(function()
+        if speeds > 1 then
+            speeds = speeds - 1
+            speed.Text = speeds
+        end
+    end)
+
     return main
 end
 
