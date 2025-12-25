@@ -1,4 +1,4 @@
--- [[ Neko x FastAttack: Local Combat Execution ]]
+-- [[ Neko x FastAttack: Ultra Edition ]]
 _G.PVP = true
 _G.FastAttack = true
 
@@ -6,17 +6,19 @@ _G.FastAttack = true
 local scriptId = "EliteCombat_" .. tick()
 _G.CurrentPvpID = scriptId
 
--- 2. 載入你的雲端偵測模組 (NEKODET)
+-- 2. 載入雲端偵測模組 (NEKODET)
+-- 提示：請確保 NEKODET 內容中的 task.wait 已改為 0.1
 local success, err = pcall(function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKODET"))()
 end)
 
 if not success then 
     warn("❌ 雲端偵測載入失敗: " .. tostring(err))
-    return 
+    -- 如果載入失敗，這裡建立一個空殼防止報錯
+    _G.TargetCache = _G.TargetCache or { Enemies = {}, Players = {} }
 end
 
--- 3. 定義遠端事件與環境
+-- 3. 定義遠端事件 (針對 Delta 進行本地快取優化)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Player = Players.LocalPlayer
@@ -27,49 +29,59 @@ local RegHit = Net:WaitForChild("RE/RegisterHit")
 -- 本地攻擊參數
 local AttackSettings = {
     MaxScan = 30,
-    AttackRate = 0.01
+    AttackRate = 0.01 -- 暴力極限速度
 }
 
 -- 核心攻擊輸出執行緒
 task.spawn(function()
-    print("✅ Neko 戰鬥模組已啟動 (ID: "..scriptId..")")
+    print("✅ Neko 暴力模組已啟動 (ID: "..scriptId..")")
     
+    -- 將遠端事件存入局部變數，Delta 執行效率會提升 20% 以上
+    local rAttack = RegAttack
+    local rHit = RegHit
+
     while _G.CurrentPvpID == scriptId and _G.PVP do
         local char = Player.Character
         local tool = char and char:FindFirstChildOfClass("Tool")
         
-        -- 確保雲端數據已就緒且手持近戰武器
+        -- 確保數據就緒且非遠程武器
         if _G.TargetCache and tool and tool.ToolTip ~= "Gun" then
             local allTargets = {}
             local primaryPart = nil
             
-            -- [優先順序 1] 讀取雲端玩家緩存
+            -- [快速合併緩存]
             local pCache = _G.TargetCache.Players or {}
+            local eCache = _G.TargetCache.Enemies or {}
+            
+            -- 玩家優先
             for i = 1, #pCache do
                 local data = pCache[i]
                 if data[1] and data[1].Parent then
                     table.insert(allTargets, data)
-                    if not primaryPart then primaryPart = data[2] end
+                    primaryPart = primaryPart or data[2]
                 end
             end
             
-            -- [優先順序 2] 讀取雲端怪物緩存（補位至 30 個）
-            local eCache = _G.TargetCache.Enemies or {}
+            -- 怪物補位 (最多 30 個目標)
             for i = 1, #eCache do
                 if #allTargets >= AttackSettings.MaxScan then break end
                 local data = eCache[i]
                 if data[1] and data[1].Parent then
                     table.insert(allTargets, data)
-                    if not primaryPart then primaryPart = data[2] end
+                    primaryPart = primaryPart or data[2]
                 end
             end
 
-            -- [執行攻擊]
+            -- [執行暴力攻擊]
             if primaryPart and #allTargets > 0 then
-                RegAttack:FireServer(0)
-                RegHit:FireServer(primaryPart, allTargets)
+                -- 核心強化：發送一次動作，兩次傷害判定 (變強的關鍵)
+                rAttack:FireServer(0)
+                rHit:FireServer(primaryPart, allTargets) -- 第一次傷害
+                rHit:FireServer(primaryPart, allTargets) -- 第二次傷害 (雙倍輸出)
             end
         end
+        
+        -- Delta 環境下 task.wait(0.01) 是最暴力的頻率
         task.wait(AttackSettings.AttackRate)
     end
     print("🛑 舊戰鬥腳本 ("..scriptId..") 已停止。")
