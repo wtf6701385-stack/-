@@ -1,67 +1,180 @@
 local CatLib = {}
-CatLib.__index = CatLib
 
 function CatLib.Init()
-    local self = setmetatable({}, CatLib)
-    
+    -- [[ 1. 建立 V12 精緻黑色 UI 底盤 ]]
     local main = Instance.new("ScreenGui")
-    main.Name = "NekoOriginal_V3"
+    main.Name = "NekoFly_V12_Logic"
     main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     main.ResetOnSpawn = false
-    self.MainGui = main
 
-    -- 主面板 (保留你原本的配色與位置)
+    local lp = game.Players.LocalPlayer
+    local mouse = lp:GetMouse()
+    local speeds = 1
+    local nowe = false
+    local tpwalking = false
+
+    -- 主面板
     local Frame = Instance.new("Frame", main)
-    Frame.BackgroundColor3 = Color3.fromRGB(163, 255, 137)
-    Frame.BorderColor3 = Color3.fromRGB(103, 221, 213)
-    Frame.Position = UDim2.new(0.1, 0, 0.38, 0)
-    Frame.Size = UDim2.new(0, 190, 0, 57)
-    Frame.Active = true
-    Frame.Draggable = true
-    self.MainFrame = Frame
+    Frame.Size = UDim2.new(0, 210, 0, 130)
+    Frame.Position = UDim2.new(0.5, -105, 0.4, 0)
+    Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Frame.BackgroundTransparency = 0.25 
+    Frame.Active = true; Frame.Draggable = true
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 20)
+    local Stroke = Instance.new("UIStroke", Frame)
+    Stroke.Thickness = 3; Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    -- 標題 (貓貓飛行)
+    -- 標題列
     local Title = Instance.new("TextLabel", Frame)
-    Title.BackgroundColor3 = Color3.fromRGB(242, 60, 255)
-    Title.Position = UDim2.new(0.47, 0, 0, 0)
-    Title.Size = UDim2.new(0, 100, 0, 28)
-    Title.Font = Enum.Font.SourceSans
-    Title.Text = " 貓貓飛行 "
-    Title.TextScaled = true
-    self.TitleLabel = Title
+    Title.Size = UDim2.new(1, 0, 0, 35)
+    Title.Text = "NYAN PROTOCOL V12"
+    Title.Font = Enum.Font.GothamBold; Title.TextSize = 11
+    Title.BackgroundTransparency = 1; Title.TextColor3 = Color3.new(1,1,1)
 
-    -- 建立一個存按鈕的 Table 方便外部調用
-    self.Buttons = {}
+    -- 按鈕通用樣式
+    local function applyStyle(btn)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 12)
+        local s = Instance.new("UIStroke", btn)
+        s.Thickness = 1.2; s.Color = Color3.new(1,1,1); s.Transparency = 0.8
+    end
 
-    -- RGB 邏輯 (完全保留你的循環)
-    task.spawn(function()
-        while main.Parent do
-            local hue = tick() % 5 / 5
-            local color = Color3.fromHSV(hue, 0.6, 1)
-            Frame.BackgroundColor3 = color
-            Title.BackgroundColor3 = color
-            for _, btn in pairs(self.Buttons) do
-                btn.BackgroundColor3 = color
+    -- 建立功能按鈕 (位置依照 V12 佈局)
+    local speedDisp = Instance.new("TextLabel", Frame)
+    speedDisp.Size = UDim2.new(0, 110, 0, 35); speedDisp.Position = UDim2.new(0.5, -55, 0, 45)
+    speedDisp.BackgroundColor3 = Color3.fromRGB(30, 30, 30); speedDisp.BackgroundTransparency = 0.5
+    speedDisp.Text = "MEOW: 1"; speedDisp.Font = Enum.Font.GothamBold; speedDisp.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", speedDisp).CornerRadius = UDim.new(0, 12)
+
+    local plus = Instance.new("TextButton", Frame)
+    plus.Text = "+"; plus.Size = UDim2.new(0, 35, 0, 35); plus.Position = UDim2.new(1, -45, 0, 45)
+    plus.BackgroundColor3 = Color3.fromRGB(50, 50, 50); applyStyle(plus)
+
+    local mine = Instance.new("TextButton", Frame)
+    mine.Text = "−"; mine.Size = UDim2.new(0, 35, 0, 35); mine.Position = UDim2.new(0, 10, 0, 45)
+    mine.BackgroundColor3 = Color3.fromRGB(50, 50, 50); applyStyle(mine)
+
+    local onof = Instance.new("TextButton", Frame)
+    onof.Text = "(=^ω^=)"; onof.Size = UDim2.new(0, 70, 0, 40); onof.Position = UDim2.new(0.5, -35, 0, 85)
+    onof.BackgroundColor3 = Color3.fromRGB(70, 70, 70); applyStyle(onof)
+
+    local up = Instance.new("TextButton", Frame)
+    up.Text = "UP"; up.Size = UDim2.new(0, 55, 0, 40); up.Position = UDim2.new(0, 10, 0, 85)
+    up.BackgroundColor3 = Color3.fromRGB(50, 50, 50); applyStyle(up)
+
+    local down = Instance.new("TextButton", Frame)
+    down.Text = "DOWN"; down.Size = UDim2.new(0, 55, 0, 40); down.Position = UDim2.new(1, -65, 0, 85)
+    down.BackgroundColor3 = Color3.fromRGB(50, 50, 50); applyStyle(down)
+
+    -- [[ 2. 注入你最原始的飛行邏輯 ]]
+    
+    onof.MouseButton1Down:connect(function()
+        if nowe == true then
+            nowe = false
+            onof.Text = "(=^ω^=)"
+            lp.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,true)
+            lp.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+        else 
+            nowe = true
+            onof.Text = "FLYING"
+            -- 原汁原味 tpwalking 邏輯
+            for i = 1, speeds do
+                spawn(function()
+                    local hb = game:GetService("RunService").Heartbeat	
+                    tpwalking = true
+                    local chr = lp.Character
+                    local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
+                    while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+                        if hum.MoveDirection.Magnitude > 0 then
+                            chr:TranslateBy(hum.MoveDirection)
+                        end
+                    end
+                end)
             end
-            task.wait()
+            lp.Character.Animate.Disabled = true
+            lp.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+        end
+
+        -- 判定 RigType (R6/R15) 進行 BodyVelocity 控制
+        local root = lp.Character:FindFirstChild("Torso") or lp.Character:FindFirstChild("UpperTorso")
+        if root then
+            local bg = Instance.new("BodyGyro", root)
+            bg.P = 9e4; bg.maxTorque = Vector3.new(9e9, 9e9, 9e9); bg.cframe = root.CFrame
+            local bv = Instance.new("BodyVelocity", root)
+            bv.velocity = Vector3.new(0,0.1,0); bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+            
+            lp.Character.Humanoid.PlatformStand = nowe
+
+            local ctrl = {f = 0, b = 0, l = 0, r = 0}
+            local lastctrl = {f = 0, b = 0, l = 0, r = 0}
+            local maxspeed = 50; local speed = 0
+
+            -- 鍵盤監聽
+            local k1 = mouse.KeyDown:connect(function(k)
+                if k:lower()=="w" then ctrl.f=1 elseif k:lower()=="s" then ctrl.f=-1 elseif k:lower()=="a" then ctrl.l=-1 elseif k:lower()=="d" then ctrl.r=1 end
+            end)
+            local k2 = mouse.KeyUp:connect(function(k)
+                if k:lower()=="w" then ctrl.f=0 elseif k:lower()=="s" then ctrl.f=0 elseif k:lower()=="a" then ctrl.l=0 elseif k:lower()=="d" then ctrl.r=0 end
+            end)
+
+            while nowe and lp.Character and lp.Character.Humanoid.Health > 0 do
+                game:GetService("RunService").RenderStepped:Wait()
+                if ctrl.l + ctrl.r ~= 0 or ctrl.f + ctrl.b ~= 0 then
+                    speed = speed+.5+(speed/maxspeed)
+                    if speed > maxspeed then speed = maxspeed end
+                elseif speed ~= 0 then
+                    speed = speed-1
+                    if speed < 0 then speed = 0 end
+                end
+                if (ctrl.l + ctrl.r) ~= 0 or (ctrl.f + ctrl.b) ~= 0 then
+                    bv.velocity = ((workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f+ctrl.b)) + ((workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f+ctrl.b)*.2,0).p) - workspace.CurrentCamera.CoordinateFrame.p))*speed
+                    lastctrl = {f = ctrl.f, b = ctrl.b, l = ctrl.l, r = ctrl.r}
+                else
+                    bv.velocity = Vector3.new(0,0,0)
+                end
+                bg.cframe = workspace.CurrentCamera.CoordinateFrame * CFrame.Angles(-math.rad((ctrl.f+ctrl.b)*50*speed/maxspeed),0,0)
+            end
+            k1:Disconnect(); k2:Disconnect(); bg:Disconnect(); bv:Disconnect()
+            lp.Character.Humanoid.PlatformStand = false
+            lp.Character.Animate.Disabled = false
+            tpwalking = false
         end
     end)
 
-    return self
-end
+    -- UP/DOWN 原始位移邏輯
+    local tis, dis
+    up.MouseButton1Down:connect(function()
+        tis = true
+        while tis do wait() lp.Character.HumanoidRootPart.CFrame *= CFrame.new(0,1,0) end
+    end)
+    up.MouseLeave:connect(function() tis = false end)
+    up.MouseButton1Up:connect(function() tis = false end)
 
--- 封裝一個方法來建立你原本樣式的按鈕
-function CatLib:AddButton(name, text, pos, size)
-    local btn = Instance.new("TextButton", self.MainFrame)
-    btn.Name = name
-    btn.Text = text
-    btn.Position = pos
-    btn.Size = size
-    btn.Font = Enum.Font.SourceSans
-    btn.TextColor3 = Color3.new(0, 0, 0)
-    btn.TextSize = 14
-    table.insert(self.Buttons, btn)
-    return btn
+    down.MouseButton1Down:connect(function()
+        dis = true
+        while dis do wait() lp.Character.HumanoidRootPart.CFrame *= CFrame.new(0,-1,0) end
+    end)
+    down.MouseLeave:connect(function() dis = false end)
+    down.MouseButton1Up:connect(function() dis = false end)
+
+    -- 速度增減邏輯
+    plus.MouseButton1Down:connect(function()
+        speeds = speeds + 1
+        speedDisp.Text = "MEOW: "..speeds
+    end)
+    mine.MouseButton1Down:connect(function()
+        if speeds > 1 then speeds = speeds - 1 end
+        speedDisp.Text = "MEOW: "..speeds
+    end)
+
+    -- RGB 循環特效
+    task.spawn(function()
+        while main.Parent do
+            local rgb = Color3.fromHSV(tick() % 5 / 5, 0.7, 1)
+            Stroke.Color = rgb; Title.TextColor3 = rgb; onof.TextColor3 = rgb; task.wait()
+        end
+    end)
+
+    return main
 end
 
 return CatLib
