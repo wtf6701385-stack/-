@@ -3,23 +3,28 @@ local RunService=game:GetService("RunService")
 local Players=game:GetService("Players")
 local player=Players.LocalPlayer
 local CoreGui=game:GetService("CoreGui")
+_G.PVP,_G.MOB,_G.ESP=false,false,false
+_G.CurrentPvpID, _G.CurrentMobID, _G.CurrentESP_ID=nil,nil,nil
+if CoreGui:FindFirstChild("CatCat_Final_Neko") then CoreGui.CatCat_Final_Neko:Destroy() end
+local cameraActive=true 
 task.spawn(function()
-local function apply()player.CameraMaxZoomDistance=1000 end
-apply()
-player.CharacterAdded:Connect(function()task.wait(1)apply()end)
-while task.wait(1)do if player.CameraMaxZoomDistance~=1000 then apply()end end
+    local function apply() player.CameraMaxZoomDistance=1000 end
+    apply()
+    local conn=player.CharacterAdded:Connect(function() task.wait(1) apply() end)
+    while cameraActive and task.wait(1) do 
+        if player.CameraMaxZoomDistance~=1000 then apply() end 
+    end
+    conn:Disconnect()
 end)
-if CoreGui:FindFirstChild("CatCat_Final_Neko")then CoreGui.CatCat_Final_Neko:Destroy()end
 local gui=Instance.new("ScreenGui",CoreGui)
 gui.Name="CatCat_Final_Neko"
 gui.ResetOnSpawn=false
-_G.PVP,_G.MOB,_G.ESP=false,false,false
 local function getRainbowColor(offset)
-local t=tick()*0.5+(offset or 0)
-return Color3.fromHSV(t%1,0.6,1)
+    local t=tick()*0.5+(offset or 0)
+    return Color3.fromHSV(t%1,0.6,1)
 end
 local function getContrast(c)
-return(0.299*c.R+0.587*c.G+0.114*c.B)>0.5 and Color3.new(0,0,0)or Color3.new(1,1,1)
+    return(0.299*c.R+0.587*c.G+0.114*c.B)>0.5 and Color3.new(0,0,0) or Color3.new(1,1,1)
 end
 local MainFrame=Instance.new("Frame",gui)
 MainFrame.Size=UDim2.new(0,380,0,240)
@@ -57,66 +62,76 @@ PageContainer.Position=UDim2.new(0,125,0,50)
 PageContainer.BackgroundTransparency=1
 local FeatureStrokes={}
 local function CreateTab(name,isDefault)
-local Page=Instance.new("ScrollingFrame",PageContainer)
-Page.Size=UDim2.new(1,0,1,0)
-Page.BackgroundTransparency=1
-Page.Visible=isDefault or false
-Page.ScrollBarThickness=0
-Page.CanvasSize=UDim2.new(0,0,0,0)
-Instance.new("UIListLayout",Page).Padding=UDim.new(0,8)
-local TabBtn=Instance.new("TextButton",TabBar)
-TabBtn.Size=UDim2.new(1,0,0,32)
-TabBtn.BackgroundColor3=Color3.fromRGB(30,28,35)
-TabBtn.Text=name
-TabBtn.TextColor3=isDefault and Color3.new(1,1,1)or Color3.new(0.5,0.5,0.5)
-TabBtn.Font=Enum.Font.GothamMedium
-TabBtn.TextSize=11
-Instance.new("UICorner",TabBtn).CornerRadius=UDim.new(0,6)
-TabBtn.MouseButton1Click:Connect(function()
-for _,p in pairs(PageContainer:GetChildren())do if p:IsA("ScrollingFrame")then p.Visible=false end end
-for _,b in pairs(TabBar:GetChildren())do if b:IsA("TextButton")then b.TextColor3=Color3.new(0.5,0.5,0.5)end end
-Page.Visible=true
-TabBtn.TextColor3=Color3.new(1,1,1)
-end)
-return Page
+    local Page=Instance.new("ScrollingFrame",PageContainer)
+    Page.Size=UDim2.new(1,0,1,0)
+    Page.BackgroundTransparency=1
+    Page.Visible=isDefault or false
+    Page.ScrollBarThickness=0
+    Page.CanvasSize=UDim2.new(0,0,0,0)
+    Instance.new("UIListLayout",Page).Padding=UDim.new(0,8)
+    local TabBtn=Instance.new("TextButton",TabBar)
+    TabBtn.Size=UDim2.new(1,0,0,32)
+    TabBtn.BackgroundColor3=Color3.fromRGB(30,28,35)
+    TabBtn.Text=name
+    TabBtn.TextColor3=isDefault and Color3.new(1,1,1) or Color3.new(0.5,0.5,0.5)
+    TabBtn.Font=Enum.Font.GothamMedium
+    TabBtn.TextSize=11
+    Instance.new("UICorner",TabBtn).CornerRadius=UDim.new(0,6)
+    TabBtn.MouseButton1Click:Connect(function()
+        for _,p in pairs(PageContainer:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible=false end end
+        for _,b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.TextColor3=Color3.new(0.5,0.5,0.5) end end
+        Page.Visible=true
+        TabBtn.TextColor3=Color3.new(1,1,1)
+    end)
+    return Page
 end
 local function CreateButton(parent,text,callback)
-local btn=Instance.new("TextButton",parent)
-btn.Size=UDim2.new(0.95,0,0,38)
-btn.BackgroundColor3=Color3.fromRGB(25,23,28)
-btn.Text="  🐱 "..text
-btn.TextColor3=Color3.new(1,1,1)
-btn.Font=Enum.Font.GothamMedium
-btn.TextSize=12
-btn.TextXAlignment="Left"
-Instance.new("UICorner",btn)
-local s=Instance.new("UIStroke",btn)
-s.Thickness=1.2
-s.Transparency=0.6
-btn.MouseButton1Click:Connect(function()if callback then callback(btn)end end)
-table.insert(FeatureStrokes,s)
-parent.CanvasSize=UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y+10)
-return btn
+    local btn=Instance.new("TextButton",parent)
+    btn.Size=UDim2.new(0.95,0,0,38)
+    btn.BackgroundColor3=Color3.fromRGB(25,23,28)
+    btn.Text="  🐱 "..text
+    btn.TextColor3=Color3.new(1,1,1)
+    btn.Font=Enum.Font.GothamMedium
+    btn.TextSize=12
+    btn.TextXAlignment="Left"
+    Instance.new("UICorner",btn)
+    local s=Instance.new("UIStroke",btn)
+    s.Thickness=1.2
+    s.Transparency=0.6
+    btn.MouseButton1Click:Connect(function() if callback then callback(btn) end end)
+    table.insert(FeatureStrokes,s)
+    parent.CanvasSize=UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y+10)
+    return btn
 end
 local p1=CreateTab("主要功能",true)
 local p2=CreateTab("其他腳本")
-CreateButton(p1,"打架模式 : OFF",function(self)
-_G.PVP=not _G.PVP
-if _G.PVP then _G.MOB=false loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"))()end
-self.Text="  🐱 打架模式 : "..(_G.PVP and "ON" or "OFF")
+local btnPVP,btnMOB,btnESP
+btnPVP=CreateButton(p1,"打架模式 : OFF",function(self)
+    _G.PVP=not _G.PVP
+    if _G.PVP then 
+        _G.MOB=false 
+        if btnMOB then btnMOB.Text="  🐱 刷怪模式 : OFF" end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"))()
+    end
+    self.Text="  🐱 打架模式 : "..(_G.PVP and "ON" or "OFF")
 end)
-CreateButton(p1,"刷怪模式 : OFF",function(self)
-_G.MOB=not _G.MOB
-if _G.MOB then _G.PVP=false loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKO.Monster"))()end
-self.Text="  🐱 刷怪模式 : "..(_G.MOB and "ON" or "OFF")
+btnMOB=CreateButton(p1,"刷怪模式 : OFF",function(self)
+    _G.MOB=not _G.MOB
+    if _G.MOB then 
+        _G.PVP=false 
+        if btnPVP then btnPVP.Text="  🐱 打架模式 : OFF" end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"))()
+    end
+    self.Text="  🐱 刷怪模式 : "..(_G.MOB and "ON" or "OFF")
 end)
-CreateButton(p1,"透視對手 : OFF",function(self)
-_G.ESP=not _G.ESP
-if _G.ESP then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()end
-self.Text="  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
+btnESP=CreateButton(p1,"透視對手 : OFF",function(self)
+    _G.ESP=not _G.ESP
+    if _G.ESP then 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()
+    end
+    self.Text="  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
 end)
-CreateButton(p2,"召喚飛行",function()loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))()end)
-CreateButton(p2,"Redz Hub 喵~",function()loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/20f318386e3fbf069ee3fa797cfc9f34.lua"))()end)
+CreateButton(p2,"召喚飛行",function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
 local MiniBtn=Instance.new("TextButton",MainFrame)
 MiniBtn.Size=UDim2.new(0,30,0,30)
 MiniBtn.Position=UDim2.new(1,-40,0,5)
@@ -134,24 +149,30 @@ RestoreBtn.Font=Enum.Font.GothamBold
 RestoreBtn.TextSize=14
 RestoreBtn.Visible=false
 MiniBtn.MouseButton1Click:Connect(function()
-ContentHolder.Visible=false
-MiniBtn.Visible=false
-MainFrame.BackgroundTransparency=0.5
-MainFrame:TweenSize(UDim2.new(0,140,0,45),"Out","Quart",0.3,true)
-RestoreBtn.Visible=true
+    ContentHolder.Visible=false
+    MiniBtn.Visible=false
+    MainFrame.BackgroundTransparency=0.5
+    MainFrame:TweenSize(UDim2.new(0,140,0,45),"Out","Quart",0.3,true)
+    RestoreBtn.Visible=true
 end)
 RestoreBtn.MouseButton1Click:Connect(function()
-RestoreBtn.Visible=false
-MainFrame:TweenSize(UDim2.new(0,380,0,240),"Out","Quart",0.3,true,function()
-ContentHolder.Visible=true
-MiniBtn.Visible=true
-MainFrame.BackgroundTransparency=0
+    RestoreBtn.Visible=false
+    MainFrame:TweenSize(UDim2.new(0,380,0,240),"Out","Quart",0.3,true,function()
+        ContentHolder.Visible=true
+        MiniBtn.Visible=true
+        MainFrame.BackgroundTransparency=0
+    end)
 end)
+local renderConn=RunService.RenderStepped:Connect(function()
+    if not gui.Parent then return end
+    local rainbow=getRainbowColor(0)
+    MainStroke.Color=rainbow
+    RestoreBtn.TextColor3=getContrast(MainFrame.BackgroundColor3)
+    for _,s in pairs(FeatureStrokes) do s.Color=rainbow end
 end)
-RunService.RenderStepped:Connect(function()
-if not gui.Parent then return end
-local rainbow=getRainbowColor(0)
-MainStroke.Color=rainbow
-RestoreBtn.TextColor3=getContrast(MainFrame.BackgroundColor3)
-for _,s in pairs(FeatureStrokes)do s.Color=rainbow end
+gui.AncestryChanged:Connect(function()
+    if not gui.Parent then 
+        renderConn:Disconnect()
+        cameraActive=false
+    end
 end)
