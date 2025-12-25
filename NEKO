@@ -2,12 +2,9 @@
 local CatLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))().Init()
 
 -- 2. 初始化全域變數
-_G.PVP = false
-_G.MOB = false
-_G.ESP = false
--- 這是給 NEKOSPD 使用的同步變數
-_G.CatSpeedActive = false -- 預設不開啟加速，由 Orion UI 控制
-_G.CatSpeedValue = 50     -- 預設滑動條數值
+_G.PVP, _G.MOB, _G.ESP = false, false, false
+_G.CatSpeedActive = false
+_G.CatSpeedValue = 50 -- 預設速度
 
 -- 3. 建立分頁
 local p0 = CatLib:CreateTab("貓公告", true)
@@ -18,7 +15,7 @@ local p2 = CatLib:CreateTab("貓召喚", false)
 CatLib:CreateInfo(p0, " 🐾 "," 歡迎使用貓貓腳本 ")
 CatLib:CreateInfo(p0, " 🐾 ", " 不要點太快謝謝您 ")
 
--- 5. 貓功能分頁 (包含 PVP/MOB/ESP 以及連動 Orion 的神速按鈕)
+-- 5. 貓功能分頁 (包含 PVP/MOB/ESP)
 local btnPVP, btnMOB
 
 btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
@@ -49,13 +46,43 @@ CatLib:CreateButton(p1, "透視對手 : OFF", function(self)
     self.Text = "  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
 end)
 
--- 【關鍵按鈕】：啟動帶有滑動條的 Orion 速度面板
-CatLib:CreateButton(p1, "貓貓神速 : 啟動", function() 
-    -- 執行你剛剛準備好的 Orion 滑動條腳本網址
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
+-- 這裡建立啟動按鈕
+local speedBtn = CatLib:CreateButton(p1, "貓貓神速 : 啟動 (點擊後輸入)", function(self)
+    _G.CatSpeedActive = not _G.CatSpeedActive
+    if _G.CatSpeedActive then
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))()
+    end
+    self.Text = "  🐱 貓貓神速 : " .. (_G.CatSpeedActive and "ON" or "OFF")
 end)
 
--- 6. 貓召喚分頁
+-- 【強行嵌入原生輸入框】這段代碼會把輸入框黏在按鈕旁邊
+task.spawn(function()
+    local pGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    -- 自動偵測貓貓 UI 框架
+    local screen = pGui:WaitForChild("main", 5) or pGui:FindFirstChildOfClass("ScreenGui")
+    local frame = screen and screen:FindFirstChildOfClass("Frame")
+    
+    if frame then
+        local box = Instance.new("TextBox")
+        box.Name = "CatSpeedInput"
+        box.Parent = frame
+        box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        box.TextColor3 = Color3.fromRGB(255, 255, 255)
+        box.Size = UDim2.new(0, 60, 0, 25)
+        -- 這邊的 Position 建議你根據 UI 畫面微調，讓它對齊按鈕
+        box.Position = UDim2.new(0.7, 0, 0.7, 0) 
+        box.Text = "50"
+        box.PlaceholderText = "速度"
+        box.ZIndex = 100
+        box.TextScaled = true
+        
+        box.FocusLost:Connect(function()
+            _G.CatSpeedValue = tonumber(box.Text) or 50
+        end)
+    end
+end)
+
+-- 6. 貓召喚分頁 (保持不變)
 CatLib:CreateButton(p2, "召喚飛行", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
 end)
