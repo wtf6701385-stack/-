@@ -1,146 +1,126 @@
 local CatLib = {}
 
 function CatLib.Init()
-    -- [[ 1. 這裡完全是你原本給我的 UI 代碼，我一條線都沒動 ]]
+    -- === [1. 你的 V12 UI 完整代碼] ===
     local main = Instance.new("ScreenGui")
-    local Frame = Instance.new("Frame")
-    local up = Instance.new("TextButton")
-    local down = Instance.new("TextButton")
-    local onof = Instance.new("TextButton")
-    local TextLabel = Instance.new("TextLabel")
-    local plus = Instance.new("TextButton")
-    local speed = Instance.new("TextLabel")
-    local mine = Instance.new("TextButton")
-    local closebutton = Instance.new("TextButton")
-    local mini = Instance.new("TextButton")
-    local mini2 = Instance.new("TextButton")
-
-    main.Name = "main"
+    main.Name = "NekoFlyUI_V12_CleanText"
     main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    main.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     main.ResetOnSpawn = false
 
+    local currentSpeed = 1 
+
+    local Frame = Instance.new("Frame")
+    Frame.Name = "MainFrame"
     Frame.Parent = main
-    Frame.BackgroundColor3 = Color3.fromRGB(163, 255, 137)
-    Frame.BorderColor3 = Color3.fromRGB(103, 221, 213)
-    Frame.Position = UDim2.new(0.100320168, 0, 0.379746825, 0)
-    Frame.Size = UDim2.new(0, 190, 0, 57)
+    Frame.Size = UDim2.new(0, 210, 0, 130)
+    Frame.Position = UDim2.new(0.5, -105, 0.4, 0)
+    Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Frame.BackgroundTransparency = 0.25 
+    Frame.BorderSizePixel = 0
     Frame.Active = true
     Frame.Draggable = true
 
-    up.Name = "up"
-    up.Parent = Frame
-    up.BackgroundColor3 = Color3.fromRGB(79, 255, 152)
-    up.Size = UDim2.new(0, 44, 0, 28)
-    up.Font = Enum.Font.SourceSans
-    up.Text = "UP 🐾"
-    up.TextColor3 = Color3.fromRGB(0, 0, 0)
-    up.TextSize = 14.000
+    local MainCorner = Instance.new("UICorner")
+    MainCorner.CornerRadius = UDim.new(0, 20)
+    MainCorner.Parent = Frame
 
-    down.Name = "down"
-    down.Parent = Frame
-    down.BackgroundColor3 = Color3.fromRGB(215, 255, 121)
-    down.Position = UDim2.new(0, 0, 0.491228074, 0)
-    down.Size = UDim2.new(0, 44, 0, 28)
-    down.Font = Enum.Font.SourceSans
-    down.Text = "DOWN 🐾"
-    down.TextColor3 = Color3.fromRGB(0, 0, 0)
-    down.TextSize = 14.000
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Thickness = 3
+    UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    UIStroke.Parent = Frame
 
-    onof.Name = "onof"
-    onof.Parent = Frame
-    onof.BackgroundColor3 = Color3.fromRGB(255, 249, 74)
-    onof.Position = UDim2.new(0.702823281, 0, 0.491228074, 0)
-    onof.Size = UDim2.new(0, 56, 0, 28)
-    onof.Font = Enum.Font.SourceSans
-    onof.Text = "貓飛行"
-    onof.TextColor3 = Color3.fromRGB(0, 0, 0)
-    onof.TextSize = 14.000
+    local TopBar = Instance.new("Frame")
+    TopBar.Size = UDim2.new(1, 0, 0, 35)
+    TopBar.BackgroundTransparency = 1
+    TopBar.Parent = Frame
 
-    TextLabel.Parent = Frame
-    TextLabel.BackgroundColor3 = Color3.fromRGB(242, 60, 255)
-    TextLabel.Position = UDim2.new(0.469327301, 0, 0, 0)
-    TextLabel.Size = UDim2.new(0, 100, 0, 28)
-    TextLabel.Font = Enum.Font.SourceSans
-    TextLabel.Text = " 貓貓飛行 "
-    TextLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
-    TextLabel.TextScaled = true
-    TextLabel.TextSize = 14.000
-    TextLabel.TextWrapped = true
+    local MiniBtn = Instance.new("TextButton")
+    MiniBtn.Size = UDim2.new(0, 30, 0, 30)
+    MiniBtn.Position = UDim2.new(0, 8, 0, 8)
+    MiniBtn.BackgroundTransparency = 1
+    MiniBtn.Text = "🐱"
+    MiniBtn.TextSize = 22
+    MiniBtn.Parent = TopBar
 
-    plus.Name = "plus"
-    plus.Parent = Frame
-    plus.BackgroundColor3 = Color3.fromRGB(133, 145, 255)
-    plus.Position = UDim2.new(0.231578946, 0, 0, 0)
-    plus.Size = UDim2.new(0, 45, 0, 28)
-    plus.Font = Enum.Font.SourceSans
-    plus.Text = "+"
-    plus.TextColor3 = Color3.fromRGB(0, 0, 0)
-    plus.TextScaled = true
-    plus.TextSize = 14.000
-    plus.TextWrapped = true
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+    CloseBtn.Position = UDim2.new(1, -38, 0, 8)
+    CloseBtn.BackgroundTransparency = 1
+    CloseBtn.Text = "🐾"
+    CloseBtn.TextSize = 20
+    CloseBtn.Parent = TopBar
 
-    speed.Name = "speed"
-    speed.Parent = Frame
-    speed.BackgroundColor3 = Color3.fromRGB(255, 85, 0)
-    speed.Position = UDim2.new(0.468421042, 0, 0.491228074, 0)
-    speed.Size = UDim2.new(0, 44, 0, 28)
-    speed.Font = Enum.Font.SourceSans
-    speed.Text = "1"
-    speed.TextColor3 = Color3.fromRGB(0, 0, 0)
-    speed.TextScaled = true
-    speed.TextSize = 14.000
-    speed.TextWrapped = true
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 1, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "NYAN PROTOCOL"
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 11
+    Title.TextColor3 = Color3.new(1, 1, 1)
+    Title.Parent = TopBar
 
-    mine.Name = "mine"
-    mine.Parent = Frame
-    mine.BackgroundColor3 = Color3.fromRGB(123, 255, 247)
-    mine.Position = UDim2.new(0.231578946, 0, 0.491228074, 0)
-    mine.Size = UDim2.new(0, 45, 0, 29)
-    mine.Font = Enum.Font.SourceSans
-    mine.Text = "-"
-    mine.TextColor3 = Color3.fromRGB(0, 0, 0)
-    mine.TextScaled = true
-    mine.TextSize = 14.000
-    mine.TextWrapped = true
+    local function applyNekoStyle(btn)
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 12)
+        corner.Parent = btn
+        local stroke = Instance.new("UIStroke")
+        stroke.Thickness = 1.2
+        stroke.Color = Color3.new(1, 1, 1)
+        stroke.Transparency = 0.8
+        stroke.Parent = btn
+        btn.MouseEnter:Connect(function() btn.BackgroundTransparency = 0.1 end)
+        btn.MouseLeave:Connect(function() btn.BackgroundTransparency = 0.3 end)
+    end
 
-    -- (RGB 背景效果保留...)
-    task.spawn(function()
-        while main.Parent do
-            local hue = tick() % 5 / 5
-            local color = Color3.fromHSV(hue, 0.6, 1)
-            Frame.BackgroundColor3 = color
-            up.BackgroundColor3 = color
-            down.BackgroundColor3 = color
-            onof.BackgroundColor3 = color
-            plus.BackgroundColor3 = color
-            mine.BackgroundColor3 = color
-            TextLabel.BackgroundColor3 = color
-            speed.BackgroundColor3 = color
-            task.wait()
-        end
-    end)
+    local SpeedRow = Instance.new("Frame")
+    SpeedRow.Size = UDim2.new(0, 190, 0, 35)
+    SpeedRow.Position = UDim2.new(0.5, -95, 0, 45)
+    SpeedRow.BackgroundTransparency = 1
+    SpeedRow.Parent = Frame
 
-    -- [[ 2. 這裡是你原始的飛行核心邏輯 ]]
-    local speeds = 1
+    local mine = Instance.new("TextButton")
+    mine.Text = "−"; mine.Size = UDim2.new(0, 35, 0, 35); mine.BackgroundColor3 = Color3.fromRGB(50, 50, 50); mine.BackgroundTransparency = 0.3; mine.Parent = SpeedRow; applyNekoStyle(mine)
+
+    local plus = Instance.new("TextButton")
+    plus.Text = "+"; plus.Size = UDim2.new(0, 35, 0, 35); plus.Position = UDim2.new(1, -35, 0, 0); plus.BackgroundColor3 = Color3.fromRGB(50, 50, 50); plus.BackgroundTransparency = 0.3; plus.Parent = SpeedRow; applyNekoStyle(plus)
+
+    local speedDisp = Instance.new("TextLabel")
+    speedDisp.Size = UDim2.new(0, 110, 0, 35); speedDisp.Position = UDim2.new(0.5, -55, 0, 0); speedDisp.BackgroundColor3 = Color3.fromRGB(30, 30, 30); speedDisp.BackgroundTransparency = 0.5; speedDisp.Text = "MEOW: 1"; speedDisp.Font = Enum.Font.GothamBold; speedDisp.TextSize = 14; speedDisp.Parent = SpeedRow; Instance.new("UICorner", speedDisp).CornerRadius = UDim.new(0, 12)
+
+    local ActionRow = Instance.new("Frame")
+    ActionRow.Size = UDim2.new(0, 190, 0, 40); ActionRow.Position = UDim2.new(0.5, -95, 0, 85); ActionRow.BackgroundTransparency = 1; ActionRow.Parent = Frame
+
+    local up = Instance.new("TextButton")
+    up.Text = "UP"; up.Size = UDim2.new(0, 55, 0, 40); up.BackgroundColor3 = Color3.fromRGB(50, 50, 50); up.BackgroundTransparency = 0.3; up.Font = Enum.Font.GothamBold; up.TextSize = 14; up.Parent = ActionRow; applyNekoStyle(up)
+
+    local down = Instance.new("TextButton")
+    down.Text = "DOWN"; down.Size = UDim2.new(0, 55, 0, 40); down.Position = UDim2.new(1, -55, 0, 0); down.BackgroundColor3 = Color3.fromRGB(50, 50, 50); down.BackgroundTransparency = 0.3; down.Font = Enum.Font.GothamBold; down.TextSize = 12; down.Parent = ActionRow; applyNekoStyle(down)
+
+    local onof = Instance.new("TextButton")
+    onof.Text = "(=^ω^=)"; onof.Size = UDim2.new(0, 70, 0, 40); onof.Position = UDim2.new(0.5, -35, 0, 0); onof.BackgroundColor3 = Color3.fromRGB(70, 70, 70); onof.BackgroundTransparency = 0.2; onof.TextSize = 14; onof.Parent = ActionRow; applyNekoStyle(onof)
+
+    local ExpandBtn = Instance.new("TextButton")
+    ExpandBtn.Size = UDim2.new(0, 50, 0, 50); ExpandBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20); ExpandBtn.BackgroundTransparency = 0.3; ExpandBtn.Text = "🐱"; ExpandBtn.TextSize = 24; ExpandBtn.Visible = false; ExpandBtn.Parent = main; Instance.new("UICorner", ExpandBtn).CornerRadius = UDim.new(1, 0); local ExpandStroke = Instance.new("UIStroke", ExpandBtn); ExpandStroke.Thickness = 3
+
+    -- === [2. 核心飛行功能與數據對接] ===
     local speaker = game:GetService("Players").LocalPlayer
     local nowe = false
     local tpwalking = false
+    local heartbeat = game:GetService("RunService").Heartbeat
 
-    -- 修正速度提升的關鍵：建立一個重刷函數
-    local function startTpWalk()
-        tpwalking = false -- 先停掉舊的
-        task.wait()
+    -- 速度刷新邏輯 (原始疊加法)
+    local function refreshFlight()
+        tpwalking = false
+        task.wait(0.05)
         if nowe then
             tpwalking = true
-            for i = 1, speeds do -- 依照目前的 speeds 疊加倍率
+            for i = 1, currentSpeed do
                 task.spawn(function()
-                    local hb = game:GetService("RunService").Heartbeat	
-                    local chr = speaker.Character
-                    local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
-                    while tpwalking and hb:Wait() and chr and hum and hum.Parent do
+                    while tpwalking and speaker.Character and speaker.Character:FindFirstChild("Humanoid") do
+                        heartbeat:Wait()
+                        local hum = speaker.Character.Humanoid
                         if hum.MoveDirection.Magnitude > 0 then
-                            chr:TranslateBy(hum.MoveDirection)
+                            speaker.Character:TranslateBy(hum.MoveDirection)
                         end
                     end
                 end)
@@ -148,77 +128,56 @@ function CatLib.Init()
         end
     end
 
-    onof.MouseButton1Down:connect(function()
-        if nowe == true then
-            nowe = false
-            tpwalking = false
-            -- 還原 Humanoid 狀態 (完全照抄)
-            speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing,true)
-            speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
-            game.Players.LocalPlayer.Character.Animate.Disabled = false
-        else 
-            nowe = true
-            startTpWalk() -- 啟動 tpwalking
-            -- 設置 Humanoid 狀態 (完全照抄)
-            game.Players.LocalPlayer.Character.Animate.Disabled = true
-            speaker.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming,false)
+    onof.MouseButton1Click:Connect(function()
+        nowe = not nowe
+        if nowe then
+            onof.Text = "FLYING"
             speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
-        end
-        
-        -- BodyVelocity 邏輯 (完全保留你的相機控制)
-        local char = speaker.Character
-        local root = char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
-        if root then
-            local ctrl = {f = 0, b = 0, l = 0, r = 0}
-            local bg = Instance.new("BodyGyro", root)
-            bg.P = 9e4; bg.maxTorque = Vector3.new(9e9, 9e9, 9e9); bg.cframe = root.CFrame
-            local bv = Instance.new("BodyVelocity", root)
-            bv.velocity = Vector3.new(0,0.1,0); bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-            
-            local mouse = speaker:GetMouse()
-            local k1 = mouse.KeyDown:connect(function(k) if k:lower()=="w" then ctrl.f=1 elseif k:lower()=="s" then ctrl.f=-1 elseif k:lower()=="a" then ctrl.l=-1 elseif k:lower()=="d" then ctrl.r=1 end end)
-            local k2 = mouse.KeyUp:connect(function(k) if k:lower()=="w" or k:lower()=="s" then ctrl.f=0 elseif k:lower()=="a" or k:lower()=="d" then ctrl.l=0 end end)
-
-            char.Humanoid.PlatformStand = true
-            while nowe and char.Humanoid.Health > 0 do
-                game:GetService("RunService").RenderStepped:Wait()
-                bv.velocity = ((workspace.CurrentCamera.CoordinateFrame.lookVector * (ctrl.f)) + ((workspace.CurrentCamera.CoordinateFrame * CFrame.new(ctrl.l+ctrl.r,(ctrl.f)*.2,0).p) - workspace.CurrentCamera.CoordinateFrame.p)) * 50
-                bg.cframe = workspace.CurrentCamera.CoordinateFrame
-            end
-            bg:Destroy(); bv:Destroy(); k1:Disconnect(); k2:Disconnect()
-            char.Humanoid.PlatformStand = false
+            speaker.Character.Animate.Disabled = true
+            refreshFlight()
+        else
+            onof.Text = "(=^ω^=)"
+            tpwalking = false
+            speaker.Character.Humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+            speaker.Character.Animate.Disabled = false
         end
     end)
 
-    -- 修正速度加減：按下後立即刷新飛行
-    plus.MouseButton1Down:connect(function()
-        speeds = speeds + 1
-        speed.Text = tostring(speeds)
-        if nowe then startTpWalk() end -- 立即提升速度
+    plus.MouseButton1Click:Connect(function()
+        currentSpeed = currentSpeed + 1
+        speedDisp.Text = "MEOW: " .. tostring(currentSpeed)
+        if nowe then refreshFlight() end -- 立即提升速度
     end)
 
-    mine.MouseButton1Down:connect(function()
-        if speeds > 1 then
-            speeds = speeds - 1
-            speed.Text = tostring(speeds)
-            if nowe then startTpWalk() end -- 立即降速
+    mine.MouseButton1Click:Connect(function()
+        if currentSpeed > 1 then
+            currentSpeed = currentSpeed - 1
+            speedDisp.Text = "MEOW: " .. tostring(currentSpeed)
+            if nowe then refreshFlight() end -- 立即降低速度
         end
     end)
 
-    -- UP/DOWN 邏輯 (完全照抄)
-    local tis
-    up.MouseButton1Down:connect(function()
-        tis = true
-        while tis do wait() game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame *= CFrame.new(0,1,0) end
+    -- 位移按鈕
+    local isUp, isDown = false, false
+    up.MouseButton1Down:Connect(function() isUp = true; while isUp do task.wait(); speaker.Character.HumanoidRootPart.CFrame *= CFrame.new(0,1,0) end end)
+    up.MouseButton1Up:Connect(function() isUp = false end)
+    down.MouseButton1Down:Connect(function() isDown = true; while isDown do task.wait(); speaker.Character.HumanoidRootPart.CFrame *= CFrame.new(0,-1,0) end end)
+    down.MouseButton1Up:Connect(function() isDown = false end)
+
+    -- UI 控制
+    MiniBtn.MouseButton1Click:Connect(function() Frame.Visible = false; ExpandBtn.Visible = true; ExpandBtn.Position = Frame.Position end)
+    ExpandBtn.MouseButton1Click:Connect(function() Frame.Visible = true; ExpandBtn.Visible = false end)
+    CloseBtn.MouseButton1Click:Connect(function() main:Destroy(); tpwalking = false; nowe = false end)
+
+    -- RGB 渲染
+    task.spawn(function()
+        while main.Parent do
+            local hue = tick() % 5 / 5
+            local rgb = Color3.fromHSV(hue, 0.7, 1)
+            UIStroke.Color = rgb; ExpandStroke.Color = rgb; speedDisp.TextColor3 = rgb; onof.TextColor3 = rgb; Title.TextColor3 = rgb; MiniBtn.TextColor3 = rgb; CloseBtn.TextColor3 = rgb
+            task.wait()
+        end
     end)
-    up.MouseButton1Up:connect(function() tis = false end)
-    
-    local dis
-    down.MouseButton1Down:connect(function()
-        dis = true
-        while dis do wait() game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame *= CFrame.new(0,-1,0) end
-    end)
-    down.MouseButton1Up:connect(function() dis = false end)
 
     return main
 end
