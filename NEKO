@@ -1,120 +1,64 @@
--- NEKOSPD.lua (由主腳本召喚的獨立 UI)
--- 1. 防止重複召喚 (若已有面板則先刪除)
-pcall(function() game.Players.LocalPlayer.PlayerGui.CatSpeedV3_Custom:Destroy() end)
+-- 1. 加載 GitHub 上的貓貓 UI 引擎
+local CatLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))().Init()
 
-local main = Instance.new("ScreenGui")
-local Frame = Instance.new("Frame")
-local TextLabel = Instance.new("TextLabel")
-local speedInput = Instance.new("TextBox") 
-local plus = Instance.new("TextButton")
-local mine = Instance.new("TextButton")
-local onof = Instance.new("TextButton")
-local closebutton = Instance.new("TextButton")
+-- 2. 初始化全域變數
+_G.PVP, _G.MOB, _G.ESP = false, false, false
+_G.CatSpeedValue = 50 -- 預設速度值
 
--- 初始化 UI 屬性
-main.Name = "CatSpeedV3_Custom"
-main.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-main.ResetOnSpawn = false
+-- 3. 建立分頁
+local p0 = CatLib:CreateTab("貓公告", true)
+local p1 = CatLib:CreateTab("貓功能", false)
+local p2 = CatLib:CreateTab("貓召喚", false)
 
-Frame.Parent = main
-Frame.BackgroundColor3 = Color3.fromRGB(163, 255, 137)
-Frame.Position = UDim2.new(0.1, 0, 0.5, 0) -- 避免擋到主 UI
-Frame.Size = UDim2.new(0, 190, 0, 85)
-Frame.Active = true
-Frame.Draggable = true
+-- 4. 貓公告內容
+CatLib:CreateInfo(p0, " 🐾 "," 歡迎使用貓貓腳本 ")
+CatLib:CreateInfo(p0, " 🐾 ", " 不要點太快謝謝您 ")
 
-TextLabel.Parent = Frame
-TextLabel.Size = UDim2.new(1, 0, 0, 25)
-TextLabel.BackgroundTransparency = 1
-TextLabel.Text = " 🐱 貓貓神速 V3 (點數值輸入) "
-TextLabel.TextScaled = true
-TextLabel.Font = Enum.Font.SourceSansBold
+-- 5. 貓功能分頁 (包含 PVP/MOB/ESP)
+local btnPVP, btnMOB
 
--- 速度輸入框
-speedInput.Name = "speedInput"
-speedInput.Parent = Frame
-speedInput.BackgroundColor3 = Color3.fromRGB(255, 85, 0)
-speedInput.Position = UDim2.new(0.4, 0, 0.35, 0)
-speedInput.Size = UDim2.new(0, 40, 0, 30)
-speedInput.Font = Enum.Font.SourceSansBold
-speedInput.Text = tostring(_G.CatSpeedValue or 50)
-speedInput.TextColor3 = Color3.fromRGB(0, 0, 0)
-speedInput.TextScaled = true
-speedInput.ClearTextOnFocus = true
-
-plus.Parent = Frame
-plus.Text = "+"
-plus.Size = UDim2.new(0, 30, 0, 30)
-plus.Position = UDim2.new(0.65, 0, 0.35, 0)
-
-mine.Parent = Frame
-mine.Text = "-"
-mine.Size = UDim2.new(0, 30, 0, 30)
-mine.Position = UDim2.new(0.2, 0, 0.35, 0)
-
-onof.Parent = Frame
-onof.Text = "啟動加速"
-onof.Size = UDim2.new(0, 100, 0, 25)
-onof.Position = UDim2.new(0.24, 0, 0.72, 0)
-
-closebutton.Parent = Frame
-closebutton.Text = "X"
-closebutton.Size = UDim2.new(0, 25, 0, 25)
-closebutton.Position = UDim2.new(0.85, 0, 0, 0)
-closebutton.BackgroundTransparency = 1
-closebutton.TextColor3 = Color3.fromRGB(255, 0, 0)
-
--- --- 核心變數與 RGB 效果 ---
-local active = false
-local speaker = game.Players.LocalPlayer
-
-task.spawn(function()
-    while main.Parent do
-        local color = Color3.fromHSV(tick() % 5 / 5, 0.6, 1)
-        Frame.BackgroundColor3 = color
-        task.wait()
+btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
+    _G.PVP = not _G.PVP
+    if _G.PVP then 
+        _G.MOB = false 
+        if btnMOB then btnMOB.Text = "  🐱 刷怪模式 : OFF" end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"))()
     end
+    self.Text = "  🐱 打架模式 : "..(_G.PVP and "ON" or "OFF")
 end)
 
-local function updateSpeed(newVal)
-    local n = tonumber(newVal)
-    if n then
-        _G.CatSpeedValue = n
-        speedInput.Text = tostring(n)
+btnMOB = CatLib:CreateButton(p1, "刷怪模式 : OFF", function(self)
+    _G.MOB = not _G.MOB
+    if _G.MOB then 
+        _G.PVP = false 
+        if btnPVP then btnPVP.Text = "  🐱 打架模式 : OFF" end
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"))()
     end
-end
-
-speedInput.FocusLost:Connect(function() updateSpeed(speedInput.Text) end)
-plus.MouseButton1Click:Connect(function() updateSpeed(_G.CatSpeedValue + 10) end)
-mine.MouseButton1Click:Connect(function() updateSpeed(_G.CatSpeedValue - 10) end)
-
--- 速度邏輯 (TranslateBy)
-onof.MouseButton1Click:Connect(function()
-    active = not active
-    if active then
-        onof.Text = "停止加速"
-        onof.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
-        task.spawn(function()
-            local hb = game:GetService("RunService").Heartbeat
-            while active do
-                hb:Wait()
-                local char = speaker.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                if char and hum and hum.MoveDirection.Magnitude > 0 then
-                    -- 讀取當前的 _G.CatSpeedValue 數值
-                    char:TranslateBy(hum.MoveDirection * (_G.CatSpeedValue / 10))
-                end
-            end
-        end)
-    else
-        onof.Text = "啟動加速"
-        onof.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    end
+    self.Text = "  🐱 刷怪模式 : "..(_G.MOB and "ON" or "OFF")
 end)
 
-closebutton.MouseButton1Click:Connect(function() main:Destroy() end)
+CatLib:CreateButton(p1, "透視對手 : OFF", function(self)
+    _G.ESP = not _G.ESP
+    if _G.ESP then 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()
+    end
+    self.Text = "  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
+end)
 
-game:GetService("StarterGui"):SetCore("SendNotification", { 
-	Title = "貓貓加速器";
-	Text = "面板召喚成功！";
-})
+-- 【這裡就是你說的：換成直接召喚 NEKOSPD】
+CatLib:CreateButton(p1, "貓貓神速 : 開啟控制面板", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
+end)
+
+-- 6. 貓召喚分頁
+CatLib:CreateButton(p2, "召喚飛行", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
+end)
+
+CatLib:CreateButton(p2, "落葉中心", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/%E8%90%BD%E5%8F%B6%E4%B8%AD%E5%BF%83%E6%B7%B7%E6%B7%86.txt"))() 
+end)
+
+CatLib:CreateButton(p2, "大司馬", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/whenheer/dasimav6/main/dasimaV6.txt"))() 
+end)
