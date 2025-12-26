@@ -52,13 +52,13 @@ function NekoLib.Init()
     local tabLayout = Instance.new("UIListLayout", TabBar)
     tabLayout.Padding = UDim.new(0, 6)
 
-    -- 右側頁面
+    -- 右側頁面容器（⚠️ 不可被隱藏）
     local Pages = Instance.new("Frame", Main)
     Pages.Size = UDim2.new(1, -130, 1, -55)
     Pages.Position = UDim2.new(0, 120, 0, 45)
     Pages.BackgroundTransparency = 1
 
-    -- ===== 最小化 / 還原（方案 B：還原必回第一頁）=====
+    -- ===== 最小化 / 還原（安全版）=====
     local MiniBtn = Instance.new("TextButton", Main)
     MiniBtn.Size = UDim2.new(0,30,0,30)
     MiniBtn.Position = UDim2.new(1,-40,0,5)
@@ -79,7 +79,8 @@ function NekoLib.Init()
     RestoreBtn.Visible = false
     RestoreBtn.ZIndex = 9
 
-    local UIObjects = {Title, TabBar, Pages}
+    -- ⚠️ 只隱藏標題與 Tab，不動 Pages
+    local UIObjects = {Title, TabBar}
 
     MiniBtn.MouseButton1Click:Connect(function()
         for _,v in pairs(UIObjects) do
@@ -96,31 +97,6 @@ function NekoLib.Init()
             for _,v in pairs(UIObjects) do
                 v.Visible = true
             end
-
-            -- 🔒 關鍵修正：強制回到第一個 Tab（貓公告）
-            local firstPage
-            for _,p in pairs(Pages:GetChildren()) do
-                if p:IsA("ScrollingFrame") then
-                    p.Visible = false
-                    if not firstPage then
-                        firstPage = p
-                    end
-                end
-            end
-            if firstPage then
-                firstPage.Visible = true
-            end
-
-            for _,b in pairs(TabBar:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextColor3 = Color3.fromRGB(150,150,150)
-                end
-            end
-            local firstTab = TabBar:FindFirstChildWhichIsA("TextButton")
-            if firstTab then
-                firstTab.TextColor3 = Color3.new(1,1,1)
-            end
-
             MiniBtn.Visible = true
         end)
     end)
@@ -154,7 +130,9 @@ function NekoLib.Init()
 
         Tab.MouseButton1Click:Connect(function()
             for _,p in pairs(Pages:GetChildren()) do
-                if p:IsA("ScrollingFrame") then p.Visible = false end
+                if p:IsA("ScrollingFrame") then
+                    p.Visible = false
+                end
             end
             for _,b in pairs(TabBar:GetChildren()) do
                 if b:IsA("TextButton") then
@@ -168,7 +146,7 @@ function NekoLib.Init()
         return Page
     end
 
-    -- ===== 按鈕 / Input / Info（完全不動）=====
+    -- ===== 你原本的 CreateButton / CreateButtonWithInput / CreateInfo 都完全不動 =====
 
     RunService.RenderStepped:Connect(function()
         Stroke.Color = rainbow()
