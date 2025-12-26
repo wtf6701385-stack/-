@@ -58,7 +58,7 @@ function NekoLib.Init()
     Pages.Position = UDim2.new(0, 120, 0, 45)
     Pages.BackgroundTransparency = 1
 
-    -- ===== 最小化 / 還原（已修正）=====
+    -- ===== 最小化 / 還原（方案 B：還原必回第一頁）=====
     local MiniBtn = Instance.new("TextButton", Main)
     MiniBtn.Size = UDim2.new(0,30,0,30)
     MiniBtn.Position = UDim2.new(1,-40,0,5)
@@ -79,7 +79,6 @@ function NekoLib.Init()
     RestoreBtn.Visible = false
     RestoreBtn.ZIndex = 9
 
-    -- 需要一起隱藏的 UI
     local UIObjects = {Title, TabBar, Pages}
 
     MiniBtn.MouseButton1Click:Connect(function()
@@ -97,6 +96,31 @@ function NekoLib.Init()
             for _,v in pairs(UIObjects) do
                 v.Visible = true
             end
+
+            -- 🔒 關鍵修正：強制回到第一個 Tab（貓公告）
+            local firstPage
+            for _,p in pairs(Pages:GetChildren()) do
+                if p:IsA("ScrollingFrame") then
+                    p.Visible = false
+                    if not firstPage then
+                        firstPage = p
+                    end
+                end
+            end
+            if firstPage then
+                firstPage.Visible = true
+            end
+
+            for _,b in pairs(TabBar:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextColor3 = Color3.fromRGB(150,150,150)
+                end
+            end
+            local firstTab = TabBar:FindFirstChildWhichIsA("TextButton")
+            if firstTab then
+                firstTab.TextColor3 = Color3.new(1,1,1)
+            end
+
             MiniBtn.Visible = true
         end)
     end)
@@ -145,7 +169,6 @@ function NekoLib.Init()
     end
 
     -- ===== 按鈕 / Input / Info（完全不動）=====
-    -- ↓↓↓ 你原本的 CreateButton / CreateButtonWithInput / CreateInfo 都 그대로 ↓↓↓
 
     RunService.RenderStepped:Connect(function()
         Stroke.Color = rainbow()
