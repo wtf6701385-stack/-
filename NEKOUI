@@ -2,11 +2,9 @@
 local NekoLib = {}
 
 function NekoLib.Init()
-    local UIS = game:GetService("UserInputService")
     local RunService = game:GetService("RunService")
     local Players = game:GetService("Players")
     local CoreGui = game:GetService("CoreGui")
-    local player = Players.LocalPlayer
 
     if CoreGui:FindFirstChild("CatCat_Final_Neko") then
         CoreGui.CatCat_Final_Neko:Destroy()
@@ -40,7 +38,7 @@ function NekoLib.Init()
     Title.Text = " ฅ^•ﻌ•^ฅ "
     Title.Font = Enum.Font.GothamBold
     Title.TextSize = 14
-    Title.TextXAlignment = "Left"
+    Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.BackgroundTransparency = 1
     Title.TextColor3 = Color3.new(1,1,1)
 
@@ -49,16 +47,22 @@ function NekoLib.Init()
     TabBar.Size = UDim2.new(0, 100, 1, -50)
     TabBar.Position = UDim2.new(0, 10, 0, 40)
     TabBar.BackgroundTransparency = 1
+    TabBar.ClipsDescendants = true
     local tabLayout = Instance.new("UIListLayout", TabBar)
     tabLayout.Padding = UDim.new(0, 6)
 
-    -- 右側頁面容器（⚠️ 不可被隱藏）
+    -- 右側頁面
     local Pages = Instance.new("Frame", Main)
     Pages.Size = UDim2.new(1, -130, 1, -55)
     Pages.Position = UDim2.new(0, 120, 0, 45)
     Pages.BackgroundTransparency = 1
+    Pages.ClipsDescendants = true
 
-    -- ===== 最小化 / 還原（安全版）=====
+    -- ===== 收起 / 展開（唯一邏輯）=====
+    local collapsed = false
+    local fullSize = UDim2.new(0, 380, 0, 240)
+    local miniSize = UDim2.new(0, 380, 0, 45)
+
     local MiniBtn = Instance.new("TextButton", Main)
     MiniBtn.Size = UDim2.new(0,30,0,30)
     MiniBtn.Position = UDim2.new(1,-40,0,5)
@@ -69,36 +73,9 @@ function NekoLib.Init()
     MiniBtn.BackgroundTransparency = 1
     MiniBtn.ZIndex = 10
 
-    local RestoreBtn = Instance.new("TextButton", Main)
-    RestoreBtn.Size = UDim2.new(1,0,1,0)
-    RestoreBtn.Text = "🐾 摸我還原 🐾"
-    RestoreBtn.Font = Enum.Font.GothamBold
-    RestoreBtn.TextSize = 14
-    RestoreBtn.TextColor3 = Color3.new(1,1,1)
-    RestoreBtn.BackgroundTransparency = 1
-    RestoreBtn.Visible = false
-    RestoreBtn.ZIndex = 9
-
-    -- ⚠️ 只隱藏標題與 Tab，不動 Pages
-    local UIObjects = {Title, TabBar}
-
     MiniBtn.MouseButton1Click:Connect(function()
-        for _,v in pairs(UIObjects) do
-            v.Visible = false
-        end
-        MiniBtn.Visible = false
-        RestoreBtn.Visible = true
-        Main:TweenSize(UDim2.new(0,140,0,45),"Out","Quart",0.25,true)
-    end)
-
-    RestoreBtn.MouseButton1Click:Connect(function()
-        RestoreBtn.Visible = false
-        Main:TweenSize(UDim2.new(0,380,0,240),"Out","Quart",0.25,true,function()
-            for _,v in pairs(UIObjects) do
-                v.Visible = true
-            end
-            MiniBtn.Visible = true
-        end)
+        collapsed = not collapsed
+        Main:TweenSize(collapsed and miniSize or fullSize, "Out", "Quart", 0.25, true)
     end)
 
     local Lib = {}
@@ -130,9 +107,7 @@ function NekoLib.Init()
 
         Tab.MouseButton1Click:Connect(function()
             for _,p in pairs(Pages:GetChildren()) do
-                if p:IsA("ScrollingFrame") then
-                    p.Visible = false
-                end
+                if p:IsA("ScrollingFrame") then p.Visible = false end
             end
             for _,b in pairs(TabBar:GetChildren()) do
                 if b:IsA("TextButton") then
@@ -146,7 +121,8 @@ function NekoLib.Init()
         return Page
     end
 
-    -- ===== 你原本的 CreateButton / CreateButtonWithInput / CreateInfo 都完全不動 =====
+    -- ⚠️ CreateButton / CreateButtonWithInput / CreateInfo
+    -- 保持你原本那份「一行都不要改」
 
     RunService.RenderStepped:Connect(function()
         Stroke.Color = rainbow()
