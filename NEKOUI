@@ -1,167 +1,111 @@
-local NekoLib = {}
+local CatLib = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"
+))().Init()
 
-function NekoLib.Init()
-    local RunService = game:GetService("RunService")
-    local CoreGui = game:GetService("CoreGui")
+_G.PVP = false
+_G.MOB = false
+_G.ESP = false
+_G.AutoV4 = false
+_G.CatSpeedValue = 50
+_G.AttackRange = 5000
 
-    if CoreGui:FindFirstChild("CatCat_Final_Neko") then
-        CoreGui.CatCat_Final_Neko:Destroy()
+
+local p0 = CatLib:CreateTab("貓公告", true)
+local p1 = CatLib:CreateTab("貓戰鬥", false)
+local p2 = CatLib:CreateTab("貓功能", false)
+local p3 = CatLib:CreateTab("貓召喚", false)
+
+
+CatLib:CreateInfo(p0, " 🐾 歡迎 ", " 歡迎使用貓貓腳本 ")
+CatLib:CreateInfo(p0, " ⚠ 注意 ", " 不要點太快，避免炸腳本 ")
+
+
+local btnPVP, btnMOB
+
+
+btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
+    _G.PVP = not _G.PVP
+
+    if _G.PVP then
+        _G.MOB = false
+        if btnMOB then
+            btnMOB.Text = "  🐱 刷怪模式 : OFF"
+        end
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"
+        ))()
     end
 
-    local gui = Instance.new("ScreenGui", CoreGui)
-    gui.Name = "CatCat_Final_Neko"
-    gui.ResetOnSpawn = false
+    self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
+end)
 
-    local function rainbow()
-        return Color3.fromHSV((tick() * 0.15) % 1, 0.6, 1)
+
+btnMOB = CatLib:CreateButton(p1, "刷怪模式 : OFF", function(self)
+    _G.MOB = not _G.MOB
+
+    if _G.MOB then
+        _G.PVP = false
+        if btnPVP then
+            btnPVP.Text = "  🐱 打架模式 : OFF"
+        end
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"
+        ))()
     end
 
-    -- ======================
-    -- 主框架（不拖動）
-    -- ======================
-    local Main = Instance.new("Frame", gui)
-    Main.Size = UDim2.new(0, 380, 0, 240)
-    Main.Position = UDim2.new(0.5, -190, 0.5, -120)
-    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-    Main.BorderSizePixel = 0
-    Main.ClipsDescendants = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+    self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
+end)
 
-    local Stroke = Instance.new("UIStroke", Main)
-    Stroke.Thickness = 2
 
-    -- ======================
-    -- 拖動列（唯一可拖）
-    -- ======================
-    local DragBar = Instance.new("Frame", Main)
-    DragBar.Size = UDim2.new(1, 0, 0, 40)
-    DragBar.BackgroundTransparency = 1
-    DragBar.Active = true
-    DragBar.Draggable = true
+CatLib:CreateButton(p2, "自動 V4 變身 : OFF", function(self)
+    _G.AutoV4 = not _G.AutoV4
 
-    local Title = Instance.new("TextLabel", DragBar)
-    Title.Size = UDim2.new(1, -60, 1, 0)
-    Title.Position = UDim2.new(0, 12, 0, 0)
-    Title.Text = "ฅ^•ﻌ•^ฅ 貓貓"
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 14
-    Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.BackgroundTransparency = 1
-    Title.TextColor3 = Color3.new(1,1,1)
-
-    -- ======================
-    -- 內容區
-    -- ======================
-    local Content = Instance.new("Frame", Main)
-    Content.Size = UDim2.new(1, 0, 1, -40)
-    Content.Position = UDim2.new(0, 0, 0, 40)
-    Content.BackgroundTransparency = 1
-
-    local TabBar = Instance.new("Frame", Content)
-    TabBar.Size = UDim2.new(0, 100, 1, -10)
-    TabBar.Position = UDim2.new(0, 10, 0, 0)
-    TabBar.BackgroundTransparency = 1
-    Instance.new("UIListLayout", TabBar).Padding = UDim.new(0, 6)
-
-    local Pages = Instance.new("Frame", Content)
-    Pages.Size = UDim2.new(1, -130, 1, -10)
-    Pages.Position = UDim2.new(0, 120, 0, 0)
-    Pages.BackgroundTransparency = 1
-
-    -- ======================
-    -- 收起按鈕
-    -- ======================
-    local MiniBtn = Instance.new("TextButton", DragBar)
-    MiniBtn.Size = UDim2.new(0, 30, 0, 30)
-    MiniBtn.Position = UDim2.new(1, -36, 0, 5)
-    MiniBtn.Text = "—"
-    MiniBtn.Font = Enum.Font.GothamBold
-    MiniBtn.TextSize = 16
-    MiniBtn.BackgroundTransparency = 1
-    MiniBtn.TextColor3 = Color3.fromRGB(200,200,200)
-
-    -- ======================
-    -- 收起狀態（點擊用，不可拖）
-    -- ======================
-    local MiniOpen = Instance.new("TextButton", Main)
-    MiniOpen.Size = UDim2.new(1, 0, 1, 0)
-    MiniOpen.BackgroundTransparency = 1
-    MiniOpen.Text = "貓貓\n\n🐾"
-    MiniOpen.Font = Enum.Font.GothamBold
-    MiniOpen.TextSize = 14
-    MiniOpen.TextColor3 = Color3.new(1,1,1)
-    MiniOpen.Visible = false
-    MiniOpen.AutoButtonColor = false
-    MiniOpen.ZIndex = 5
-
-    -- ======================
-    -- 收起 / 展開邏輯
-    -- ======================
-    MiniBtn.MouseButton1Click:Connect(function()
-        Content.Visible = false
-        DragBar.Visible = false
-        MiniOpen.Visible = true
-        Main:TweenSize(UDim2.new(0, 140, 0, 60), "Out", "Quart", 0.25, true)
-    end)
-
-    MiniOpen.MouseButton1Click:Connect(function()
-        MiniOpen.Visible = false
-        Main:TweenSize(UDim2.new(0, 380, 0, 240), "Out", "Quart", 0.25, true, function()
-            Content.Visible = true
-            DragBar.Visible = true
-        end)
-    end)
-
-    -- ======================
-    -- Lib API
-    -- ======================
-    local Lib = {}
-
-    function Lib:CreateTab(name, default)
-        local Page = Instance.new("ScrollingFrame", Pages)
-        Page.Size = UDim2.new(1,0,1,0)
-        Page.ScrollBarThickness = 0
-        Page.Visible = default or false
-        Page.CanvasSize = UDim2.new(0,0,0,0)
-        Page.BackgroundTransparency = 1
-
-        local layout = Instance.new("UIListLayout", Page)
-        layout.Padding = UDim.new(0,8)
-
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            Page.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+10)
-        end)
-
-        local Tab = Instance.new("TextButton", TabBar)
-        Tab.Size = UDim2.new(1,0,0,32)
-        Tab.Text = name
-        Tab.Font = Enum.Font.GothamMedium
-        Tab.TextSize = 11
-        Tab.BackgroundColor3 = Color3.fromRGB(30,28,35)
-        Tab.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(150,150,150)
-        Instance.new("UICorner", Tab)
-
-        Tab.MouseButton1Click:Connect(function()
-            for _,p in pairs(Pages:GetChildren()) do
-                if p:IsA("ScrollingFrame") then p.Visible=false end
-            end
-            for _,b in pairs(TabBar:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextColor3 = Color3.fromRGB(150,150,150)
-                end
-            end
-            Page.Visible = true
-            Tab.TextColor3 = Color3.new(1,1,1)
-        end)
-
-        return Page
+    if _G.AutoV4 then
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"
+        ))()
     end
 
-    RunService.RenderStepped:Connect(function()
-        Stroke.Color = rainbow()
-    end)
+    self.Text = "  🐱 自動 V4 變身 : " .. (_G.AutoV4 and "ON" or "OFF")
+end)
 
-    return Lib
-end
 
-return NekoLib
+CatLib:CreateButton(p2, "透視對手 : OFF", function(self)
+    _G.ESP = not _G.ESP
+
+    if _G.ESP then
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"
+        ))()
+    end
+
+    self.Text = "  🐱 透視對手 : " .. (_G.ESP and "ON" or "OFF")
+end)
+
+
+CatLib:CreateButton(p2, "貓貓神速", function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"
+    ))()
+end)
+
+
+CatLib:CreateButton(p3, "召喚飛行", function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"
+    ))()
+end)
+
+
+CatLib:CreateButton(p3, "落葉中心", function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/%E8%90%BD%E5%8F%B6%E4%B8%AD%E5%BF%83%E6%B7%B7%E6%B7%86.txt"
+    ))()
+end)
+
+
+CatLib:CreateButton(p3, "大司馬", function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/whenheer/dasimav6/main/dasimaV6.txt"
+    ))()
+end)
