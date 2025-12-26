@@ -11,12 +11,15 @@ _G.AutoV4 = false
 _G.CatSpeedValue = 50
 _G.PVPDistance = 200
 
--- 3. 分頁
+-- 3. 分頁（公告 → 戰鬥 → 功能 → 召喚）
 local p0 = CatLib:CreateTab("貓公告", true)
-local p1 = CatLib:CreateTab("貓功能", false)
-local p2 = CatLib:CreateTab("貓召喚", false)
+local p1 = CatLib:CreateTab("貓戰鬥", false)
+local p2 = CatLib:CreateTab("貓功能", false)
+local p3 = CatLib:CreateTab("貓召喚", false)
 
--- 4. 公告
+-- ======================
+-- 4️⃣ 公告
+-- ======================
 CatLib:CreateInfo(p0, " 🐾 歡迎 ", " 歡迎使用貓貓腳本 ")
 CatLib:CreateInfo(p0, " ⚠ 注意 ", " 不要點太快，避免炸腳本 ")
 
@@ -49,26 +52,32 @@ btnPVP = CatLib:CreateButtonWithInput(
 )
 
 -- MOB
-btnMOB = CatLib:CreateButton(p1, "刷怪模式 : OFF", function(self)
-    _G.MOB = not _G.MOB
-    if _G.MOB then
-        _G.PVP = false
-        if btnPVP then
-            btnPVP.Text = "  🐱 打架模式 : OFF"
+btnMOB = CatLib:CreateButton(
+    p1,
+    "刷怪模式 : OFF",
+    function(self)
+        _G.MOB = not _G.MOB
+
+        if _G.MOB then
+            _G.PVP = false
+            if btnPVP then
+                btnPVP.Text = "  🐱 打架模式 : OFF"
+            end
+            loadstring(game:HttpGet(
+                "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"
+            ))()
         end
-        loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"
-        ))()
+
+        self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
     end
-    self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
-end)
+)
 
 -- ======================
 -- 6️⃣ 貓功能
 -- ======================
 
 -- 自動 V4
-CatLib:CreateButton(p1, "自動 V4 變身 : OFF", function(self)
+CatLib:CreateButton(p2, "自動 V4 變身 : OFF", function(self)
     _G.AutoV4 = not _G.AutoV4
     if _G.AutoV4 then
         loadstring(game:HttpGet(
@@ -79,7 +88,7 @@ CatLib:CreateButton(p1, "自動 V4 變身 : OFF", function(self)
 end)
 
 -- ESP
-CatLib:CreateButton(p1, "透視對手 : OFF", function(self)
+CatLib:CreateButton(p2, "透視對手 : OFF", function(self)
     _G.ESP = not _G.ESP
     if _G.ESP then
         loadstring(game:HttpGet(
@@ -91,7 +100,7 @@ end)
 
 -- 神速（輸入框）
 CatLib:CreateButtonWithInput(
-    p1,
+    p2,
     "貓貓神速",
     50,
     function(value)
@@ -105,19 +114,19 @@ CatLib:CreateButtonWithInput(
 -- ======================
 -- 7️⃣ 貓召喚
 -- ======================
-CatLib:CreateButton(p2, "召喚飛行", function()
+CatLib:CreateButton(p3, "召喚飛行", function()
     loadstring(game:HttpGet(
         "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"
     ))()
 end)
 
-CatLib:CreateButton(p2, "落葉中心", function()
+CatLib:CreateButton(p3, "落葉中心", function()
     loadstring(game:HttpGet(
         "https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/%E8%90%BD%E5%8F%B6%E4%B8%AD%E5%BF%83%E6%B7%B7%E6%B7%86.txt"
     ))()
 end)
 
-CatLib:CreateButton(p2, "大司馬", function()
+CatLib:CreateButton(p3, "大司馬", function()
     loadstring(game:HttpGet(
         "https://raw.githubusercontent.com/whenheer/dasimav6/main/dasimaV6.txt"
     ))()
