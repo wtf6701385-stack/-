@@ -1,159 +1,149 @@
--- NEKOUI | Fresh Base
--- UI Library Only
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local Player = Players.LocalPlayer
 
-local NekoUI = {}
+local Lib = {}
+Lib.__index = Lib
 
-function NekoUI.Init()
-    local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
-    local CoreGui = game:GetService("CoreGui")
-    local player = Players.LocalPlayer
+function Lib.Init()
+    local self = setmetatable({}, Lib)
 
-    if CoreGui:FindFirstChild("NEKOUI_ROOT") then
-        CoreGui.NEKOUI_ROOT:Destroy()
-    end
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "NEKO_UI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "NEKOUI_ROOT"
-    gui.ResetOnSpawn = false
-    gui.Parent = CoreGui
-
-    local function rainbow()
-        return Color3.fromHSV((tick() * 0.15) % 1, 0.6, 1)
-    end
-
-    local Main = Instance.new("Frame", gui)
-    Main.Size = UDim2.new(0, 400, 0, 260)
-    Main.Position = UDim2.new(0.5, -200, 0.5, -130)
-    Main.BackgroundColor3 = Color3.fromRGB(18,18,22)
+    local Main = Instance.new("Frame", ScreenGui)
+    Main.Size = UDim2.new(0, 520, 0, 360)
+    Main.Position = UDim2.new(0.5, -260, 0.5, -180)
+    Main.BackgroundColor3 = Color3.fromRGB(20,20,25)
     Main.BorderSizePixel = 0
     Main.Active = true
     Main.Draggable = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0,12)
-
-    local Stroke = Instance.new("UIStroke", Main)
-    Stroke.Thickness = 2
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0,16)
 
     local Title = Instance.new("TextLabel", Main)
-    Title.Size = UDim2.new(1,-20,0,32)
-    Title.Position = UDim2.new(0,10,0,6)
-    Title.Text = "ฅ 貓貓 NEKO UI ฅ"
+    Title.Size = UDim2.new(1,0,0,40)
+    Title.BackgroundColor3 = Color3.fromRGB(180,180,180)
+    Title.Text = " 貓貓 NEKO UI "
     Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 14
-    Title.TextXAlignment = Left
-    Title.BackgroundTransparency = 1
-    Title.TextColor3 = Color3.new(1,1,1)
+    Title.TextSize = 18
+    Title.TextColor3 = Color3.fromRGB(30,30,30)
+    Instance.new("UICorner", Title).CornerRadius = UDim.new(0,12)
 
-    local TabBar = Instance.new("Frame", Main)
-    TabBar.Size = UDim2.new(0,110,1,-48)
-    TabBar.Position = UDim2.new(0,10,0,42)
-    TabBar.BackgroundTransparency = 1
-
-    local tabLayout = Instance.new("UIListLayout", TabBar)
-    tabLayout.Padding = UDim.new(0,6)
+    local Tabs = Instance.new("Frame", Main)
+    Tabs.Position = UDim2.new(0,0,0,42)
+    Tabs.Size = UDim2.new(0,130,1,-42)
+    Tabs.BackgroundTransparency = 1
 
     local Pages = Instance.new("Frame", Main)
-    Pages.Size = UDim2.new(1,-140,1,-54)
-    Pages.Position = UDim2.new(0,130,0,44)
+    Pages.Position = UDim2.new(0,130,0,42)
+    Pages.Size = UDim2.new(1,-130,1,-42)
     Pages.BackgroundTransparency = 1
 
-    local Lib = {}
+    local TabLayout = Instance.new("UIListLayout", Tabs)
+    TabLayout.Padding = UDim.new(0,6)
 
-    function Lib:CreateTab(name, default)
+    self.Pages = Pages
+    self.Tabs = Tabs
+    self.CurrentPage = nil
+
+    function self:CreateTab(name, default)
+        local Btn = Instance.new("TextButton", Tabs)
+        Btn.Size = UDim2.new(1,-10,0,34)
+        Btn.Text = " "..name
+        Btn.Font = Enum.Font.Gotham
+        Btn.TextSize = 14
+        Btn.TextXAlignment = Left
+        Btn.BackgroundColor3 = Color3.fromRGB(35,35,45)
+        Btn.TextColor3 = Color3.fromRGB(255,255,255)
+        Btn.BorderSizePixel = 0
+        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0,8)
+
         local Page = Instance.new("ScrollingFrame", Pages)
         Page.Size = UDim2.new(1,0,1,0)
-        Page.ScrollBarThickness = 0
         Page.CanvasSize = UDim2.new(0,0,0,0)
-        Page.Visible = default or false
+        Page.ScrollBarThickness = 0
         Page.BackgroundTransparency = 1
+        Page.Visible = false
 
-        local layout = Instance.new("UIListLayout", Page)
-        layout.Padding = UDim.new(0,8)
+        local Layout = Instance.new("UIListLayout", Page)
+        Layout.Padding = UDim.new(0,8)
 
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            Page.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 8)
+        Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            Page.CanvasSize = UDim2.new(0,0,0,Layout.AbsoluteContentSize.Y + 10)
         end)
 
-        local Tab = Instance.new("TextButton", TabBar)
-        Tab.Size = UDim2.new(1,0,0,32)
-        Tab.Text = name
-        Tab.Font = Enum.Font.GothamMedium
-        Tab.TextSize = 11
-        Tab.BackgroundColor3 = Color3.fromRGB(30,30,38)
-        Tab.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(160,160,160)
-        Instance.new("UICorner", Tab)
-
-        Tab.MouseButton1Click:Connect(function()
-            for _,p in pairs(Pages:GetChildren()) do
-                if p:IsA("ScrollingFrame") then
-                    p.Visible = false
-                end
-            end
-            for _,b in pairs(TabBar:GetChildren()) do
-                if b:IsA("TextButton") then
-                    b.TextColor3 = Color3.fromRGB(160,160,160)
-                end
+        Btn.MouseButton1Click:Connect(function()
+            if self.CurrentPage then
+                self.CurrentPage.Visible = false
             end
             Page.Visible = true
-            Tab.TextColor3 = Color3.new(1,1,1)
+            self.CurrentPage = Page
         end)
+
+        if default then
+            Page.Visible = true
+            self.CurrentPage = Page
+        end
 
         return Page
     end
 
-    function Lib:CreateButton(parent, text, callback)
-        local btn = Instance.new("TextButton", parent)
-        btn.Size = UDim2.new(1,-6,0,36)
-        btn.BackgroundColor3 = Color3.fromRGB(25,25,32)
-        btn.Text = "  🐱 "..text
-        btn.Font = Enum.Font.Gotham
-        btn.TextSize = 12
-        btn.TextXAlignment = Left
-        btn.TextColor3 = Color3.new(1,1,1)
-        Instance.new("UICorner", btn)
-        Instance.new("UIStroke", btn)
+    function self:CreateButton(parent, text, callback)
+        local Btn = Instance.new("TextButton", parent)
+        Btn.Size = UDim2.new(1,-10,0,36)
+        Btn.Text = " "..text
+        Btn.Font = Enum.Font.Gotham
+        Btn.TextSize = 14
+        Btn.TextXAlignment = Left
+        Btn.BackgroundColor3 = Color3.fromRGB(40,40,55)
+        Btn.TextColor3 = Color3.fromRGB(255,255,255)
+        Btn.BorderSizePixel = 0
+        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0,8)
 
-        btn.MouseButton1Click:Connect(function()
+        Btn.MouseButton1Click:Connect(function()
             if callback then
-                callback(btn)
+                callback(Btn)
             end
         end)
 
-        return btn
+        return Btn
     end
 
-    function Lib:CreateInfo(parent, title, desc)
-        local frame = Instance.new("Frame", parent)
-        frame.Size = UDim2.new(1,-6,0,58)
-        frame.BackgroundColor3 = Color3.fromRGB(22,22,28)
-        Instance.new("UICorner", frame)
+    function self:CreateInfo(parent, title, desc)
+        local Box = Instance.new("Frame", parent)
+        Box.Size = UDim2.new(1,-10,0,60)
+        Box.BackgroundColor3 = Color3.fromRGB(35,35,50)
+        Box.BorderSizePixel = 0
+        Instance.new("UICorner", Box).CornerRadius = UDim.new(0,8)
 
-        local t = Instance.new("TextLabel", frame)
-        t.Size = UDim2.new(1,-12,0,22)
-        t.Position = UDim2.new(0,8,0,6)
-        t.Text = title
-        t.Font = Enum.Font.GothamBold
-        t.TextSize = 12
-        t.TextColor3 = Color3.fromRGB(255,200,200)
-        t.BackgroundTransparency = 1
-        t.TextXAlignment = Left
+        local T = Instance.new("TextLabel", Box)
+        T.Size = UDim2.new(1,-10,0,22)
+        T.Position = UDim2.new(0,8,0,6)
+        T.Text = title
+        T.Font = Enum.Font.GothamBold
+        T.TextSize = 14
+        T.TextXAlignment = Left
+        T.BackgroundTransparency = 1
+        T.TextColor3 = Color3.fromRGB(255,255,255)
 
-        local d = Instance.new("TextLabel", frame)
-        d.Size = UDim2.new(1,-12,0,22)
-        d.Position = UDim2.new(0,8,0,30)
-        d.Text = desc
-        d.Font = Enum.Font.Gotham
-        d.TextSize = 11
-        d.TextColor3 = Color3.fromRGB(200,200,200)
-        d.BackgroundTransparency = 1
-        d.TextXAlignment = Left
+        local D = Instance.new("TextLabel", Box)
+        D.Size = UDim2.new(1,-10,0,26)
+        D.Position = UDim2.new(0,8,0,30)
+        D.TextWrapped = true
+        D.TextYAlignment = Top
+        D.TextXAlignment = Left
+        D.Text = desc
+        D.Font = Enum.Font.Gotham
+        D.TextSize = 12
+        D.BackgroundTransparency = 1
+        D.TextColor3 = Color3.fromRGB(200,200,200)
+
+        return Box
     end
 
-    RunService.RenderStepped:Connect(function()
-        Stroke.Color = rainbow()
-    end)
-
-    return Lib
+    return self
 end
 
-return NekoUI
+return Lib
