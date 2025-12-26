@@ -1,145 +1,196 @@
---[[ ===============================
-     NEKO UI - 可用版本
-     Button / ButtonWithInput
-     Input：數字限定，失焦才套用
-================================ ]]
-
+-- [[ 貓貓 UI 引擎 - NEKOUI 完整可用版 ]]
 local NekoLib = {}
 
 function NekoLib.Init()
+    local UIS = game:GetService("UserInputService")
     local RunService = game:GetService("RunService")
+    local Players = game:GetService("Players")
     local CoreGui = game:GetService("CoreGui")
+    local player = Players.LocalPlayer
 
-    if CoreGui:FindFirstChild("NEKO_UI_FINAL") then
-        CoreGui.NEKO_UI_FINAL:Destroy()
+    if CoreGui:FindFirstChild("CatCat_Final_Neko") then
+        CoreGui.CatCat_Final_Neko:Destroy()
     end
 
     local gui = Instance.new("ScreenGui", CoreGui)
-    gui.Name = "NEKO_UI_FINAL"
+    gui.Name = "CatCat_Final_Neko"
     gui.ResetOnSpawn = false
 
-    -- 主框
+    local function rainbow()
+        return Color3.fromHSV((tick() * 0.15) % 1, 0.6, 1)
+    end
+
+    -- 主框架
     local Main = Instance.new("Frame", gui)
     Main.Size = UDim2.new(0, 380, 0, 240)
     Main.Position = UDim2.new(0.5, -190, 0.5, -120)
-    Main.BackgroundColor3 = Color3.fromRGB(15,15,17)
+    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
     Main.BorderSizePixel = 0
     Main.Active = true
     Main.Draggable = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0,12)
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
     local Stroke = Instance.new("UIStroke", Main)
-    Stroke.Thickness = 2.5
+    Stroke.Thickness = 2
 
     -- 標題
     local Title = Instance.new("TextLabel", Main)
-    Title.Size = UDim2.new(1,-20,0,36)
-    Title.Position = UDim2.new(0,10,0,6)
-    Title.BackgroundTransparency = 1
-    Title.Text = "ฅ^•ﻌ•^ฅ  NEKO UI"
-    Title.TextColor3 = Color3.new(1,1,1)
+    Title.Size = UDim2.new(1, -20, 0, 35)
+    Title.Position = UDim2.new(0, 10, 0, 5)
+    Title.Text = " ฅ^•ﻌ•^ฅ  CatCat UI"
     Title.Font = Enum.Font.GothamBold
     Title.TextSize = 14
-    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextXAlignment = "Left"
+    Title.BackgroundTransparency = 1
+    Title.TextColor3 = Color3.new(1,1,1)
 
-    -- 內容區
-    local Content = Instance.new("ScrollingFrame", Main)
-    Content.Size = UDim2.new(1,-20,1,-60)
-    Content.Position = UDim2.new(0,10,0,50)
-    Content.CanvasSize = UDim2.new()
-    Content.ScrollBarThickness = 0
-    Content.BackgroundTransparency = 1
+    -- 左側 Tab
+    local TabBar = Instance.new("Frame", Main)
+    TabBar.Size = UDim2.new(0, 100, 1, -50)
+    TabBar.Position = UDim2.new(0, 10, 0, 40)
+    TabBar.BackgroundTransparency = 1
+    local tabLayout = Instance.new("UIListLayout", TabBar)
+    tabLayout.Padding = UDim.new(0, 6)
 
-    local Layout = Instance.new("UIListLayout", Content)
-    Layout.Padding = UDim.new(0,8)
-
-    local function refreshCanvas()
-        task.wait()
-        Content.CanvasSize = UDim2.new(
-            0,0,
-            0, Layout.AbsoluteContentSize.Y + 10
-        )
-    end
-
-    -- 彩虹邊框
-    RunService.RenderStepped:Connect(function()
-        Stroke.Color = Color3.fromHSV(tick() % 1, 0.6, 1)
-    end)
+    -- 右側頁面
+    local Pages = Instance.new("Frame", Main)
+    Pages.Size = UDim2.new(1, -130, 1, -55)
+    Pages.Position = UDim2.new(0, 120, 0, 45)
+    Pages.BackgroundTransparency = 1
 
     local Lib = {}
 
-    -- =====================
-    -- 普通按鈕
-    -- =====================
-    function Lib:CreateButton(text, callback)
-        local btn = Instance.new("TextButton", Content)
-        btn.Size = UDim2.new(1,0,0,38)
-        btn.BackgroundColor3 = Color3.fromRGB(25,23,28)
-        btn.Text = "  🐱 "..text
-        btn.TextColor3 = Color3.new(1,1,1)
-        btn.Font = Enum.Font.GothamMedium
-        btn.TextSize = 12
-        btn.TextXAlignment = Enum.TextXAlignment.Left
-        btn.BorderSizePixel = 0
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+    -- ===== Tabs =====
+    function Lib:CreateTab(name, default)
+        local Page = Instance.new("ScrollingFrame", Pages)
+        Page.Size = UDim2.new(1,0,1,0)
+        Page.ScrollBarThickness = 0
+        Page.CanvasSize = UDim2.new(0,0,0,0)
+        Page.Visible = default or false
+        Page.BackgroundTransparency = 1
 
-        btn.MouseButton1Click:Connect(function()
-            if callback then callback(btn) end
+        local layout = Instance.new("UIListLayout", Page)
+        layout.Padding = UDim.new(0, 8)
+
+        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            Page.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y + 10)
         end)
 
-        refreshCanvas()
-        return btn
+        local Tab = Instance.new("TextButton", TabBar)
+        Tab.Size = UDim2.new(1,0,0,32)
+        Tab.Text = name
+        Tab.Font = Enum.Font.GothamMedium
+        Tab.TextSize = 11
+        Tab.BackgroundColor3 = Color3.fromRGB(30,28,35)
+        Tab.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(150,150,150)
+        Instance.new("UICorner", Tab).CornerRadius = UDim.new(0,6)
+
+        Tab.MouseButton1Click:Connect(function()
+            for _,p in pairs(Pages:GetChildren()) do
+                if p:IsA("ScrollingFrame") then p.Visible = false end
+            end
+            for _,b in pairs(TabBar:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextColor3 = Color3.fromRGB(150,150,150)
+                end
+            end
+            Page.Visible = true
+            Tab.TextColor3 = Color3.new(1,1,1)
+        end)
+
+        return Page
     end
 
-    -- ===============================
-    -- 按鈕 + 右側輸入框（數字）
-    -- 失焦才套用
-    -- ===============================
-    function Lib:CreateButtonWithInput(text, defaultValue, callback)
-        local row = Instance.new("Frame", Content)
-        row.Size = UDim2.new(1,0,0,38)
-        row.BackgroundTransparency = 1
+    -- ===== 普通按鈕 =====
+    function Lib:CreateButton(parent, text, callback)
+        local Btn = Instance.new("TextButton", parent)
+        Btn.Size = UDim2.new(0.95,0,0,36)
+        Btn.Text = "  🐱 "..text
+        Btn.Font = Enum.Font.GothamMedium
+        Btn.TextSize = 12
+        Btn.TextXAlignment = "Left"
+        Btn.BackgroundColor3 = Color3.fromRGB(25,23,28)
+        Btn.TextColor3 = Color3.new(1,1,1)
+        Instance.new("UICorner", Btn)
 
-        -- 左按鈕
-        local btn = Instance.new("TextButton", row)
-        btn.Size = UDim2.new(0.65,-6,1,0)
-        btn.BackgroundColor3 = Color3.fromRGB(25,23,28)
-        btn.Text = "  🐱 "..text
-        btn.TextColor3 = Color3.new(1,1,1)
-        btn.Font = Enum.Font.GothamMedium
-        btn.TextSize = 12
-        btn.TextXAlignment = Enum.TextXAlignment.Left
-        btn.BorderSizePixel = 0
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+        local s = Instance.new("UIStroke", Btn)
+        s.Transparency = 0.6
 
-        -- 右輸入框
-        local box = Instance.new("TextBox", row)
-        box.Size = UDim2.new(0.35,-6,1,0)
-        box.Position = UDim2.new(0.65,6,0,0)
-        box.BackgroundColor3 = Color3.fromRGB(20,18,23)
-        box.Text = tostring(defaultValue or "")
-        box.PlaceholderText = "數字"
-        box.TextColor3 = Color3.new(1,1,1)
-        box.Font = Enum.Font.Gotham
-        box.TextSize = 12
-        box.ClearTextOnFocus = false
-        box.BorderSizePixel = 0
-        Instance.new("UICorner", box).CornerRadius = UDim.new(0,8)
-
-        -- 限制只能輸入數字
-        box:GetPropertyChangedSignal("Text"):Connect(function()
-            box.Text = box.Text:gsub("%D","")
+        Btn.MouseButton1Click:Connect(function()
+            if callback then callback(Btn) end
         end)
 
-        -- 失焦才套用
-        box.FocusLost:Connect(function()
-            local v = tonumber(box.Text)
-            if callback then callback(v) end
-        end)
-
-        refreshCanvas()
-        return btn, box
+        return Btn
     end
+
+    -- ===== 右側輸入框按鈕 =====
+    function Lib:CreateButtonWithInput(parent, text, defaultValue, callback)
+        local Holder = Instance.new("Frame", parent)
+        Holder.Size = UDim2.new(0.95,0,0,36)
+        Holder.BackgroundTransparency = 1
+
+        local Btn = Instance.new("TextButton", Holder)
+        Btn.Size = UDim2.new(0.65,0,1,0)
+        Btn.Text = "  🐱 "..text
+        Btn.Font = Enum.Font.GothamMedium
+        Btn.TextSize = 12
+        Btn.TextXAlignment = "Left"
+        Btn.BackgroundColor3 = Color3.fromRGB(25,23,28)
+        Btn.TextColor3 = Color3.new(1,1,1)
+        Instance.new("UICorner", Btn)
+
+        local Box = Instance.new("TextBox", Holder)
+        Box.Size = UDim2.new(0.32,0,1,0)
+        Box.Position = UDim2.new(0.68,0,0,0)
+        Box.Text = tostring(defaultValue or "")
+        Box.Font = Enum.Font.Gotham
+        Box.TextSize = 12
+        Box.BackgroundColor3 = Color3.fromRGB(20,18,24)
+        Box.TextColor3 = Color3.new(1,1,1)
+        Box.ClearTextOnFocus = false
+        Instance.new("UICorner", Box)
+
+        Btn.MouseButton1Click:Connect(function()
+            local v = tonumber(Box.Text)
+            if v and callback then
+                callback(v)
+            end
+        end)
+
+        return Btn, Box
+    end
+
+    -- ===== Info =====
+    function Lib:CreateInfo(parent, title, desc)
+        local F = Instance.new("Frame", parent)
+        F.Size = UDim2.new(0.95,0,0,60)
+        F.BackgroundColor3 = Color3.fromRGB(20,18,23)
+        Instance.new("UICorner", F)
+
+        local T = Instance.new("TextLabel", F)
+        T.Size = UDim2.new(1,-10,0,25)
+        T.Position = UDim2.new(0,8,0,5)
+        T.Text = title
+        T.Font = Enum.Font.GothamBold
+        T.TextSize = 12
+        T.TextXAlignment = "Left"
+        T.TextColor3 = Color3.fromRGB(255,200,200)
+        T.BackgroundTransparency = 1
+
+        local D = Instance.new("TextLabel", F)
+        D.Size = UDim2.new(1,-10,0,25)
+        D.Position = UDim2.new(0,8,0,30)
+        D.Text = desc
+        D.Font = Enum.Font.Gotham
+        D.TextSize = 11
+        D.TextXAlignment = "Left"
+        D.TextColor3 = Color3.fromRGB(200,200,200)
+        D.BackgroundTransparency = 1
+    end
+
+    RunService.RenderStepped:Connect(function()
+        Stroke.Color = rainbow()
+    end)
 
     return Lib
 end
