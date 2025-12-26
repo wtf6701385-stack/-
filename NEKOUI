@@ -1,208 +1,36 @@
--- =====================================
--- 🐱 NEKOUI | Library Version
--- =====================================
+function NEKOUI:CreateButton(parent, text, callback)
+    local Btn = Instance.new("TextButton", parent)
+    Btn.Size = UDim2.new(0.95, 0, 0, 36)
+    Btn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+    Btn.BackgroundTransparency = 0.15
+    Btn.BorderSizePixel = 0
+    Btn.Text = "  🐱 " .. text
+    Btn.Font = Enum.Font.GothamMedium
+    Btn.TextSize = 12
+    Btn.TextXAlignment = Enum.TextXAlignment.Left
+    Btn.TextColor3 = Color3.fromRGB(235, 235, 235)
+    Btn.AutoButtonColor = false
 
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-local Players = game:GetService("Players")
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 8)
 
-local player = Players.LocalPlayer
+    local Stroke = Instance.new("UIStroke", Btn)
+    Stroke.Thickness = 1
+    Stroke.Transparency = 0.5
+    Stroke.Color = Color3.fromRGB(120,120,120)
 
-local NEKOUI = {}
-NEKOUI.__index = NEKOUI
+    Btn.MouseEnter:Connect(function()
+        Btn.BackgroundTransparency = 0
+    end)
 
--- ================= Init =================
-function NEKOUI.Init()
-    if CoreGui:FindFirstChild("NEKOUI") then
-        CoreGui.NEKOUI:Destroy()
-    end
+    Btn.MouseLeave:Connect(function()
+        Btn.BackgroundTransparency = 0.15
+    end)
 
-    local self = setmetatable({}, NEKOUI)
-
-    -- ============== ScreenGui ==============
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "NEKOUI"
-    gui.ResetOnSpawn = false
-    gui.Parent = CoreGui
-    self.Gui = gui
-
-    -- ============== Main Frame ==============
-    local Main = Instance.new("Frame", gui)
-    Main.Size = UDim2.new(0, 420, 0, 260)
-    Main.Position = UDim2.new(0.5, -210, 0.5, -130)
-    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-    Main.BackgroundTransparency = 0.15
-    Main.BorderSizePixel = 0
-    Main.Active = true
-    Main.Draggable = true
-    Main.ClipsDescendants = true
-    self.Main = Main
-
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
-
-    local Stroke = Instance.new("UIStroke", Main)
-    Stroke.Thickness = 2
-    self.Stroke = Stroke
-
-    -- ============== Header ==============
-    local Header = Instance.new("Frame", Main)
-    Header.Size = UDim2.new(1, 0, 0, 36)
-    Header.BackgroundTransparency = 1
-
-    local Title = Instance.new("TextLabel", Header)
-    Title.Size = UDim2.new(1, -60, 1, 0)
-    Title.Position = UDim2.new(0, 12, 0, 0)
-    Title.Text = "ฅ^•ﻌ•^ฅ NEKOUI"
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 14
-    Title.TextXAlignment = "Left"
-    Title.TextColor3 = Color3.new(1, 1, 1)
-    Title.BackgroundTransparency = 1
-    self.Title = Title
-
-    local MiniBtn = Instance.new("TextButton", Header)
-    MiniBtn.Size = UDim2.new(0, 32, 0, 32)
-    MiniBtn.Position = UDim2.new(1, -38, 0, 2)
-    MiniBtn.Text = "🐾"
-    MiniBtn.Font = Enum.Font.GothamBold
-    MiniBtn.TextSize = 16
-    MiniBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
-    MiniBtn.BackgroundTransparency = 1
-    self.MiniBtn = MiniBtn
-
-    -- ============== Content ==============
-    local Content = Instance.new("Frame", Main)
-    Content.Position = UDim2.new(0, 0, 0, 36)
-    Content.Size = UDim2.new(1, 0, 1, -36)
-    Content.BackgroundTransparency = 1
-    self.Content = Content
-
-    -- Tabs
-    local Tabs = Instance.new("Frame", Content)
-    Tabs.Size = UDim2.new(0, 110, 1, 0)
-    Tabs.BackgroundTransparency = 1
-    self.Tabs = Tabs
-
-    local TabLayout = Instance.new("UIListLayout", Tabs)
-    TabLayout.Padding = UDim.new(0, 6)
-
-    -- Pages
-    local Pages = Instance.new("Frame", Content)
-    Pages.Position = UDim2.new(0, 120, 0, 0)
-    Pages.Size = UDim2.new(1, -120, 1, 0)
-    Pages.BackgroundTransparency = 1
-    self.Pages = Pages
-
-    -- ============== Minimize Logic ==============
-    local minimized = false
-
-    MiniBtn.MouseButton1Click:Connect(function()
-        minimized = not minimized
-
-        if minimized then
-            Content.Visible = false
-            MiniBtn.Text = "🐱"
-            Title.Text = "貓咪趴下中"
-
-            Main:TweenSize(
-                UDim2.new(0, 210, 0, 36),
-                "Out", "Quart", 0.25, true
-            )
-        else
-            MiniBtn.Text = "🐾"
-            Title.Text = "ฅ^•ﻌ•^ฅ NEKOUI"
-
-            Main:TweenSize(
-                UDim2.new(0, 420, 0, 260),
-                "Out", "Quart", 0.25, true,
-                function()
-                    Content.Visible = true
-                end
-            )
+    Btn.MouseButton1Click:Connect(function()
+        if callback then
+            callback(Btn)
         end
     end)
 
-    -- ============== Stroke Effect ==============
-    RunService.RenderStepped:Connect(function()
-        Stroke.Color = Color3.fromHSV((tick() * 0.15) % 1, 0.6, 1)
-    end)
-
-    return self
+    return Btn
 end
-
--- ================= API =================
-function NEKOUI:CreateTab(name, default)
-    local Page = Instance.new("ScrollingFrame", self.Pages)
-    Page.Size = UDim2.new(1, 0, 1, 0)
-    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
-    Page.ScrollBarThickness = 0
-    Page.BackgroundTransparency = 1
-    Page.Visible = default or false
-
-    local layout = Instance.new("UIListLayout", Page)
-    layout.Padding = UDim.new(0, 8)
-
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 8)
-    end)
-
-    local Tab = Instance.new("TextButton", self.Tabs)
-    Tab.Size = UDim2.new(1, 0, 0, 32)
-    Tab.Text = name
-    Tab.Font = Enum.Font.GothamMedium
-    Tab.TextSize = 11
-    Tab.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(160,160,160)
-    Tab.BackgroundColor3 = Color3.fromRGB(35,35,40)
-    Tab.BackgroundTransparency = 0.2
-    Tab.BorderSizePixel = 0
-
-    Instance.new("UICorner", Tab).CornerRadius = UDim.new(0, 8)
-
-    Tab.MouseButton1Click:Connect(function()
-        for _, p in pairs(self.Pages:GetChildren()) do
-            if p:IsA("ScrollingFrame") then
-                p.Visible = false
-            end
-        end
-        for _, b in pairs(self.Tabs:GetChildren()) do
-            if b:IsA("TextButton") then
-                b.TextColor3 = Color3.fromRGB(160,160,160)
-            end
-        end
-        Page.Visible = true
-        Tab.TextColor3 = Color3.new(1,1,1)
-    end)
-
-    return Page
-end
-
-function NEKOUI:CreateInfo(parent, title, desc)
-    local Box = Instance.new("Frame", parent)
-    Box.Size = UDim2.new(0.95, 0, 0, 60)
-    Box.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    Box.BackgroundTransparency = 0.25
-    Box.BorderSizePixel = 0
-    Instance.new("UICorner", Box)
-
-    local T = Instance.new("TextLabel", Box)
-    T.Size = UDim2.new(1, -20, 0, 22)
-    T.Position = UDim2.new(0, 10, 0, 6)
-    T.Text = title
-    T.Font = Enum.Font.GothamBold
-    T.TextSize = 12
-    T.TextXAlignment = "Left"
-    T.TextColor3 = Color3.fromRGB(255, 200, 200)
-    T.BackgroundTransparency = 1
-
-    local D = Instance.new("TextLabel", Box)
-    D.Size = UDim2.new(1, -20, 0, 22)
-    D.Position = UDim2.new(0, 10, 0, 30)
-    D.Text = desc
-    D.Font = Enum.Font.Gotham
-    D.TextSize = 11
-    D.TextXAlignment = "Left"
-    D.TextColor3 = Color3.fromRGB(200, 200, 200)
-    D.BackgroundTransparency = 1
-end
-
-return NEKOUI
