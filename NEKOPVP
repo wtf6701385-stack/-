@@ -1,88 +1,138 @@
--- [[ Neko x FastAttack: Ultra Edition ]]
-_G.PVP = true
-_G.FastAttack = true
+-- [[ Neko x FastAttack : Toggle Safe PVP Edition ]]
 
--- 1. 自殺協議：確保重複執行時舊腳本自動釋放
-local scriptId = "EliteCombat_" .. tick()
-_G.CurrentPvpID = scriptId
+-- ===== 0. 自殺協議（防重複、防殘留）=====
+local scriptId = "NekoFastAtk_" .. tick()
+_G.CurrentFastAtkID = scriptId
 
--- 2. 載入雲端偵測模組 (NEKODET)
--- 提示：請確保 NEKODET 內容中的 task.wait 已改為 0.1
-local success, err = pcall(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKODET"))()
-end)
+-- 預設由 UI 控制（UI ON = true / OFF = false）
+_G.FastAttack = _G.FastAttack or false
 
-if not success then 
-    warn("❌ 雲端偵測載入失敗: " .. tostring(err))
-    -- 如果載入失敗，這裡建立一個空殼防止報錯
-    _G.TargetCache = _G.TargetCache or { Enemies = {}, Players = {} }
+-- ===== 1. 原始環境 =====
+local _ENV = (getgenv or getrenv or getfenv)()
+
+local function SafeWaitForChild(parent, childName)
+    local success, result = pcall(function()
+        return parent:WaitForChild(childName)
+    end)
+    if not success or not result then
+        warn("noooooo: " .. childName)
+    end
+    return result
 end
 
--- 3. 定義遠端事件 (針對 Delta 進行本地快取優化)
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Player = Players.LocalPlayer
-local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
-local RegAttack = Net:WaitForChild("RE/RegisterAttack")
-local RegHit = Net:WaitForChild("RE/RegisterHit")
+local function WaitChilds(path, ...)
+    local last = path
+    for _, child in {...} do
+        last = last:FindFirstChild(child) or SafeWaitForChild(last, child)
+        if not last then break end
+    end
+    return last
+end
 
--- 本地攻擊參數
-local AttackSettings = {
-    MaxScan = 30,
-    AttackRate = 0.01 -- 暴力極限速度
+-- ===== 2. Services（原始保留）=====
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeleportService = game:GetService("TeleportService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+if not Player then return end
+
+local Remotes = SafeWaitForChild(ReplicatedStorage, "Remotes")
+if not Remotes then return end
+
+local Validator = SafeWaitForChild(Remotes, "Validator")
+local CommF = SafeWaitForChild(Remotes, "CommF_")
+local CommE = SafeWaitForChild(Remotes, "CommE")
+
+local WorldOrigin = SafeWaitForChild(workspace, "_WorldOrigin")
+local Characters = SafeWaitForChild(workspace, "Characters")
+local Enemies = SafeWaitForChild(workspace, "Enemies")
+
+local Modules = SafeWaitForChild(ReplicatedStorage, "Modules")
+local Net = SafeWaitForChild(Modules, "Net")
+
+-- ===== 3. 原始設定（不動）=====
+local Settings = {
+    AutoClick = true,
+    ClickDelay = 0.000000000000000000000000000000000001
 }
 
--- 核心攻擊輸出執行緒
-task.spawn(function()
-    print("✅ Neko 暴力模組已啟動 (ID: "..scriptId..")")
-    
-    -- 將遠端事件存入局部變數，Delta 執行效率會提升 20% 以上
-    local rAttack = RegAttack
-    local rHit = RegHit
+-- ===== 4. FastAttack 原始模組（完整保留）=====
+if not _ENV.rz_FastAttack then
+    local FastAttack = {
+        Distance = 200000,
+        attackMobs = true,
+        attackPlayers = true,
+        Equipped = nil
+    }
 
-    while _G.CurrentPvpID == scriptId and _G.PVP do
-        local char = Player.Character
-        local tool = char and char:FindFirstChildOfClass("Tool")
-        
-        -- 確保數據就緒且非遠程武器
-        if _G.TargetCache and tool and tool.ToolTip ~= "Gun" then
-            local allTargets = {}
-            local primaryPart = nil
-            
-            -- [快速合併緩存]
-            local pCache = _G.TargetCache.Players or {}
-            local eCache = _G.TargetCache.Enemies or {}
-            
-            -- 玩家優先
-            for i = 1, #pCache do
-                local data = pCache[i]
-                if data[1] and data[1].Parent then
-                    table.insert(allTargets, data)
-                    primaryPart = primaryPart or data[2]
-                end
-            end
-            
-            -- 怪物補位 (最多 30 個目標)
-            for i = 1, #eCache do
-                if #allTargets >= AttackSettings.MaxScan then break end
-                local data = eCache[i]
-                if data[1] and data[1].Parent then
-                    table.insert(allTargets, data)
-                    primaryPart = primaryPart or data[2]
-                end
-            end
+    local RegisterAttack = SafeWaitForChild(Net, "RE/RegisterAttack")
+    local RegisterHit = SafeWaitForChild(Net, "RE/RegisterHit")
 
-            -- [執行暴力攻擊]
-            if primaryPart and #allTargets > 0 then
-                -- 核心強化：發送一次動作，兩次傷害判定 (變強的關鍵)
-                rAttack:FireServer(0)
-                rHit:FireServer(primaryPart, allTargets) -- 第一次傷害
-                rHit:FireServer(primaryPart, allTargets) -- 第二次傷害 (雙倍輸出)
+    local function IsAlive(character)
+        return character
+            and character:FindFirstChild("Humanoid")
+            and character.Humanoid.Health > 0
+    end
+
+    local function ProcessEnemies(OthersEnemies, Folder)
+        local BasePart
+        for _, Enemy in Folder:GetChildren() do
+            local Head = Enemy:FindFirstChild("Head")
+            if Head and IsAlive(Enemy)
+            and Player:DistanceFromCharacter(Head.Position) < FastAttack.Distance
+            and Enemy ~= Player.Character then
+                table.insert(OthersEnemies, { Enemy, Head })
+                BasePart = Head
             end
         end
-        
-        -- Delta 環境下 task.wait(0.01) 是最暴力的頻率
-        task.wait(AttackSettings.AttackRate)
+        return BasePart
     end
-    print("🛑 舊戰鬥腳本 ("..scriptId..") 已停止。")
+
+    function FastAttack:Attack(BasePart, OthersEnemies)
+        if not BasePart or #OthersEnemies == 0 then return end
+        RegisterAttack:FireServer(Settings.ClickDelay or 0)
+        RegisterHit:FireServer(BasePart, OthersEnemies)
+    end
+
+    function FastAttack:AttackNearest()
+        local OthersEnemies = {}
+        local p1 = ProcessEnemies(OthersEnemies, Enemies)
+        local p2 = ProcessEnemies(OthersEnemies, Characters)
+        if #OthersEnemies > 0 then
+            self:Attack(p1 or p2, OthersEnemies)
+        else
+            task.wait(0)
+        end
+    end
+
+    function FastAttack:BladeHits()
+        local Equipped = IsAlive(Player.Character)
+            and Player.Character:FindFirstChildOfClass("Tool")
+        if Equipped and Equipped.ToolTip ~= "Gun" then
+            self:AttackNearest()
+        else
+            task.wait(0)
+        end
+    end
+
+    _ENV.rz_FastAttack = FastAttack
+end
+
+-- ===== 5. 控制殼（真正的 ON / OFF 核心）=====
+task.spawn(function()
+    print("✅ Neko FastAttack PVP Loaded | ID:", scriptId)
+
+    while _G.CurrentFastAtkID == scriptId do
+        if _G.FastAttack and Settings.AutoClick then
+            pcall(function()
+                _ENV.rz_FastAttack:BladeHits()
+            end)
+        end
+        task.wait(Settings.ClickDelay)
+    end
+
+    print("🛑 Neko FastAttack PVP Stopped | ID:", scriptId)
 end)
