@@ -1,5 +1,5 @@
 -- [[ NEKO UI - 貓貓 ]]
--- UI only / 不含任何功能邏輯
+-- UI only / 修正收起無法點擊問題
 
 local NekoLib = {}
 
@@ -7,19 +7,14 @@ function NekoLib.Init()
     local Players = game:GetService("Players")
     local RunService = game:GetService("RunService")
     local CoreGui = game:GetService("CoreGui")
-    local player = Players.LocalPlayer
 
     if CoreGui:FindFirstChild("CatCat_Final_Neko") then
         CoreGui.CatCat_Final_Neko:Destroy()
     end
 
-    -- ======================
-    -- GUI
-    -- ======================
-    local gui = Instance.new("ScreenGui")
+    local gui = Instance.new("ScreenGui", CoreGui)
     gui.Name = "CatCat_Final_Neko"
     gui.ResetOnSpawn = false
-    gui.Parent = CoreGui
 
     local function rainbow()
         return Color3.fromHSV((tick() * 0.15) % 1, 0.6, 1)
@@ -47,7 +42,7 @@ function NekoLib.Init()
     local Title = Instance.new("TextLabel", Main)
     Title.Size = UDim2.new(1, -60, 0, 35)
     Title.Position = UDim2.new(0, 12, 0, 5)
-    Title.Text = "ฅ^•ﻌ•^ฅ 貓貓"
+    Title.Text = " ฅ^•ﻌ•^ฅ "
     Title.Font = Enum.Font.GothamBold
     Title.TextSize = 14
     Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -55,21 +50,22 @@ function NekoLib.Init()
     Title.TextColor3 = Color3.new(1, 1, 1)
 
     -- ======================
-    -- 收起狀態顯示
+    -- 收起狀態（可點擊）
     -- ======================
-    local MiniTitle = Instance.new("TextLabel", Main)
+    local MiniTitle = Instance.new("TextButton", Main)
     MiniTitle.Size = UDim2.new(1, 0, 1, 0)
     MiniTitle.BackgroundTransparency = 1
-    MiniTitle.Text = "貓貓\n\n🐾"
+    MiniTitle.Text = "ฅ^•ﻌ•^ฅ\n\n🐾"
     MiniTitle.Font = Enum.Font.GothamBold
     MiniTitle.TextSize = 14
     MiniTitle.TextColor3 = Color3.new(1, 1, 1)
     MiniTitle.TextYAlignment = Enum.TextYAlignment.Center
     MiniTitle.Visible = false
+    MiniTitle.AutoButtonColor = false
     MiniTitle.ZIndex = 5
 
     -- ======================
-    -- Tab 區
+    -- Tab / Pages
     -- ======================
     local TabBar = Instance.new("Frame", Main)
     TabBar.Size = UDim2.new(0, 100, 1, -50)
@@ -78,16 +74,13 @@ function NekoLib.Init()
     local tabLayout = Instance.new("UIListLayout", TabBar)
     tabLayout.Padding = UDim.new(0, 6)
 
-    -- ======================
-    -- Page 區
-    -- ======================
     local Pages = Instance.new("Frame", Main)
     Pages.Size = UDim2.new(1, -130, 1, -55)
     Pages.Position = UDim2.new(0, 120, 0, 45)
     Pages.BackgroundTransparency = 1
 
     -- ======================
-    -- 收起 / 展開
+    -- 收起按鈕
     -- ======================
     local MiniBtn = Instance.new("TextButton", Main)
     MiniBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -109,16 +102,14 @@ function NekoLib.Init()
         Main:TweenSize(UDim2.new(0, 140, 0, 60), "Out", "Quart", 0.25, true)
     end)
 
-    MiniTitle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            MiniTitle.Visible = false
-            Main:TweenSize(UDim2.new(0, 380, 0, 240), "Out", "Quart", 0.25, true, function()
-                for _, v in pairs(UIObjects) do
-                    v.Visible = true
-                end
-                MiniBtn.Visible = true
-            end)
-        end
+    MiniTitle.MouseButton1Click:Connect(function()
+        MiniTitle.Visible = false
+        Main:TweenSize(UDim2.new(0, 380, 0, 240), "Out", "Quart", 0.25, true, function()
+            for _, v in pairs(UIObjects) do
+                v.Visible = true
+            end
+            MiniBtn.Visible = true
+        end)
     end)
 
     -- ======================
@@ -166,7 +157,6 @@ function NekoLib.Init()
         return Page
     end
 
-    -- ⚠️ 下面這些只是接口，不含邏輯
     function Lib:CreateButton(parent, text, callback)
         local btn = Instance.new("TextButton", parent)
         btn.Size = UDim2.new(0.95, 0, 0, 38)
@@ -177,9 +167,7 @@ function NekoLib.Init()
         btn.TextSize = 12
         btn.TextXAlignment = Enum.TextXAlignment.Left
         Instance.new("UICorner", btn)
-        local s = Instance.new("UIStroke", btn)
-        s.Thickness = 1.2
-        s.Transparency = 0.5
+        Instance.new("UIStroke", btn)
 
         btn.MouseButton1Click:Connect(function()
             if callback then callback(btn) end
