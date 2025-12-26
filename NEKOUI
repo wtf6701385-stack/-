@@ -1,197 +1,223 @@
--- [[ 貓貓 UI 引擎 - 存放於 GitHub ]]
+-- [[ 貓貓 UI 引擎 - NEKOUI ]]
 local NekoLib = {}
 
 function NekoLib.Init()
-    local UserInputService=game:GetService("UserInputService")
-    local RunService=game:GetService("RunService")
-    local Players=game:GetService("Players")
-    local player=Players.LocalPlayer
-    local CoreGui=game:GetService("CoreGui")
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    local CoreGui = game:GetService("CoreGui")
 
-    -- 鏡頭邏輯
-    local cameraActive=true 
+    -- 鏡頭邏輯（原樣保留）
+    local cameraActive = true
     task.spawn(function()
-        local function apply() player.CameraMaxZoomDistance=1000 end
+        local function apply()
+            player.CameraMaxZoomDistance = 1000
+        end
         apply()
-        local conn=player.CharacterAdded:Connect(function() task.wait(1) apply() end)
-        while cameraActive and task.wait(1) do 
-            if player.CameraMaxZoomDistance~=1000 then apply() end 
+        local conn = player.CharacterAdded:Connect(function()
+            task.wait(1)
+            apply()
+        end)
+        while cameraActive and task.wait(1) do
+            if player.CameraMaxZoomDistance ~= 1000 then
+                apply()
+            end
         end
         conn:Disconnect()
     end)
 
-    if CoreGui:FindFirstChild("CatCat_Final_Neko") then CoreGui.CatCat_Final_Neko:Destroy() end
+    if CoreGui:FindFirstChild("CatCat_Final_Neko") then
+        CoreGui.CatCat_Final_Neko:Destroy()
+    end
 
-    local gui=Instance.new("ScreenGui",CoreGui)
-    gui.Name="CatCat_Final_Neko"
-    gui.ResetOnSpawn=false
+    local gui = Instance.new("ScreenGui", CoreGui)
+    gui.Name = "CatCat_Final_Neko"
+    gui.ResetOnSpawn = false
 
     local function getRainbowColor(offset)
-        local t=tick()*0.5+(offset or 0)
-        return Color3.fromHSV(t%1,0.6,1)
+        local t = tick() * 0.5 + (offset or 0)
+        return Color3.fromHSV(t % 1, 0.6, 1)
     end
 
     local function getContrast(c)
-        return(0.299*c.R+0.587*c.G+0.114*c.B)>0.5 and Color3.new(0,0,0) or Color3.new(1,1,1)
+        return (0.299*c.R + 0.587*c.G + 0.114*c.B) > 0.5
+            and Color3.new(0,0,0)
+            or Color3.new(1,1,1)
     end
 
-    local MainFrame=Instance.new("Frame",gui)
-    MainFrame.Size=UDim2.new(0,380,0,240)
-    MainFrame.Position=UDim2.new(0.5,-190,0.5,-120)
-    MainFrame.BackgroundColor3=Color3.fromRGB(15,15,17)
-    MainFrame.BorderSizePixel=0
-    MainFrame.Active=true
-    MainFrame.Draggable=true
-    MainFrame.ClipsDescendants=true
+    -- 主框
+    local MainFrame = Instance.new("Frame", gui)
+    MainFrame.Size = UDim2.new(0,380,0,240)
+    MainFrame.Position = UDim2.new(0.5,-190,0.5,-120)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(15,15,17)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Active = true
+    MainFrame.Draggable = true
+    MainFrame.ClipsDescendants = true
 
-    Instance.new("UICorner",MainFrame).CornerRadius=UDim.new(0,12)
-    local MainStroke=Instance.new("UIStroke",MainFrame)
-    MainStroke.Thickness=2.5
-    MainStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,12)
 
-    local ContentHolder=Instance.new("Frame",MainFrame)
-    ContentHolder.Size=UDim2.new(1,0,1,0)
-    ContentHolder.BackgroundTransparency=1
+    local MainStroke = Instance.new("UIStroke", MainFrame)
+    MainStroke.Thickness = 2.5
+    MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-    local Title=Instance.new("TextLabel",ContentHolder)
-    Title.Size=UDim2.new(1,-100,0,35)
-    Title.Position=UDim2.new(0,15,0,5)
-    Title.Text=" ฅ^•ﻌ•^ฅ  "
-    Title.TextColor3=Color3.new(1,1,1)
-    Title.Font=Enum.Font.GothamBold
-    Title.TextSize=14
-    Title.TextXAlignment="Left"
-    Title.BackgroundTransparency=1
+    local ContentHolder = Instance.new("Frame", MainFrame)
+    ContentHolder.Size = UDim2.new(1,0,1,0)
+    ContentHolder.BackgroundTransparency = 1
 
-    local TabBar=Instance.new("Frame",ContentHolder)
-    TabBar.Size=UDim2.new(0,100,1,-60)
-    TabBar.Position=UDim2.new(0,12,0,45)
-    TabBar.BackgroundTransparency=1
-    Instance.new("UIListLayout",TabBar).Padding=UDim.new(0,6)
+    local Title = Instance.new("TextLabel", ContentHolder)
+    Title.Size = UDim2.new(1,-100,0,35)
+    Title.Position = UDim2.new(0,15,0,5)
+    Title.Text = " ฅ^•ﻌ•^ฅ  CatCat UI"
+    Title.TextColor3 = Color3.new(1,1,1)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 14
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.BackgroundTransparency = 1
 
-    local PageContainer=Instance.new("Frame",ContentHolder)
-    PageContainer.Size=UDim2.new(1,-135,1,-65)
-    PageContainer.Position=UDim2.new(0,125,0,50)
-    PageContainer.BackgroundTransparency=1
+    local TabBar = Instance.new("Frame", ContentHolder)
+    TabBar.Size = UDim2.new(0,100,1,-60)
+    TabBar.Position = UDim2.new(0,12,0,45)
+    TabBar.BackgroundTransparency = 1
+    Instance.new("UIListLayout", TabBar).Padding = UDim.new(0,6)
 
-    local FeatureStrokes={}
+    local PageContainer = Instance.new("Frame", ContentHolder)
+    PageContainer.Size = UDim2.new(1,-135,1,-65)
+    PageContainer.Position = UDim2.new(0,125,0,50)
+    PageContainer.BackgroundTransparency = 1
 
+    local FeatureStrokes = {}
     local Lib = {}
 
+    -- 分頁
     function Lib:CreateTab(name, isDefault)
-        local Page=Instance.new("ScrollingFrame",PageContainer)
-        Page.Size=UDim2.new(1,0,1,0)
-        Page.BackgroundTransparency=1
-        Page.Visible=isDefault or false
-        Page.ScrollBarThickness=0
-        Page.CanvasSize=UDim2.new(0,0,0,0)
-        Instance.new("UIListLayout",Page).Padding=UDim.new(0,8)
-        
-        local TabBtn=Instance.new("TextButton",TabBar)
-        TabBtn.Size=UDim2.new(1,0,0,32)
-        TabBtn.BackgroundColor3=Color3.fromRGB(30,28,35)
-        TabBtn.Text=name
-        TabBtn.TextColor3=isDefault and Color3.new(1,1,1) or Color3.new(0.5,0.5,0.5)
-        TabBtn.Font=Enum.Font.GothamMedium
-        TabBtn.TextSize=11
-        Instance.new("UICorner",TabBtn).CornerRadius=UDim.new(0,6)
-        
+        local Page = Instance.new("ScrollingFrame", PageContainer)
+        Page.Size = UDim2.new(1,0,1,0)
+        Page.BackgroundTransparency = 1
+        Page.Visible = isDefault or false
+        Page.ScrollBarThickness = 0
+        Page.CanvasSize = UDim2.new(0,0,0,0)
+        Instance.new("UIListLayout", Page).Padding = UDim.new(0,8)
+
+        local TabBtn = Instance.new("TextButton", TabBar)
+        TabBtn.Size = UDim2.new(1,0,0,32)
+        TabBtn.BackgroundColor3 = Color3.fromRGB(30,28,35)
+        TabBtn.Text = name
+        TabBtn.TextColor3 = isDefault and Color3.new(1,1,1) or Color3.new(0.5,0.5,0.5)
+        TabBtn.Font = Enum.Font.GothamMedium
+        TabBtn.TextSize = 11
+        Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0,6)
+
         TabBtn.MouseButton1Click:Connect(function()
-            for _,p in pairs(PageContainer:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible=false end end
-            for _,b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.TextColor3=Color3.new(0.5,0.5,0.5) end end
-            Page.Visible=true
-            TabBtn.TextColor3=Color3.new(1,1,1)
+            for _,p in pairs(PageContainer:GetChildren()) do
+                if p:IsA("ScrollingFrame") then
+                    p.Visible = false
+                end
+            end
+            for _,b in pairs(TabBar:GetChildren()) do
+                if b:IsA("TextButton") then
+                    b.TextColor3 = Color3.new(0.5,0.5,0.5)
+                end
+            end
+            Page.Visible = true
+            TabBtn.TextColor3 = Color3.new(1,1,1)
         end)
+
         return Page
     end
 
+    -- 原本按鈕（不動）
     function Lib:CreateButton(parent, text, callback)
-        local btn=Instance.new("TextButton",parent)
-        btn.Size=UDim2.new(0.95,0,0,38)
-        btn.BackgroundColor3=Color3.fromRGB(25,23,28)
-        btn.Text="  🐱 "..text
-        btn.TextColor3=Color3.new(1,1,1)
-        btn.Font=Enum.Font.GothamMedium
-        btn.TextSize=12
-        btn.TextXAlignment="Left"
-        Instance.new("UICorner",btn)
-        local s=Instance.new("UIStroke",btn)
-        s.Thickness=1.2
-        s.Transparency=0.6
-        btn.MouseButton1Click:Connect(function() if callback then callback(btn) end end)
-        table.insert(FeatureStrokes,s)
-        parent.CanvasSize=UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y+10)
+        local btn = Instance.new("TextButton", parent)
+        btn.Size = UDim2.new(0.95,0,0,38)
+        btn.BackgroundColor3 = Color3.fromRGB(25,23,28)
+        btn.Text = "  🐱 "..text
+        btn.TextColor3 = Color3.new(1,1,1)
+        btn.Font = Enum.Font.GothamMedium
+        btn.TextSize = 12
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        Instance.new("UICorner", btn)
+
+        local s = Instance.new("UIStroke", btn)
+        s.Thickness = 1.2
+        s.Transparency = 0.6
+        table.insert(FeatureStrokes, s)
+
+        btn.MouseButton1Click:Connect(function()
+            if callback then callback(btn) end
+        end)
+
+        parent.CanvasSize = UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y + 10)
         return btn
     end
 
-    function Lib:CreateInfo(parent, title, desc)
-        local frame = Instance.new("Frame", parent)
-        frame.Size = UDim2.new(0.95, 0, 0, 60)
-        frame.BackgroundColor3 = Color3.fromRGB(20, 18, 23)
-        Instance.new("UICorner", frame)
-        local t = Instance.new("TextLabel", frame)
-        t.Size = UDim2.new(1, -10, 0, 25)
-        t.Position = UDim2.new(0, 8, 0, 5)
-        t.Text = title
-        t.TextColor3 = Color3.fromRGB(255, 200, 200)
-        t.Font = Enum.Font.GothamBold
-        t.TextSize = 12
-        t.BackgroundTransparency = 1
-        t.TextXAlignment = "Left"
-        local d = Instance.new("TextLabel", frame)
-        d.Size = UDim2.new(1, -10, 0, 25)
-        d.Position = UDim2.new(0, 8, 0, 28)
-        d.Text = desc
-        d.TextColor3 = Color3.fromRGB(200, 200, 200)
-        d.Font = Enum.Font.Gotham
-        d.TextSize = 11
-        d.BackgroundTransparency = 1
-        d.TextXAlignment = "Left"
-        parent.CanvasSize = UDim2.new(0, 0, 0, parent.UIListLayout.AbsoluteContentSize.Y + 10)
+    -- ⭐ 新增：輸入框按鈕 Row
+    function Lib:CreateInputButton(parent, text, default, onChange)
+        local row = Instance.new("Frame", parent)
+        row.Size = UDim2.new(0.95,0,0,38)
+        row.BackgroundColor3 = Color3.fromRGB(25,23,28)
+        Instance.new("UICorner", row)
+
+        local s = Instance.new("UIStroke", row)
+        s.Thickness = 1.2
+        s.Transparency = 0.6
+        table.insert(FeatureStrokes, s)
+
+        local btn = Instance.new("TextButton", row)
+        btn.Size = UDim2.new(0.6,0,1,0)
+        btn.BackgroundTransparency = 1
+        btn.Text = "  🐱 "..text
+        btn.Font = Enum.Font.GothamMedium
+        btn.TextSize = 12
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        btn.TextColor3 = Color3.new(1,1,1)
+
+        local box = Instance.new("TextBox", row)
+        box.Size = UDim2.new(0.35,-6,1,-10)
+        box.Position = UDim2.new(0.62,3,0,5)
+        box.BackgroundColor3 = Color3.fromRGB(18,16,20)
+        box.Text = tostring(default or "")
+        box.PlaceholderText = "輸入"
+        box.Font = Enum.Font.Gotham
+        box.TextSize = 12
+        box.TextColor3 = Color3.new(1,1,1)
+        box.ClearTextOnFocus = false
+        Instance.new("UICorner", box)
+
+        box:GetPropertyChangedSignal("Text"):Connect(function()
+            box.Text = box.Text:gsub("[^%d%.]", "")
+        end)
+
+        box.FocusLost:Connect(function()
+            if onChange then
+                onChange(box.Text)
+            end
+        end)
+
+        parent.CanvasSize = UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y + 10)
+        return {Button = btn, Input = box}
     end
 
-    -- 縮小功能
-    local MiniBtn=Instance.new("TextButton",MainFrame)
-    MiniBtn.Size=UDim2.new(0,30,0,30)
-    MiniBtn.Position=UDim2.new(1,-40,0,5)
-    MiniBtn.Text="miu"
-    MiniBtn.TextColor3=Color3.fromRGB(200,200,200)
-    MiniBtn.BackgroundTransparency=1
-    MiniBtn.Font=Enum.Font.GothamBold
-    MiniBtn.TextSize=14
-    MiniBtn.ZIndex=10
+    -- 彩虹描邊（效能優化後）
+    local acc = 0
+    local UPDATE_RATE = 0.03
+    local conn
+    conn = RunService.Heartbeat:Connect(function(dt)
+        if not gui.Parent then
+            conn:Disconnect()
+            cameraActive = false
+            return
+        end
+        acc += dt
+        if acc < UPDATE_RATE then return end
+        acc = 0
 
-    local RestoreBtn=Instance.new("TextButton",MainFrame)
-    RestoreBtn.Size=UDim2.new(1,0,1,0)
-    RestoreBtn.BackgroundTransparency=1
-    RestoreBtn.Text="[ 🐾 摸我還原 🐾 ]"
-    RestoreBtn.Font=Enum.Font.GothamBold
-    RestoreBtn.TextSize=14
-    RestoreBtn.Visible=false
-
-    MiniBtn.MouseButton1Click:Connect(function()
-        ContentHolder.Visible=false; MiniBtn.Visible=false; MainFrame.BackgroundTransparency=0.5
-        MainFrame:TweenSize(UDim2.new(0,140,0,45),"Out","Quart",0.3,true)
-        RestoreBtn.Visible=true
-    end)
-
-    RestoreBtn.MouseButton1Click:Connect(function()
-        RestoreBtn.Visible=false
-        MainFrame:TweenSize(UDim2.new(0,380,0,240),"Out","Quart",0.3,true,function()
-            ContentHolder.Visible=true; MiniBtn.Visible=true; MainFrame.BackgroundTransparency=0
-        end)
-    end)
-
-    local renderConn=RunService.RenderStepped:Connect(function()
-        if not gui.Parent then return end
-        local rainbow=getRainbowColor(0)
-        MainStroke.Color=rainbow
-        RestoreBtn.TextColor3=getContrast(MainFrame.BackgroundColor3)
-        for _,s in pairs(FeatureStrokes) do s.Color=rainbow end
-    end)
-
-    gui.AncestryChanged:Connect(function()
-        if not gui.Parent then renderConn:Disconnect(); cameraActive=false end
+        local c = getRainbowColor()
+        MainStroke.Color = c
+        for _,st in pairs(FeatureStrokes) do
+            st.Color = c
+        end
     end)
 
     return Lib
