@@ -1,4 +1,4 @@
--- [[ 貓貓 UI 引擎 - NEKOUI 完整可用版 ]]
+-- [[ 貓貓製作 ]]
 local NekoLib = {}
 
 function NekoLib.Init()
@@ -33,11 +33,45 @@ function NekoLib.Init()
     local Stroke = Instance.new("UIStroke", Main)
     Stroke.Thickness = 2
 
+    -- ===== 最小化 / 還原 =====
+    local MiniBtn = Instance.new("TextButton", Main)
+    MiniBtn.Size = UDim2.new(0,30,0,30)
+    MiniBtn.Position = UDim2.new(1,-40,0,5)
+    MiniBtn.Text = "miu"
+    MiniBtn.Font = Enum.Font.GothamBold
+    MiniBtn.TextSize = 14
+    MiniBtn.TextColor3 = Color3.fromRGB(200,200,200)
+    MiniBtn.BackgroundTransparency = 1
+    MiniBtn.ZIndex = 10
+
+    local RestoreBtn = Instance.new("TextButton", Main)
+    RestoreBtn.Size = UDim2.new(1,0,1,0)
+    RestoreBtn.Text = "🐾 摸我還原 🐾"
+    RestoreBtn.Font = Enum.Font.GothamBold
+    RestoreBtn.TextSize = 14
+    RestoreBtn.TextColor3 = Color3.new(1,1,1)
+    RestoreBtn.BackgroundTransparency = 1
+    RestoreBtn.Visible = false
+    RestoreBtn.ZIndex = 9
+
+    MiniBtn.MouseButton1Click:Connect(function()
+        RestoreBtn.Visible = true
+        MiniBtn.Visible = false
+        Main:TweenSize(UDim2.new(0,140,0,45),"Out","Quart",0.25,true)
+    end)
+
+    RestoreBtn.MouseButton1Click:Connect(function()
+        RestoreBtn.Visible = false
+        Main:TweenSize(UDim2.new(0,380,0,240),"Out","Quart",0.25,true,function()
+            MiniBtn.Visible = true
+        end)
+    end)
+
     -- 標題
     local Title = Instance.new("TextLabel", Main)
     Title.Size = UDim2.new(1, -20, 0, 35)
     Title.Position = UDim2.new(0, 10, 0, 5)
-    Title.Text = " ฅ^•ﻌ•^ฅ  CatCat UI"
+    Title.Text = " ฅ^•ﻌ•^ฅ "
     Title.Font = Enum.Font.GothamBold
     Title.TextSize = 14
     Title.TextXAlignment = "Left"
@@ -112,9 +146,7 @@ function NekoLib.Init()
         Btn.BackgroundColor3 = Color3.fromRGB(25,23,28)
         Btn.TextColor3 = Color3.new(1,1,1)
         Instance.new("UICorner", Btn)
-
-        local s = Instance.new("UIStroke", Btn)
-        s.Transparency = 0.6
+        Instance.new("UIStroke", Btn).Transparency = 0.6
 
         Btn.MouseButton1Click:Connect(function()
             if callback then callback(Btn) end
@@ -123,7 +155,7 @@ function NekoLib.Init()
         return Btn
     end
 
-    -- ===== 右側輸入框按鈕 =====
+    -- ===== 右側輸入框 =====
     function Lib:CreateButtonWithInput(parent, text, defaultValue, callback)
         local Holder = Instance.new("Frame", parent)
         Holder.Size = UDim2.new(0.95,0,0,36)
@@ -152,9 +184,7 @@ function NekoLib.Init()
 
         Btn.MouseButton1Click:Connect(function()
             local v = tonumber(Box.Text)
-            if v and callback then
-                callback(v)
-            end
+            if v and callback then callback(v) end
         end)
 
         return Btn, Box
