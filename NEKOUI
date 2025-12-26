@@ -1,149 +1,158 @@
 local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
-local Player = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
-local Lib = {}
-Lib.__index = Lib
-
-function Lib.Init()
-    local self = setmetatable({}, Lib)
-
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "NEKO_UI"
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.Parent = Player:WaitForChild("PlayerGui")
-
-    local Main = Instance.new("Frame", ScreenGui)
-    Main.Size = UDim2.new(0, 520, 0, 360)
-    Main.Position = UDim2.new(0.5, -260, 0.5, -180)
-    Main.BackgroundColor3 = Color3.fromRGB(20,20,25)
-    Main.BorderSizePixel = 0
-    Main.Active = true
-    Main.Draggable = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0,16)
-
-    local Title = Instance.new("TextLabel", Main)
-    Title.Size = UDim2.new(1,0,0,40)
-    Title.BackgroundColor3 = Color3.fromRGB(180,180,180)
-    Title.Text = " 貓貓 NEKO UI "
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 18
-    Title.TextColor3 = Color3.fromRGB(30,30,30)
-    Instance.new("UICorner", Title).CornerRadius = UDim.new(0,12)
-
-    local Tabs = Instance.new("Frame", Main)
-    Tabs.Position = UDim2.new(0,0,0,42)
-    Tabs.Size = UDim2.new(0,130,1,-42)
-    Tabs.BackgroundTransparency = 1
-
-    local Pages = Instance.new("Frame", Main)
-    Pages.Position = UDim2.new(0,130,0,42)
-    Pages.Size = UDim2.new(1,-130,1,-42)
-    Pages.BackgroundTransparency = 1
-
-    local TabLayout = Instance.new("UIListLayout", Tabs)
-    TabLayout.Padding = UDim.new(0,6)
-
-    self.Pages = Pages
-    self.Tabs = Tabs
-    self.CurrentPage = nil
-
-    function self:CreateTab(name, default)
-        local Btn = Instance.new("TextButton", Tabs)
-        Btn.Size = UDim2.new(1,-10,0,34)
-        Btn.Text = " "..name
-        Btn.Font = Enum.Font.Gotham
-        Btn.TextSize = 14
-        Btn.TextXAlignment = Left
-        Btn.BackgroundColor3 = Color3.fromRGB(35,35,45)
-        Btn.TextColor3 = Color3.fromRGB(255,255,255)
-        Btn.BorderSizePixel = 0
-        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0,8)
-
-        local Page = Instance.new("ScrollingFrame", Pages)
-        Page.Size = UDim2.new(1,0,1,0)
-        Page.CanvasSize = UDim2.new(0,0,0,0)
-        Page.ScrollBarThickness = 0
-        Page.BackgroundTransparency = 1
-        Page.Visible = false
-
-        local Layout = Instance.new("UIListLayout", Page)
-        Layout.Padding = UDim.new(0,8)
-
-        Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            Page.CanvasSize = UDim2.new(0,0,0,Layout.AbsoluteContentSize.Y + 10)
-        end)
-
-        Btn.MouseButton1Click:Connect(function()
-            if self.CurrentPage then
-                self.CurrentPage.Visible = false
-            end
-            Page.Visible = true
-            self.CurrentPage = Page
-        end)
-
-        if default then
-            Page.Visible = true
-            self.CurrentPage = Page
-        end
-
-        return Page
+pcall(function()
+    if playerGui:FindFirstChild("CatCat_UI_Only") then
+        playerGui.CatCat_UI_Only:Destroy()
     end
+end)
 
-    function self:CreateButton(parent, text, callback)
-        local Btn = Instance.new("TextButton", parent)
-        Btn.Size = UDim2.new(1,-10,0,36)
-        Btn.Text = " "..text
-        Btn.Font = Enum.Font.Gotham
-        Btn.TextSize = 14
-        Btn.TextXAlignment = Left
-        Btn.BackgroundColor3 = Color3.fromRGB(40,40,55)
-        Btn.TextColor3 = Color3.fromRGB(255,255,255)
-        Btn.BorderSizePixel = 0
-        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0,8)
+local gui = Instance.new("ScreenGui", playerGui)
+gui.Name = "CatCat_UI_Only"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-        Btn.MouseButton1Click:Connect(function()
-            if callback then
-                callback(Btn)
-            end
-        end)
-
-        return Btn
-    end
-
-    function self:CreateInfo(parent, title, desc)
-        local Box = Instance.new("Frame", parent)
-        Box.Size = UDim2.new(1,-10,0,60)
-        Box.BackgroundColor3 = Color3.fromRGB(35,35,50)
-        Box.BorderSizePixel = 0
-        Instance.new("UICorner", Box).CornerRadius = UDim.new(0,8)
-
-        local T = Instance.new("TextLabel", Box)
-        T.Size = UDim2.new(1,-10,0,22)
-        T.Position = UDim2.new(0,8,0,6)
-        T.Text = title
-        T.Font = Enum.Font.GothamBold
-        T.TextSize = 14
-        T.TextXAlignment = Left
-        T.BackgroundTransparency = 1
-        T.TextColor3 = Color3.fromRGB(255,255,255)
-
-        local D = Instance.new("TextLabel", Box)
-        D.Size = UDim2.new(1,-10,0,26)
-        D.Position = UDim2.new(0,8,0,30)
-        D.TextWrapped = true
-        D.TextYAlignment = Top
-        D.TextXAlignment = Left
-        D.Text = desc
-        D.Font = Enum.Font.Gotham
-        D.TextSize = 12
-        D.BackgroundTransparency = 1
-        D.TextColor3 = Color3.fromRGB(200,200,200)
-
-        return Box
-    end
-
-    return self
+local function getRainbow(o)
+    local t = tick() + (o or 0)
+    return Color3.new(
+        (math.sin(t) + 1) / 2,
+        (math.sin(t + 2) + 1) / 2,
+        (math.sin(t + 4) + 1) / 2
+    )
 end
 
-return Lib
+local function getPulse(b, s)
+    local p = (math.sin(tick() * s) + 1) / 2
+    return b:Lerp(Color3.new(1,1,1), p * 0.3)
+end
+
+local function getContrast(c)
+    return (0.299*c.R + 0.587*c.G + 0.114*c.B) > 0.5
+        and Color3.new(0,0,0) or Color3.new(1,1,1)
+end
+
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0,260,0,230)
+main.Position = UDim2.new(0.5,-130,0.5,-115)
+main.BorderSizePixel = 0
+main.Active = true
+main.Draggable = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,20)
+
+local bar = Instance.new("Frame", main)
+bar.Size = UDim2.new(1,0,0,45)
+bar.BorderSizePixel = 0
+Instance.new("UICorner", bar).CornerRadius = UDim.new(0,20)
+
+local title = Instance.new("TextLabel", bar)
+title.Size = UDim2.new(1,-90,1,0)
+title.Position = UDim2.new(0,15,0,0)
+title.BackgroundTransparency = 1
+title.Text = "ฅ^•ﻌ•^ฅ 貓貓"
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+local p1 = Instance.new("Frame", main)
+p1.Size = UDim2.new(1,0,1,-45)
+p1.Position = UDim2.new(0,0,0,45)
+p1.BackgroundTransparency = 1
+
+local p2 = Instance.new("Frame", main)
+p2.Size = UDim2.new(1,0,1,-45)
+p2.Position = UDim2.new(0,0,0,45)
+p2.BackgroundTransparency = 1
+p2.Visible = false
+
+local pageBtn = Instance.new("TextButton", bar)
+pageBtn.Size = UDim2.new(0,50,0,25)
+pageBtn.Position = UDim2.new(1,-125,0.5,-12.5)
+pageBtn.Text = "Page 1"
+pageBtn.Font = Enum.Font.SourceSansBold
+pageBtn.TextSize = 12
+Instance.new("UICorner", pageBtn).CornerRadius = UDim.new(0,8)
+
+pageBtn.MouseButton1Click:Connect(function()
+    p1.Visible = not p1.Visible
+    p2.Visible = not p1.Visible
+    pageBtn.Text = p1.Visible and "Page 1" or "Page 2"
+end)
+
+local close = Instance.new("TextButton", bar)
+close.Size = UDim2.new(0,30,0,30)
+close.Position = UDim2.new(1,-35,0.5,-15)
+close.Text = "🐾"
+Instance.new("UICorner", close).CornerRadius = UDim.new(1,0)
+
+local mini = Instance.new("TextButton", bar)
+mini.Size = UDim2.new(0,30,0,30)
+mini.Position = UDim2.new(1,-70,0.5,-15)
+mini.Text = "miu"
+Instance.new("UICorner", mini).CornerRadius = UDim.new(1,0)
+
+local restore = Instance.new("TextButton", main)
+restore.Size = UDim2.new(1,0,1,0)
+restore.BackgroundTransparency = 1
+restore.Text = "[ 🐾 摸我還原 ]"
+restore.Font = Enum.Font.SourceSansBold
+restore.Visible = false
+
+local function createBtn(text, y, parent)
+    local b = Instance.new("TextButton", parent)
+    b.Size = UDim2.new(1,-30,0,36)
+    b.Position = UDim2.new(0,15,0,y-45)
+    b.Text = "🐱 "..text
+    b.Font = Enum.Font.SourceSansBold
+    b.TextSize = 14
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,12)
+    return b
+end
+
+createBtn("按鈕一", 60, p1)
+createBtn("按鈕二", 105, p1)
+createBtn("按鈕三", 150, p1)
+
+createBtn("按鈕四", 60, p2)
+createBtn("按鈕五", 105, p2)
+
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+mini.MouseButton1Click:Connect(function()
+    title.Visible = false
+    mini.Visible = false
+    pageBtn.Visible = false
+    p1.Visible = false
+    p2.Visible = false
+    main.BackgroundTransparency = 0.8
+    main:TweenSize(UDim2.new(0,140,0,45), "Out", "Quart", 0.3, true)
+    restore.Visible = true
+end)
+
+restore.MouseButton1Click:Connect(function()
+    main:TweenSize(UDim2.new(0,260,0,230), "Out", "Quart", 0.3, true, function()
+        title.Visible = true
+        mini.Visible = true
+        pageBtn.Visible = true
+        p1.Visible = (pageBtn.Text == "Page 1")
+        p2.Visible = (pageBtn.Text == "Page 2")
+        main.BackgroundTransparency = 0
+        restore.Visible = false
+    end)
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not gui.Parent then return end
+    local mc = getRainbow(0)
+    main.BackgroundColor3 = mc
+    bar.BackgroundColor3 = getPulse(getRainbow(1),2)
+    pageBtn.BackgroundColor3 = getPulse(getRainbow(1.5),3)
+    pageBtn.TextColor3 = getContrast(pageBtn.BackgroundColor3)
+    title.TextColor3 = getContrast(bar.BackgroundColor3)
+    close.BackgroundColor3 = getPulse(Color3.new(0.9,0.4,0.4),3)
+    mini.BackgroundColor3 = getPulse(getRainbow(2),3)
+    restore.TextColor3 = getContrast(mc)
+end)
