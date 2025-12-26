@@ -9,7 +9,7 @@ _G.MOB = false
 _G.ESP = false
 _G.AutoV4 = false
 _G.CatSpeedValue = 50
-_G.PVPDistance = 200
+_G.AttackRange = 5000
 
 -- 3. 分頁（公告 → 戰鬥 → 功能 → 召喚）
 local p0 = CatLib:CreateTab("貓公告", true)
@@ -28,49 +28,39 @@ CatLib:CreateInfo(p0, " ⚠ 注意 ", " 不要點太快，避免炸腳本 ")
 -- ======================
 local btnPVP, btnMOB
 
--- PVP（輸入框版本）
-btnPVP = CatLib:CreateButtonWithInput(
-    p1,
-    "打架模式",
-    _G.PVPDistance,
-    function(value)
-        _G.PVPDistance = value
-        _G.PVP = not _G.PVP
+-- PVP
+btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
+    _G.PVP = not _G.PVP
 
-        if _G.PVP then
-            _G.MOB = false
-            if btnMOB then
-                btnMOB.Text = "  🐱 刷怪模式 : OFF"
-            end
-            loadstring(game:HttpGet(
-                "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"
-            ))()
+    if _G.PVP then
+        _G.MOB = false
+        if btnMOB then
+            btnMOB.Text = "  🐱 刷怪模式 : OFF"
         end
-
-        btnPVP.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"
+        ))()
     end
-)
+
+    self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
+end)
 
 -- MOB
-btnMOB = CatLib:CreateButton(
-    p1,
-    "刷怪模式 : OFF",
-    function(self)
-        _G.MOB = not _G.MOB
+btnMOB = CatLib:CreateButton(p1, "刷怪模式 : OFF", function(self)
+    _G.MOB = not _G.MOB
 
-        if _G.MOB then
-            _G.PVP = false
-            if btnPVP then
-                btnPVP.Text = "  🐱 打架模式 : OFF"
-            end
-            loadstring(game:HttpGet(
-                "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"
-            ))()
+    if _G.MOB then
+        _G.PVP = false
+        if btnPVP then
+            btnPVP.Text = "  🐱 打架模式 : OFF"
         end
-
-        self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"
+        ))()
     end
-)
+
+    self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
+end)
 
 -- ======================
 -- 6️⃣ 貓功能
