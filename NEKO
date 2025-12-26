@@ -1,72 +1,107 @@
--- 1. 加載 GitHub 上的貓貓 UI 引擎
-local CatLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))().Init()
+-- 1. 載入 NEKOUI（你剛剛已經接好的那份）
+local CatLib = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"
+))().Init()
 
--- 2. 初始化全域變數
-_G.PVP, _G.MOB, _G.ESP, _G.AutoV4 = false, false, false, false
-_G.CatSpeedValue = 50 -- 預設速度值
+-- 2. 全域狀態
+_G.PVP = false
+_G.MOB = false
+_G.ESP = false
+_G.AutoV4 = false
+_G.CatSpeedValue = 50
 
--- 3. 建立分頁
+-- 3. 分頁
 local p0 = CatLib:CreateTab("貓公告", true)
 local p1 = CatLib:CreateTab("貓功能", false)
 local p2 = CatLib:CreateTab("貓召喚", false)
 
--- 4. 貓公告內容
-CatLib:CreateInfo(p0, " 🐾 "," 歡迎使用貓貓腳本 ")
-CatLib:CreateInfo(p0, " 🐾 ", " 不要點太快謝謝您 ")
+-- 4. 公告
+CatLib:CreateInfo(p0, " 🐾 歡迎 ", " 歡迎使用貓貓腳本 ")
+CatLib:CreateInfo(p0, " ⚠ 注意 ", " 不要點太快，避免炸腳本 ")
 
--- 5. 貓功能分頁 (包含 PVP/MOB/ESP/V4)
+-- 5. 功能區
 local btnPVP, btnMOB
 
--- 【新增：自動 V4 按鈕】
+-- 自動 V4
 CatLib:CreateButton(p1, "自動 V4 變身 : OFF", function(self)
     _G.AutoV4 = not _G.AutoV4
     if _G.AutoV4 then
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))()
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"
+        ))()
     end
-    self.Text = "  🐱 自動 V4 變身 : "..(_G.AutoV4 and "ON" or "OFF")
+    self.Text = "  🐱 自動 V4 變身 : " .. (_G.AutoV4 and "ON" or "OFF")
 end)
 
+-- PVP
 btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
     _G.PVP = not _G.PVP
-    if _G.PVP then 
-        _G.MOB = false 
-        if btnMOB then btnMOB.Text = "  🐱 刷怪模式 : OFF" end
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"))()
+    if _G.PVP then
+        _G.MOB = false
+        if btnMOB then
+            btnMOB.Text = "  🐱 刷怪模式 : OFF"
+        end
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"
+        ))()
     end
-    self.Text = "  🐱 打架模式 : "..(_G.PVP and "ON" or "OFF")
+    self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
 end)
 
+-- MOB
 btnMOB = CatLib:CreateButton(p1, "刷怪模式 : OFF", function(self)
     _G.MOB = not _G.MOB
-    if _G.MOB then 
-        _G.PVP = false 
-        if btnPVP then btnPVP.Text = "  🐱 打架模式 : OFF" end
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"))()
+    if _G.MOB then
+        _G.PVP = false
+        if btnPVP then
+            btnPVP.Text = "  🐱 打架模式 : OFF"
+        end
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"
+        ))()
     end
-    self.Text = "  🐱 刷怪模式 : "..(_G.MOB and "ON" or "OFF")
+    self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
+-- ESP
 CatLib:CreateButton(p1, "透視對手 : OFF", function(self)
     _G.ESP = not _G.ESP
-    if _G.ESP then 
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()
+    if _G.ESP then
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"
+        ))()
     end
-    self.Text = "  🐱 透視對手 : "..(_G.ESP and "ON" or "OFF")
+    self.Text = "  🐱 透視對手 : " .. (_G.ESP and "ON" or "OFF")
 end)
 
-CatLib:CreateButton(p1, "貓貓神速 : 開啟控制面板", function() 
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
+-- ★ 神速（右側輸入框版本｜2️⃣重點）
+CatLib:CreateButtonWithInput(
+    p1,
+    "貓貓神速",
+    50,
+    function(value)
+        _G.CatSpeedValue = value
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"
+        ))()
+    end
+)
+
+-- 6. 召喚
+CatLib:CreateButton(p2, "召喚飛行", function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"
+    ))()
 end)
 
--- 6. 貓召喚分頁
-CatLib:CreateButton(p2, "召喚飛行", function() 
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
+CatLib:CreateButton(p2, "落葉中心", function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/%E8%90%BD%E5%8F%B6%E4%B8%AD%E5%BF%83%E6%B7%B7%E6%B7%86.txt"
+    ))()
 end)
 
-CatLib:CreateButton(p2, "落葉中心", function() 
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/%E8%90%BD%E5%8F%B6%E4%B8%AD%E5%BF%83%E6%B7%B7%E6%B7%86.txt"))() 
-end)
-
-CatLib:CreateButton(p2, "大司馬", function() 
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/whenheer/dasimav6/main/dasimaV6.txt"))() 
+CatLib:CreateButton(p2, "大司馬", function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/whenheer/dasimav6/main/dasimaV6.txt"
+    ))()
 end)
