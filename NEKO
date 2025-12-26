@@ -1,34 +1,40 @@
--- 1. 載入 NEKOUI
+-- =====================================
+-- 🐱 貓貓腳本｜最終整合版
+-- UI: NEKOUI
+-- =====================================
+
+-- 1️⃣ 載入 NEKOUI
 local CatLib = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"
 ))().Init()
 
--- 2. 全域狀態
+-- 2️⃣ 全域狀態
 _G.PVP = false
 _G.MOB = false
 _G.ESP = false
 _G.AutoV4 = false
+_G.CatSpeed = false
 _G.CatSpeedValue = 50
 _G.AttackRange = 5000
 
--- 3. 分頁（公告 → 戰鬥 → 功能 → 召喚）
+-- 3️⃣ 分頁（公告 → 戰鬥 → 功能 → 召喚）
 local p0 = CatLib:CreateTab("貓公告", true)
 local p1 = CatLib:CreateTab("貓戰鬥", false)
 local p2 = CatLib:CreateTab("貓功能", false)
 local p3 = CatLib:CreateTab("貓召喚", false)
 
--- ======================
--- 4️⃣ 公告
--- ======================
+-- ======================================================
+-- 📢 貓公告
+-- ======================================================
 CatLib:CreateInfo(p0, " 🐾 歡迎 ", " 歡迎使用貓貓腳本 ")
 CatLib:CreateInfo(p0, " ⚠ 注意 ", " 不要點太快，避免炸腳本 ")
 
--- ======================
--- 5️⃣ 貓戰鬥（PVP / MOB）
--- ======================
+-- ======================================================
+-- ⚔ 貓戰鬥（PVP / MOB）
+-- ======================================================
 local btnPVP, btnMOB
 
--- PVP
+-- 🥊 PVP
 btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
     _G.PVP = not _G.PVP
 
@@ -45,7 +51,7 @@ btnPVP = CatLib:CreateButton(p1, "打架模式 : OFF", function(self)
     self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
 end)
 
--- MOB
+-- 👾 MOB
 btnMOB = CatLib:CreateButton(p1, "刷怪模式 : OFF", function(self)
     _G.MOB = not _G.MOB
 
@@ -62,48 +68,54 @@ btnMOB = CatLib:CreateButton(p1, "刷怪模式 : OFF", function(self)
     self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
--- ======================
--- 6️⃣ 貓功能
--- ======================
+-- ======================================================
+-- 🧩 貓功能
+-- ======================================================
 
--- 自動 V4
+-- ✨ 自動 V4
 CatLib:CreateButton(p2, "自動 V4 變身 : OFF", function(self)
     _G.AutoV4 = not _G.AutoV4
+
     if _G.AutoV4 then
         loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"
         ))()
     end
+
     self.Text = "  🐱 自動 V4 變身 : " .. (_G.AutoV4 and "ON" or "OFF")
 end)
 
--- ESP
+-- 👁 ESP
 CatLib:CreateButton(p2, "透視對手 : OFF", function(self)
     _G.ESP = not _G.ESP
+
     if _G.ESP then
         loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"
         ))()
     end
+
     self.Text = "  🐱 透視對手 : " .. (_G.ESP and "ON" or "OFF")
 end)
 
--- 神速（輸入框）
-CatLib:CreateButtonWithInput(
-    p2,
-    "貓貓神速",
-    50,
-    function(value)
-        _G.CatSpeedValue = value
+-- ⚡ 神速（無輸入框，穩定版）
+CatLib:CreateButton(p2, "貓貓神速 : OFF", function(self)
+    _G.CatSpeed = not _G.CatSpeed
+
+    if _G.CatSpeed then
+        _G.CatSpeedValue = 50 -- 改這裡調速度
         loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"
         ))()
     end
-)
 
--- ======================
--- 7️⃣ 貓召喚
--- ======================
+    self.Text = "  🐱 貓貓神速 : " .. (_G.CatSpeed and "ON" or "OFF")
+end)
+
+-- ======================================================
+-- 🧿 貓召喚
+-- ======================================================
+
 CatLib:CreateButton(p3, "召喚飛行", function()
     loadstring(game:HttpGet(
         "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"
