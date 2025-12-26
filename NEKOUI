@@ -1,158 +1,208 @@
-local Players = game:GetService("Players")
+-- =====================================
+-- 🐱 NEKOUI | Library Version
+-- =====================================
+
 local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 
-pcall(function()
-    if playerGui:FindFirstChild("CatCat_UI_Only") then
-        playerGui.CatCat_UI_Only:Destroy()
+local NEKOUI = {}
+NEKOUI.__index = NEKOUI
+
+-- ================= Init =================
+function NEKOUI.Init()
+    if CoreGui:FindFirstChild("NEKOUI") then
+        CoreGui.NEKOUI:Destroy()
     end
-end)
 
-local gui = Instance.new("ScreenGui", playerGui)
-gui.Name = "CatCat_UI_Only"
-gui.ResetOnSpawn = false
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    local self = setmetatable({}, NEKOUI)
 
-local function getRainbow(o)
-    local t = tick() + (o or 0)
-    return Color3.new(
-        (math.sin(t) + 1) / 2,
-        (math.sin(t + 2) + 1) / 2,
-        (math.sin(t + 4) + 1) / 2
-    )
-end
+    -- ============== ScreenGui ==============
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "NEKOUI"
+    gui.ResetOnSpawn = false
+    gui.Parent = CoreGui
+    self.Gui = gui
 
-local function getPulse(b, s)
-    local p = (math.sin(tick() * s) + 1) / 2
-    return b:Lerp(Color3.new(1,1,1), p * 0.3)
-end
+    -- ============== Main Frame ==============
+    local Main = Instance.new("Frame", gui)
+    Main.Size = UDim2.new(0, 420, 0, 260)
+    Main.Position = UDim2.new(0.5, -210, 0.5, -130)
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Main.BackgroundTransparency = 0.15
+    Main.BorderSizePixel = 0
+    Main.Active = true
+    Main.Draggable = true
+    Main.ClipsDescendants = true
+    self.Main = Main
 
-local function getContrast(c)
-    return (0.299*c.R + 0.587*c.G + 0.114*c.B) > 0.5
-        and Color3.new(0,0,0) or Color3.new(1,1,1)
-end
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
-local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,260,0,230)
-main.Position = UDim2.new(0.5,-130,0.5,-115)
-main.BorderSizePixel = 0
-main.Active = true
-main.Draggable = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0,20)
+    local Stroke = Instance.new("UIStroke", Main)
+    Stroke.Thickness = 2
+    self.Stroke = Stroke
 
-local bar = Instance.new("Frame", main)
-bar.Size = UDim2.new(1,0,0,45)
-bar.BorderSizePixel = 0
-Instance.new("UICorner", bar).CornerRadius = UDim.new(0,20)
+    -- ============== Header ==============
+    local Header = Instance.new("Frame", Main)
+    Header.Size = UDim2.new(1, 0, 0, 36)
+    Header.BackgroundTransparency = 1
 
-local title = Instance.new("TextLabel", bar)
-title.Size = UDim2.new(1,-90,1,0)
-title.Position = UDim2.new(0,15,0,0)
-title.BackgroundTransparency = 1
-title.Text = "ฅ^•ﻌ•^ฅ 貓貓"
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 18
-title.TextXAlignment = Enum.TextXAlignment.Left
+    local Title = Instance.new("TextLabel", Header)
+    Title.Size = UDim2.new(1, -60, 1, 0)
+    Title.Position = UDim2.new(0, 12, 0, 0)
+    Title.Text = "ฅ^•ﻌ•^ฅ NEKOUI"
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 14
+    Title.TextXAlignment = "Left"
+    Title.TextColor3 = Color3.new(1, 1, 1)
+    Title.BackgroundTransparency = 1
+    self.Title = Title
 
-local p1 = Instance.new("Frame", main)
-p1.Size = UDim2.new(1,0,1,-45)
-p1.Position = UDim2.new(0,0,0,45)
-p1.BackgroundTransparency = 1
+    local MiniBtn = Instance.new("TextButton", Header)
+    MiniBtn.Size = UDim2.new(0, 32, 0, 32)
+    MiniBtn.Position = UDim2.new(1, -38, 0, 2)
+    MiniBtn.Text = "🐾"
+    MiniBtn.Font = Enum.Font.GothamBold
+    MiniBtn.TextSize = 16
+    MiniBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
+    MiniBtn.BackgroundTransparency = 1
+    self.MiniBtn = MiniBtn
 
-local p2 = Instance.new("Frame", main)
-p2.Size = UDim2.new(1,0,1,-45)
-p2.Position = UDim2.new(0,0,0,45)
-p2.BackgroundTransparency = 1
-p2.Visible = false
+    -- ============== Content ==============
+    local Content = Instance.new("Frame", Main)
+    Content.Position = UDim2.new(0, 0, 0, 36)
+    Content.Size = UDim2.new(1, 0, 1, -36)
+    Content.BackgroundTransparency = 1
+    self.Content = Content
 
-local pageBtn = Instance.new("TextButton", bar)
-pageBtn.Size = UDim2.new(0,50,0,25)
-pageBtn.Position = UDim2.new(1,-125,0.5,-12.5)
-pageBtn.Text = "Page 1"
-pageBtn.Font = Enum.Font.SourceSansBold
-pageBtn.TextSize = 12
-Instance.new("UICorner", pageBtn).CornerRadius = UDim.new(0,8)
+    -- Tabs
+    local Tabs = Instance.new("Frame", Content)
+    Tabs.Size = UDim2.new(0, 110, 1, 0)
+    Tabs.BackgroundTransparency = 1
+    self.Tabs = Tabs
 
-pageBtn.MouseButton1Click:Connect(function()
-    p1.Visible = not p1.Visible
-    p2.Visible = not p1.Visible
-    pageBtn.Text = p1.Visible and "Page 1" or "Page 2"
-end)
+    local TabLayout = Instance.new("UIListLayout", Tabs)
+    TabLayout.Padding = UDim.new(0, 6)
 
-local close = Instance.new("TextButton", bar)
-close.Size = UDim2.new(0,30,0,30)
-close.Position = UDim2.new(1,-35,0.5,-15)
-close.Text = "🐾"
-Instance.new("UICorner", close).CornerRadius = UDim.new(1,0)
+    -- Pages
+    local Pages = Instance.new("Frame", Content)
+    Pages.Position = UDim2.new(0, 120, 0, 0)
+    Pages.Size = UDim2.new(1, -120, 1, 0)
+    Pages.BackgroundTransparency = 1
+    self.Pages = Pages
 
-local mini = Instance.new("TextButton", bar)
-mini.Size = UDim2.new(0,30,0,30)
-mini.Position = UDim2.new(1,-70,0.5,-15)
-mini.Text = "miu"
-Instance.new("UICorner", mini).CornerRadius = UDim.new(1,0)
+    -- ============== Minimize Logic ==============
+    local minimized = false
 
-local restore = Instance.new("TextButton", main)
-restore.Size = UDim2.new(1,0,1,0)
-restore.BackgroundTransparency = 1
-restore.Text = "[ 🐾 摸我還原 ]"
-restore.Font = Enum.Font.SourceSansBold
-restore.Visible = false
+    MiniBtn.MouseButton1Click:Connect(function()
+        minimized = not minimized
 
-local function createBtn(text, y, parent)
-    local b = Instance.new("TextButton", parent)
-    b.Size = UDim2.new(1,-30,0,36)
-    b.Position = UDim2.new(0,15,0,y-45)
-    b.Text = "🐱 "..text
-    b.Font = Enum.Font.SourceSansBold
-    b.TextSize = 14
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0,12)
-    return b
-end
+        if minimized then
+            Content.Visible = false
+            MiniBtn.Text = "🐱"
+            Title.Text = "貓咪趴下中"
 
-createBtn("按鈕一", 60, p1)
-createBtn("按鈕二", 105, p1)
-createBtn("按鈕三", 150, p1)
+            Main:TweenSize(
+                UDim2.new(0, 210, 0, 36),
+                "Out", "Quart", 0.25, true
+            )
+        else
+            MiniBtn.Text = "🐾"
+            Title.Text = "ฅ^•ﻌ•^ฅ NEKOUI"
 
-createBtn("按鈕四", 60, p2)
-createBtn("按鈕五", 105, p2)
-
-close.MouseButton1Click:Connect(function()
-    gui:Destroy()
-end)
-
-mini.MouseButton1Click:Connect(function()
-    title.Visible = false
-    mini.Visible = false
-    pageBtn.Visible = false
-    p1.Visible = false
-    p2.Visible = false
-    main.BackgroundTransparency = 0.8
-    main:TweenSize(UDim2.new(0,140,0,45), "Out", "Quart", 0.3, true)
-    restore.Visible = true
-end)
-
-restore.MouseButton1Click:Connect(function()
-    main:TweenSize(UDim2.new(0,260,0,230), "Out", "Quart", 0.3, true, function()
-        title.Visible = true
-        mini.Visible = true
-        pageBtn.Visible = true
-        p1.Visible = (pageBtn.Text == "Page 1")
-        p2.Visible = (pageBtn.Text == "Page 2")
-        main.BackgroundTransparency = 0
-        restore.Visible = false
+            Main:TweenSize(
+                UDim2.new(0, 420, 0, 260),
+                "Out", "Quart", 0.25, true,
+                function()
+                    Content.Visible = true
+                end
+            )
+        end
     end)
-end)
 
-RunService.RenderStepped:Connect(function()
-    if not gui.Parent then return end
-    local mc = getRainbow(0)
-    main.BackgroundColor3 = mc
-    bar.BackgroundColor3 = getPulse(getRainbow(1),2)
-    pageBtn.BackgroundColor3 = getPulse(getRainbow(1.5),3)
-    pageBtn.TextColor3 = getContrast(pageBtn.BackgroundColor3)
-    title.TextColor3 = getContrast(bar.BackgroundColor3)
-    close.BackgroundColor3 = getPulse(Color3.new(0.9,0.4,0.4),3)
-    mini.BackgroundColor3 = getPulse(getRainbow(2),3)
-    restore.TextColor3 = getContrast(mc)
-end)
+    -- ============== Stroke Effect ==============
+    RunService.RenderStepped:Connect(function()
+        Stroke.Color = Color3.fromHSV((tick() * 0.15) % 1, 0.6, 1)
+    end)
+
+    return self
+end
+
+-- ================= API =================
+function NEKOUI:CreateTab(name, default)
+    local Page = Instance.new("ScrollingFrame", self.Pages)
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Page.ScrollBarThickness = 0
+    Page.BackgroundTransparency = 1
+    Page.Visible = default or false
+
+    local layout = Instance.new("UIListLayout", Page)
+    layout.Padding = UDim.new(0, 8)
+
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 8)
+    end)
+
+    local Tab = Instance.new("TextButton", self.Tabs)
+    Tab.Size = UDim2.new(1, 0, 0, 32)
+    Tab.Text = name
+    Tab.Font = Enum.Font.GothamMedium
+    Tab.TextSize = 11
+    Tab.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(160,160,160)
+    Tab.BackgroundColor3 = Color3.fromRGB(35,35,40)
+    Tab.BackgroundTransparency = 0.2
+    Tab.BorderSizePixel = 0
+
+    Instance.new("UICorner", Tab).CornerRadius = UDim.new(0, 8)
+
+    Tab.MouseButton1Click:Connect(function()
+        for _, p in pairs(self.Pages:GetChildren()) do
+            if p:IsA("ScrollingFrame") then
+                p.Visible = false
+            end
+        end
+        for _, b in pairs(self.Tabs:GetChildren()) do
+            if b:IsA("TextButton") then
+                b.TextColor3 = Color3.fromRGB(160,160,160)
+            end
+        end
+        Page.Visible = true
+        Tab.TextColor3 = Color3.new(1,1,1)
+    end)
+
+    return Page
+end
+
+function NEKOUI:CreateInfo(parent, title, desc)
+    local Box = Instance.new("Frame", parent)
+    Box.Size = UDim2.new(0.95, 0, 0, 60)
+    Box.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    Box.BackgroundTransparency = 0.25
+    Box.BorderSizePixel = 0
+    Instance.new("UICorner", Box)
+
+    local T = Instance.new("TextLabel", Box)
+    T.Size = UDim2.new(1, -20, 0, 22)
+    T.Position = UDim2.new(0, 10, 0, 6)
+    T.Text = title
+    T.Font = Enum.Font.GothamBold
+    T.TextSize = 12
+    T.TextXAlignment = "Left"
+    T.TextColor3 = Color3.fromRGB(255, 200, 200)
+    T.BackgroundTransparency = 1
+
+    local D = Instance.new("TextLabel", Box)
+    D.Size = UDim2.new(1, -20, 0, 22)
+    D.Position = UDim2.new(0, 10, 0, 30)
+    D.Text = desc
+    D.Font = Enum.Font.Gotham
+    D.TextSize = 11
+    D.TextXAlignment = "Left"
+    D.TextColor3 = Color3.fromRGB(200, 200, 200)
+    D.BackgroundTransparency = 1
+end
+
+return NEKOUI
