@@ -1,4 +1,4 @@
--- [[ GitHub: NEKOUI - 第二版風格優化 ]]
+-- [[ GitHub: NEKOUI - 終極流暢優化版 ]]
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -6,130 +6,124 @@ local CoreGui = game:GetService("CoreGui")
 
 local Lib = {}
 
+-- 內部動畫引擎：防止動畫重疊卡死
+local function ApplyTween(obj, info, goal)
+    local t = TweenService:Create(obj, TweenInfo.new(unpack(info)), goal)
+    t:Play()
+    return t
+end
+
 function Lib:Init()
     local Gui = Instance.new("ScreenGui", CoreGui)
-    Gui.Name = "NEKOUI_MAIN"
-    Gui.ResetOnSpawn = false
+    Gui.Name = "NEKO_PREMIUM_UI"
+    Gui.IgnoreGuiInset = true -- 讓 UI 不會被手機瀏海擋住
 
-    -- 主框架
     local Main = Instance.new("Frame", Gui)
     Main.Size = UDim2.new(0, 480, 0, 320)
     Main.Position = UDim2.new(0.5, -240, 0.5, -160)
-    Main.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+    Main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
     Main.Active = true
     Main.Draggable = true
-    Main.ClipsDescendants = true -- 確保內容不超出圓角
-    local MainCorner = Instance.new("UICorner", Main)
-    MainCorner.CornerRadius = UDim.new(0, 14)
+    Main.ClipsDescendants = true
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 16)
 
-    -- 彩虹邊框
+    -- 低功耗彩虹邊框 (優化循環)
     local Stroke = Instance.new("UIStroke", Main)
     Stroke.Thickness = 2
-    RunService.RenderStepped:Connect(function() 
-        Stroke.Color = Color3.fromHSV((tick()*0.4)%1, 0.6, 1) 
-    end)
-
-    -- 頂部標題區 (仿第二張圖)
-    local Top = Instance.new("Frame", Main)
-    Top.Size = UDim2.new(1, 0, 0, 55)
-    Top.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
-    Top.BorderSizePixel = 0
-    
-    local Title = Instance.new("TextLabel", Top)
-    Title.Size = UDim2.new(1, -100, 1, 0)
-    Title.Position = UDim2.new(0, 20, 0, 0)
-    Title.Text = "NEKO ATK"; Title.TextColor3 = Color3.new(1, 1, 1)
-    Title.Font = Enum.Font.GothamBold; Title.TextSize = 20; Title.TextXAlignment = "Left"; Title.BackgroundTransparency = 1
-
-    -- 收合按鈕 (紫色圓圈)
-    local MiniBtn = Instance.new("TextButton", Top)
-    MiniBtn.Size = UDim2.new(0, 32, 0, 32)
-    MiniBtn.Position = UDim2.new(1, -45, 0.5, -16)
-    MiniBtn.BackgroundColor3 = Color3.fromRGB(120, 0, 255)
-    MiniBtn.Text = "—"
-    MiniBtn.TextColor3 = Color3.new(1, 1, 1); MiniBtn.TextSize = 18; MiniBtn.Font = "GothamBold"
-    Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
-
-    local Content = Instance.new("Frame", Main)
-    Content.Size = UDim2.new(1, 0, 1, -55); Content.Position = UDim2.new(0, 0, 0, 55); Content.BackgroundTransparency = 1
-
-    -- 左側側邊欄 (仿第二張圖)
-    local TabBar = Instance.new("Frame", Content)
-    TabBar.Size = UDim2.new(0, 130, 1, -20); TabBar.Position = UDim2.new(0, 12, 0, 10)
-    TabBar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    Instance.new("UICorner", TabBar).CornerRadius = UDim.new(0, 12)
-    
-    local TabLayout = Instance.new("UIListLayout", TabBar)
-    TabLayout.Padding = UDim.new(0, 8); TabLayout.HorizontalAlignment = "Center"
-    Instance.new("UIPadding", TabBar).PaddingTop = UDim.new(0, 10)
-
-    -- 右側內容區
-    local Pages = Instance.new("Frame", Content)
-    Pages.Size = UDim2.new(1, -165, 1, -20); Pages.Position = UDim2.new(0, 152, 0, 10); Pages.BackgroundTransparency = 1
-
-    -- 收合邏輯
-    local opened = true
-    MiniBtn.MouseButton1Click:Connect(function()
-        opened = not opened
-        if not opened then
-            Content.Visible = false
-            Main:TweenSize(UDim2.new(0, 220, 0, 55), "Out", "Quart", 0.3, true)
-        else
-            Main:TweenSize(UDim2.new(0, 480, 0, 320), "Out", "Quart", 0.3, true, function() Content.Visible = true end)
+    task.spawn(function()
+        while Gui.Parent do
+            for i = 0, 1, 0.005 do
+                Stroke.Color = Color3.fromHSV(i, 0.6, 1)
+                task.wait(0.05)
+            end
         end
     end)
 
-    local UI_Logic = {}
+    local Top = Instance.new("Frame", Main)
+    Top.Size = UDim2.new(1, 0, 0, 60)
+    Top.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    Top.BorderSizePixel = 0
     
+    local Title = Instance.new("TextLabel", Top)
+    Title.Size = UDim2.new(1, -120, 1, 0); Title.Position = UDim2.new(0, 20, 0, 0)
+    Title.Text = "NEKO HUB"; Title.TextColor3 = Color3.new(1, 1, 1)
+    Title.Font = "GothamBold"; Title.TextSize = 20; Title.TextXAlignment = "Left"; Title.BackgroundTransparency = 1
+
+    local MiniBtn = Instance.new("TextButton", Top)
+    MiniBtn.Size = UDim2.new(0, 32, 0, 32); MiniBtn.Position = UDim2.new(1, -48, 0.5, -16)
+    MiniBtn.BackgroundColor3 = Color3.fromRGB(120, 0, 255); MiniBtn.Text = "—"
+    MiniBtn.TextColor3 = Color3.new(1, 1, 1); MiniBtn.Font = "GothamBold"; MiniBtn.TextSize = 16
+    Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
+
+    local Content = Instance.new("Frame", Main)
+    Content.Size = UDim2.new(1, 0, 1, -60); Content.Position = UDim2.new(0, 0, 0, 60); Content.BackgroundTransparency = 1
+
+    local TabBar = Instance.new("Frame", Content)
+    TabBar.Size = UDim2.new(0, 130, 1, -24); TabBar.Position = UDim2.new(0, 12, 0, 12)
+    TabBar.BackgroundColor3 = Color3.fromRGB(28, 28, 33)
+    Instance.new("UICorner", TabBar).CornerRadius = UDim.new(0, 12)
+    local TabLayout = Instance.new("UIListLayout", TabBar); TabLayout.Padding = UDim.new(0, 8); TabLayout.HorizontalAlignment = "Center"
+    Instance.new("UIPadding", TabBar).PaddingTop = UDim.new(0, 10)
+
+    local Pages = Instance.new("Frame", Content)
+    Pages.Size = UDim2.new(1, -165, 1, -24); Pages.Position = UDim2.new(0, 153, 0, 12); Pages.BackgroundTransparency = 1
+
+    local opened = true
+    MiniBtn.MouseButton1Click:Connect(function()
+        opened = not opened
+        Content.Visible = opened
+        ApplyTween(Main, {0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out}, {
+            Size = opened and UDim2.new(0, 480, 0, 320) or UDim2.new(0, 220, 0, 60)
+        })
+        MiniBtn.Text = opened and "—" or "+"
+    end)
+
+    local UI_Logic = {}
     function UI_Logic:CreateTab(name, default)
         local Page = Instance.new("ScrollingFrame", Pages)
         Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundTransparency = 1; Page.Visible = default or false; Page.ScrollBarThickness = 0
         local L = Instance.new("UIListLayout", Page); L.Padding = UDim.new(0, 10)
         
         local B = Instance.new("TextButton", TabBar)
-        B.Size = UDim2.new(0.85, 0, 0, 38)
-        B.Text = name
-        B.BackgroundColor3 = default and Color3.fromRGB(120, 0, 255) or Color3.fromRGB(40, 40, 45)
+        B.Size = UDim2.new(0.88, 0, 0, 38)
+        B.Text = name; B.BackgroundColor3 = default and Color3.fromRGB(120, 0, 255) or Color3.fromRGB(40, 40, 46)
         B.TextColor3 = Color3.new(1, 1, 1); B.Font = "GothamMedium"; B.TextSize = 12
         Instance.new("UICorner", B).CornerRadius = UDim.new(0, 8)
         
         B.MouseButton1Click:Connect(function()
             for _, p in pairs(Pages:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible = false end end
-            for _, b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(40, 40, 45) end end
+            for _, b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.BackgroundColor3 = Color3.fromRGB(40, 40, 46) end end
             Page.Visible = true; B.BackgroundColor3 = Color3.fromRGB(120, 0, 255)
         end)
 
         local Elements = {}
         function Elements:AddButton(text, callback)
             local btn = Instance.new("TextButton", Page)
-            btn.Size = UDim2.new(0.96, 0, 0, 40)
-            btn.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-            btn.Text = "  " .. text; btn.TextColor3 = Color3.new(1, 1, 1)
-            btn.Font = "GothamMedium"; btn.TextSize = 13; btn.TextXAlignment = "Left"
-            Instance.new("UICorner", btn)
-            Instance.new("UIStroke", btn).Color = Color3.fromRGB(60, 60, 70)
+            btn.Size = UDim2.new(0.96, 0, 0, 42); btn.BackgroundColor3 = Color3.fromRGB(38, 38, 45)
+            btn.Text = "  " .. text; btn.TextColor3 = Color3.new(1, 1, 1); btn.Font = "GothamMedium"; btn.TextSize = 13; btn.TextXAlignment = "Left"
+            Instance.new("UICorner", btn); Instance.new("UIStroke", btn).Color = Color3.fromRGB(60, 60, 75)
             
-            btn.MouseButton1Click:Connect(function() callback(btn) end)
+            -- 按鈕點擊動畫：解決手機觸控反饋
+            btn.MouseButton1Down:Connect(function() ApplyTween(btn, {0.1}, {BackgroundColor3 = Color3.fromRGB(120, 0, 255)}) end)
+            btn.MouseButton1Up:Connect(function() 
+                ApplyTween(btn, {0.2}, {BackgroundColor3 = Color3.fromRGB(38, 38, 45)}) 
+                callback(btn)
+            end)
+            
             Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 20)
             return btn
         end
 
         function Elements:AddInfo(title, desc)
-            local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.96, 0, 0, 65)
-            f.BackgroundColor3 = Color3.fromRGB(32, 32, 38); Instance.new("UICorner", f)
-            local t = Instance.new("TextLabel", f); t.Text = title; t.Size = UDim2.new(1, -20, 0, 30)
-            t.Position = UDim2.new(0, 10, 0, 5); t.TextColor3 = Color3.fromRGB(180, 120, 255)
-            t.Font = "GothamBold"; t.TextSize = 14; t.TextXAlignment = "Left"; t.BackgroundTransparency = 1
-            local d = Instance.new("TextLabel", f); d.Text = desc; d.Size = UDim2.new(1, -20, 0, 25)
-            d.Position = UDim2.new(0, 10, 0, 30); d.TextColor3 = Color3.fromRGB(200, 200, 200)
-            d.Font = "Gotham"; d.TextSize = 12; d.TextXAlignment = "Left"; d.BackgroundTransparency = 1
+            local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.96, 0, 0, 68)
+            f.BackgroundColor3 = Color3.fromRGB(30, 30, 35); Instance.new("UICorner", f)
+            local is = Instance.new("UIStroke", f); is.Color = Color3.fromRGB(120, 0, 255); is.Transparency = 0.6
+            local t = Instance.new("TextLabel", f); t.Text = title; t.Size = UDim2.new(1, -20, 0, 30); t.Position = UDim2.new(0, 12, 0, 6); t.TextColor3 = Color3.fromRGB(180, 120, 255); t.Font = "GothamBold"; t.TextSize = 14; t.TextXAlignment = "Left"; t.BackgroundTransparency = 1
+            local d = Instance.new("TextLabel", f); d.Text = desc; d.Size = UDim2.new(1, -20, 0, 25); d.Position = UDim2.new(0, 12, 0, 32); d.TextColor3 = Color3.fromRGB(180, 180, 180); d.Font = "Gotham"; d.TextSize = 11; d.TextXAlignment = "Left"; d.BackgroundTransparency = 1
             Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 20)
         end
-
         return Elements
     end
-
     return UI_Logic
 end
-
 return Lib
