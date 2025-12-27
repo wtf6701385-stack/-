@@ -1,4 +1,4 @@
--- [[ GitHub: NEKOUI ]]
+-- [[ GitHub: NEKOUI - Interface Library ]]
 local UI = {}
 
 function UI:Init()
@@ -13,7 +13,9 @@ function UI:Init()
     Main.Size = UDim2.new(0, 420, 0, 260)
     Main.Position = UDim2.new(0.5, -210, 0.5, -130)
     Main.BackgroundColor3 = Color3.fromRGB(20,20,24)
-    Main.Active = true; Main.Draggable = true
+    Main.Active = true
+    Main.Draggable = true -- 簡單拖動
+    Main.ClipsDescendants = true
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0,14)
 
     local Stroke = Instance.new("UIStroke", Main)
@@ -22,9 +24,40 @@ function UI:Init()
         Stroke.Color = Color3.fromHSV((tick()*0.4)%1,0.6,1) 
     end)
 
+    -- 標題列 (包含收合按鈕)
+    local Top = Instance.new("Frame", Main)
+    Top.Size = UDim2.new(1,0,0,36)
+    Top.BackgroundTransparency = 1
+    
+    local T = Instance.new("TextLabel", Top)
+    T.Size = UDim2.new(1,-40,1,0); T.Position = UDim2.new(0,14,0,0)
+    T.Text = "  ฅ^•ﻌ•^ฅ NEKO UI "; T.TextColor3 = Color3.new(1,1,1); T.Font = "GothamBold"; T.TextXAlignment = "Left"; T.BackgroundTransparency = 1
+
+    local MiniBtn = Instance.new("TextButton", Top)
+    MiniBtn.Size = UDim2.new(0,30,0,30); MiniBtn.Position = UDim2.new(1,-35,0,3)
+    MiniBtn.Text = "≡"; MiniBtn.TextColor3 = Color3.new(1,1,1); MiniBtn.BackgroundTransparency = 1; MiniBtn.TextSize = 18; MiniBtn.Font = "GothamBold"
+
     local Content = Instance.new("Frame", Main)
     Content.Size = UDim2.new(1,0,1,-36); Content.Position = UDim2.new(0,0,0,36); Content.BackgroundTransparency = 1
 
+    -- 收合邏輯
+    local opened = true
+    local fullSize = Main.Size
+    local miniSize = UDim2.new(0, 220, 0, 36)
+
+    MiniBtn.MouseButton1Click:Connect(function()
+        opened = not opened
+        if not opened then
+            Content.Visible = false
+            Main:TweenSize(miniSize, "Out", "Quart", 0.3, true)
+        else
+            Main:TweenSize(fullSize, "Out", "Quart", 0.3, true, function()
+                Content.Visible = true
+            end)
+        end
+    end)
+
+    -- 分頁容器
     local TabBar = Instance.new("Frame", Content)
     TabBar.Size = UDim2.new(0,110,1,-10); TabBar.Position = UDim2.new(0,10,0,5); TabBar.BackgroundTransparency = 1
     Instance.new("UIListLayout", TabBar).Padding = UDim.new(0,6)
@@ -67,4 +100,4 @@ function UI:Init()
     return Lib
 end
 
-return UI -- 這行最重要，絕對不能刪掉
+return UI
