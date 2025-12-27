@@ -17,24 +17,12 @@ _G.MOB = false
 _G.FastAttack = false
 _G.AutoV4 = false 
 
--- [[ 核心邏輯：保持視角鎖定 + 原有的 V4 檢查 ]]
+-- [[ 核心邏輯：保持視角鎖定 ]]
 game:GetService("RunService").Heartbeat:Connect(function()
     -- 內建自動視角 (1000)
     pcall(function()
         player.CameraMaxZoomDistance = 1000
     end)
-
-    -- 原始 AutoV4 邏輯
-    if _G.AutoV4 then
-        pcall(function()
-            local bp = player:FindFirstChild("Backpack")
-            local char = player.Character
-            local awake = (bp and bp:FindFirstChild("Awakening")) or (char and char:FindFirstChild("Awakening"))
-            if awake then 
-                awake.RemoteFunction:InvokeServer(true) 
-            end
-        end)
-    end
 end)
 
 local function KillCombat()
@@ -42,7 +30,7 @@ local function KillCombat()
     _G.CurrentFastAtkID = "KILL_" .. tick()
 end
 
--- 以下為你原本的所有 UI 按鈕與功能邏輯，完全沒變動 --
+-- --- UI 按鈕與功能邏輯 --- --
 local p0, l0 = Lib:CreateTab("貓公告", true)
 Lib:AddInfo(p0, l0, "🐾 ", " 歡迎使用貓貓腳本 ")
 
@@ -83,8 +71,12 @@ local p2, l2 = Lib:CreateTab("貓功能")
 Lib:AddButton(p2, l2, "貓貓神速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
 Lib:AddButton(p2, l2, "貓貓透視", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end)
 
+-- 已替換為你要求的 V4 載入路徑
 Lib:AddButton(p2, l2, "自動 V4 : OFF", function(self)
     _G.AutoV4 = not _G.AutoV4
+    if _G.AutoV4 then
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKO%20V4"))()
+    end
     self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
 end)
 
