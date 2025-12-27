@@ -1,4 +1,4 @@
--- [[ GitHub: NEKO ]]
+-- [[ GitHub: NEKO - Original Logic Kept ]]
 local success, NEKOLib = pcall(function()
     return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 end)
@@ -9,20 +9,26 @@ if not success or not NEKOLib then
 end
 
 local Lib = NEKOLib:Init()
+local player = game:GetService("Players").LocalPlayer
 
+-- [[ 原始全域變數 ]]
 _G.PVP = false
 _G.MOB = false
 _G.FastAttack = false
-_G.AutoV4 = false -- 初始化 V4 開關
+_G.AutoV4 = false 
 
--- [[ 核心邏輯：每幀檢查並自動啟動 V4 ]]
+-- [[ 核心邏輯：保持視角鎖定 + 原有的 V4 檢查 ]]
 game:GetService("RunService").Heartbeat:Connect(function()
+    -- 內建自動視角 (1000)
+    pcall(function()
+        player.CameraMaxZoomDistance = 1000
+    end)
+
+    -- 原始 AutoV4 邏輯
     if _G.AutoV4 then
         pcall(function()
-            local player = game:GetService("Players").LocalPlayer
             local bp = player:FindFirstChild("Backpack")
             local char = player.Character
-            -- 檢查覺醒物件位置
             local awake = (bp and bp:FindFirstChild("Awakening")) or (char and char:FindFirstChild("Awakening"))
             if awake then 
                 awake.RemoteFunction:InvokeServer(true) 
@@ -36,6 +42,7 @@ local function KillCombat()
     _G.CurrentFastAtkID = "KILL_" .. tick()
 end
 
+-- 以下為你原本的所有 UI 按鈕與功能邏輯，完全沒變動 --
 local p0, l0 = Lib:CreateTab("貓公告", true)
 Lib:AddInfo(p0, l0, "🐾 狀態", "UI 已成功載入")
 
@@ -76,7 +83,6 @@ local p2, l2 = Lib:CreateTab("貓功能")
 Lib:AddButton(p2, l2, "貓貓神速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
 Lib:AddButton(p2, l2, "貓貓透視", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end)
 
--- 新增：自動 V4 按鈕
 Lib:AddButton(p2, l2, "自動 V4 : OFF", function(self)
     _G.AutoV4 = not _G.AutoV4
     self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
