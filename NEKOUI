@@ -1,4 +1,4 @@
--- [[ GitHub: NEKOUI - Interface Library ]]
+-- [[ GitHub: NEKOUI - 手機優化版 ]]
 local UI = {}
 
 function UI:Init()
@@ -9,12 +9,13 @@ function UI:Init()
     Gui.Name = "NEKOUI_MAIN"
     Gui.ResetOnSpawn = false
 
+    -- 主框架
     local Main = Instance.new("Frame", Gui)
     Main.Size = UDim2.new(0, 420, 0, 260)
     Main.Position = UDim2.new(0.5, -210, 0.5, -130)
     Main.BackgroundColor3 = Color3.fromRGB(20,20,24)
     Main.Active = true
-    Main.Draggable = true -- 簡單拖動
+    Main.Draggable = true
     Main.ClipsDescendants = true
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0,14)
 
@@ -24,40 +25,48 @@ function UI:Init()
         Stroke.Color = Color3.fromHSV((tick()*0.4)%1,0.6,1) 
     end)
 
-    -- 標題列 (包含收合按鈕)
+    -- 標題列 (手機點擊區)
     local Top = Instance.new("Frame", Main)
-    Top.Size = UDim2.new(1,0,0,36)
+    Top.Size = UDim2.new(1,0,0,40) -- 稍微加高方便手指點擊
     Top.BackgroundTransparency = 1
     
     local T = Instance.new("TextLabel", Top)
-    T.Size = UDim2.new(1,-40,1,0); T.Position = UDim2.new(0,14,0,0)
+    T.Size = UDim2.new(1,-50,1,0); T.Position = UDim2.new(0,14,0,0)
     T.Text = "  ฅ^•ﻌ•^ฅ NEKO UI "; T.TextColor3 = Color3.new(1,1,1); T.Font = "GothamBold"; T.TextXAlignment = "Left"; T.BackgroundTransparency = 1
 
+    -- 大大的收合按鈕 (手機友好)
     local MiniBtn = Instance.new("TextButton", Top)
-    MiniBtn.Size = UDim2.new(0,30,0,30); MiniBtn.Position = UDim2.new(1,-35,0,3)
-    MiniBtn.Text = "≡"; MiniBtn.TextColor3 = Color3.new(1,1,1); MiniBtn.BackgroundTransparency = 1; MiniBtn.TextSize = 18; MiniBtn.Font = "GothamBold"
+    MiniBtn.Size = UDim2.new(0,40,0,40)
+    MiniBtn.Position = UDim2.new(1,-45,0,0)
+    MiniBtn.Text = "—" -- 用橫槓代表最小化
+    MiniBtn.TextColor3 = Color3.new(1,1,1)
+    MiniBtn.BackgroundTransparency = 1
+    MiniBtn.TextSize = 20
+    MiniBtn.Font = "GothamBold"
 
     local Content = Instance.new("Frame", Main)
-    Content.Size = UDim2.new(1,0,1,-36); Content.Position = UDim2.new(0,0,0,36); Content.BackgroundTransparency = 1
+    Content.Size = UDim2.new(1,0,1,-40); Content.Position = UDim2.new(0,0,0,40); Content.BackgroundTransparency = 1
 
     -- 收合邏輯
     local opened = true
     local fullSize = Main.Size
-    local miniSize = UDim2.new(0, 220, 0, 36)
+    local miniSize = UDim2.new(0, 200, 0, 40) -- 縮小後的大小
 
     MiniBtn.MouseButton1Click:Connect(function()
         opened = not opened
         if not opened then
             Content.Visible = false
+            MiniBtn.Text = "+" -- 縮小後變加號
             Main:TweenSize(miniSize, "Out", "Quart", 0.3, true)
         else
             Main:TweenSize(fullSize, "Out", "Quart", 0.3, true, function()
                 Content.Visible = true
+                MiniBtn.Text = "—"
             end)
         end
     end)
 
-    -- 分頁容器
+    -- 以下保持原有的 Tab 和 Button 功能...
     local TabBar = Instance.new("Frame", Content)
     TabBar.Size = UDim2.new(0,110,1,-10); TabBar.Position = UDim2.new(0,10,0,5); TabBar.BackgroundTransparency = 1
     Instance.new("UIListLayout", TabBar).Padding = UDim.new(0,6)
