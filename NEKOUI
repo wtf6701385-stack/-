@@ -1,4 +1,4 @@
--- [[ GitHub: NEKOUI - Interface Library ]]
+-- [[ GitHub: NEKOUI ]]
 local UI = {}
 
 function UI:Init()
@@ -21,12 +21,6 @@ function UI:Init()
     game:GetService("RunService").RenderStepped:Connect(function() 
         Stroke.Color = Color3.fromHSV((tick()*0.4)%1,0.6,1) 
     end)
-
-    -- 標題列
-    local Top = Instance.new("Frame", Main)
-    Top.Size = UDim2.new(1,0,0,36); Top.BackgroundTransparency = 1
-    local T = Instance.new("TextLabel", Top)
-    T.Size = UDim2.new(1,0,1,0); T.Text = "  ฅ^•ﻌ•^ฅ NEKO UI "; T.TextColor3 = Color3.new(1,1,1); T.Font = "GothamBold"; T.TextXAlignment = "Left"; T.BackgroundTransparency = 1
 
     local Content = Instance.new("Frame", Main)
     Content.Size = UDim2.new(1,0,1,-36); Content.Position = UDim2.new(0,0,0,36); Content.BackgroundTransparency = 1
@@ -73,4 +67,4 @@ function UI:Init()
     return Lib
 end
 
-return UI
+return UI -- 這行最重要，絕對不能刪掉
