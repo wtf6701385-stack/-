@@ -1,6 +1,7 @@
--- [[ GitHub: NEKO - Original Logic Kept ]]
+-- [[ GitHub: NEKO - 主腳本 ]]
 local success, NEKOLib = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
+    -- 建議加上 tick() 防止 GitHub 快取舊代碼
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
 end)
 
 if not success or not NEKOLib then
@@ -17,12 +18,9 @@ _G.MOB = false
 _G.FastAttack = false
 _G.AutoV4 = false 
 
--- [[ 核心邏輯：保持視角鎖定 ]]
+-- [[ 核心邏輯 ]]
 game:GetService("RunService").Heartbeat:Connect(function()
-    -- 內建自動視角 (1000)
-    pcall(function()
-        player.CameraMaxZoomDistance = 1000
-    end)
+    pcall(function() player.CameraMaxZoomDistance = 1000 end)
 end)
 
 local function KillCombat()
@@ -30,10 +28,13 @@ local function KillCombat()
     _G.CurrentFastAtkID = "KILL_" .. tick()
 end
 
--- --- UI 按鈕與功能邏輯 --- --
-local p0, l0 = Lib:CreateTab("貓公告", true)
-Lib:AddInfo(p0, l0, "🐾 ", " 歡迎使用貓貓腳本 ")
+-- --- UI 實作 --- --
 
+-- 1. 公告頁面
+local p0, l0 = Lib:CreateTab("貓公告", true)
+Lib:AddInfo(p0, l0, "🐾 歡迎 ", " 歡迎使用貓貓腳本 NEKO HUB ")
+
+-- 2. 戰鬥頁面
 local p1, l1 = Lib:CreateTab("貓戰鬥")
 local btnPVP, btnMOB
 
@@ -67,19 +68,18 @@ btnMOB = Lib:AddButton(p1, l1, "刷怪模式 : OFF", function(self)
     self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
+-- 3. 功能頁面
 local p2, l2 = Lib:CreateTab("貓功能")
 Lib:AddButton(p2, l2, "貓貓神速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
 Lib:AddButton(p2, l2, "貓貓透視", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end)
-
--- 自動 V4 按鈕：已更新連結為 NEKOV4
 Lib:AddButton(p2, l2, "自動 V4 : OFF", function(self)
     _G.AutoV4 = not _G.AutoV4
     if _G.AutoV4 then
-        -- 呼叫你更新後的 V4 腳本
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))()
     end
     self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
 end)
 
+-- 4. 召喚頁面
 local p3, l3 = Lib:CreateTab("貓召喚")
 Lib:AddButton(p3, l3, "召喚飛行", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
