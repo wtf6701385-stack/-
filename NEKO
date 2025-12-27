@@ -71,11 +71,12 @@ local p2, l2 = Lib:CreateTab("貓功能")
 Lib:AddButton(p2, l2, "貓貓神速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
 Lib:AddButton(p2, l2, "貓貓透視", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end)
 
--- 已替換為你要求的 V4 載入路徑
+-- 自動 V4 按鈕：已更新連結為 NEKOV4
 Lib:AddButton(p2, l2, "自動 V4 : OFF", function(self)
     _G.AutoV4 = not _G.AutoV4
     if _G.AutoV4 then
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKO%20V4"))()
+        -- 呼叫你更新後的 V4 腳本
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))()
     end
     self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
 end)
