@@ -1,42 +1,40 @@
--- [[ NEKO x FastAttack : Loader ]]
+-- [[ GitHub: NEKO - Main Logic Layer ]]
 
--- 1. 載入來自 GitHub 的 UI 庫
--- 確保你的 https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI 內容是下方的「UI 庫腳本」
+-- 1. 載入 UI 庫
 local NEKOLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
-local Lib = NEKOLib:Init() -- 初始化 UI 並獲取工具箱
+local Lib = NEKOLib:Init()
 
--- 2. 全域變數初始化
+-- 2. 全域變數
 _G.PVP = false
 _G.MOB = false
 _G.FastAttack = false
 
--- 3. 核心清理函數 (殺死舊線程)
+-- 3. 強制殺死腳本線程的函數
 local function KillCombat()
     _G.FastAttack = false
-    _G.CurrentFastAtkID = "KILL_" .. tick()
-    print("⚔️ Previous combat threads terminated.")
+    -- 改變 ID 會讓舊的 while 迴圈立即 break
+    _G.CurrentFastAtkID = "KILL_" .. tick() 
 end
 
--- 4. 建立分頁與功能
+-- 4. 介面內容設定
 local p0, l0 = Lib:CreateTab("貓公告", true)
-Lib:AddInfo(p0, l0, "🐾 歡迎", "介面已從 GitHub 成功加載")
-Lib:AddInfo(p0, l0, "⚠️ 提示", "切換模式會自動清理舊的攻擊線程")
+Lib:AddInfo(p0, l0, "🐾 歡迎", "貓貓整合腳本已加載")
+Lib:AddInfo(p0, l0, "⚠️ 殺死機制", "切換模式時會強制終止所有舊的攻擊線程")
 
 local p1, l1 = Lib:CreateTab("貓戰鬥")
-
-local btnPVP, btnMOB -- 預留變數以便互相改字
+local btnPVP, btnMOB -- 預留引用
 
 btnPVP = Lib:AddButton(p1, l1, "打架模式 : OFF", function(self)
     _G.PVP = not _G.PVP
     if _G.PVP then
         _G.MOB = false
         if btnMOB then btnMOB.Text = "  🐱 刷怪模式 : OFF" end
-        KillCombat()
+        KillCombat() -- 殺死現有的
         task.wait(0.1)
         _G.FastAttack = true
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"))()
     else
-        KillCombat()
+        KillCombat() -- 直接殺死
     end
     self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
 end)
@@ -46,12 +44,12 @@ btnMOB = Lib:AddButton(p1, l1, "刷怪模式 : OFF", function(self)
     if _G.MOB then
         _G.PVP = false
         if btnPVP then btnPVP.Text = "  🐱 打架模式 : OFF" end
-        KillCombat()
+        KillCombat() -- 殺死現有的
         task.wait(0.1)
         _G.FastAttack = true
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"))()
     else
-        KillCombat()
+        KillCombat() -- 直接殺死
     end
     self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
