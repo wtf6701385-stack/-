@@ -1,129 +1,87 @@
--- [[ Neko x FastAttack : Toggle Safe PVP Edition ]]
+-- [[ Neko x FastAttack : High-Speed Edition ]]
 
--- ===== 0. 自殺協議（防重複、防殘留）=====
-local scriptId = "NekoFastAtk_" .. tick()
+-- ===== 0. 自殺協議 =====
+local scriptId = "NekoFastAtk_Speed_" .. tick()
 _G.CurrentFastAtkID = scriptId
+_G.FastAttack = _G.FastAttack or true -- 預設開啟
 
--- 預設由 UI 控制（UI ON = true / OFF = false）
-_G.FastAttack = _G.FastAttack or false
-
--- ===== 1. 原始環境 =====
+-- ===== 1. 環境優化 =====
 local _ENV = (getgenv or getrenv or getfenv)()
-
-local function SafeWaitForChild(parent, childName)
-    local success, result = pcall(function()
-        return parent:WaitForChild(childName)
-    end)
-    if not success or not result then
-        warn("noooooo: " .. childName)
-    end
-    return result
-end
-
-local function WaitChilds(path, ...)
-    local last = path
-    for _, child in {...} do
-        last = last:FindFirstChild(child) or SafeWaitForChild(last, child)
-        if not last then break end
-    end
-    return last
-end
-
--- ===== 2. Services（原始保留）=====
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local CollectionService = game:GetService("CollectionService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TeleportService = game:GetService("TeleportService")
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-if not Player then return end
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Remotes = SafeWaitForChild(ReplicatedStorage, "Remotes")
-if not Remotes then return end
+-- 快速獲取遠端事件
+local Modules = ReplicatedStorage:WaitForChild("Modules")
+local Net = Modules:WaitForChild("Net")
+local RegisterAttack = Net:WaitForChild("RE/RegisterAttack")
+local RegisterHit = Net:WaitForChild("RE/RegisterHit")
 
-local Validator = SafeWaitForChild(Remotes, "Validator")
-local CommF = SafeWaitForChild(Remotes, "CommF_")
-local CommE = SafeWaitForChild(Remotes, "CommE")
-
-local WorldOrigin = SafeWaitForChild(workspace, "_WorldOrigin")
-local Characters = SafeWaitForChild(workspace, "Characters")
-local Enemies = SafeWaitForChild(workspace, "Enemies")
-
-local Modules = SafeWaitForChild(ReplicatedStorage, "Modules")
-local Net = SafeWaitForChild(Modules, "Net")
-
--- ===== 3. 原始設定（不動）=====
+-- ===== 2. 參數設定 =====
 local Settings = {
     AutoClick = true,
-    ClickDelay = 0.000000000000000000000000000000000001
+    ClickDelay = 0.06,  -- 你要求的 0.06
+    Distance = 5000     -- 你要求的 5000
 }
 
--- ===== 4. FastAttack 原始模組（完整保留）=====
+-- ===== 3. 核心功能 =====
 if not _ENV.rz_FastAttack then
     local FastAttack = {
-        Distance = 200000,
         attackMobs = true,
-        attackPlayers = true,
-        Equipped = nil
+        attackPlayers = true
     }
 
-    local RegisterAttack = SafeWaitForChild(Net, "RE/RegisterAttack")
-    local RegisterHit = SafeWaitForChild(Net, "RE/RegisterHit")
-
-    local function IsAlive(character)
-        return character
-            and character:FindFirstChild("Humanoid")
-            and character.Humanoid.Health > 0
-    end
-
-    local function ProcessEnemies(OthersEnemies, Folder)
-        local BasePart
-        for _, Enemy in Folder:GetChildren() do
-            local Head = Enemy:FindFirstChild("Head")
-            if Head and IsAlive(Enemy)
-            and Player:DistanceFromCharacter(Head.Position) < FastAttack.Distance
-            and Enemy ~= Player.Character then
-                table.insert(OthersEnemies, { Enemy, Head })
-                BasePart = Head
-            end
-        end
-        return BasePart
-    end
-
-    function FastAttack:Attack(BasePart, OthersEnemies)
-        if not BasePart or #OthersEnemies == 0 then return end
-        RegisterAttack:FireServer(Settings.ClickDelay or 0)
-        RegisterHit:FireServer(BasePart, OthersEnemies)
+    local function IsAlive(char)
+        return char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0
     end
 
     function FastAttack:AttackNearest()
         local OthersEnemies = {}
-        local p1 = ProcessEnemies(OthersEnemies, Enemies)
-        local p2 = ProcessEnemies(OthersEnemies, Characters)
-        if #OthersEnemies > 0 then
-            self:Attack(p1 or p2, OthersEnemies)
-        else
-            task.wait(0)
+        local TargetPart = nil
+        local MyChar = Player.Character
+        if not IsAlive(MyChar) then return end
+        
+        local MyPos = MyChar.PrimaryPart and MyChar.PrimaryPart.Position
+        if not MyPos then return end
+
+        -- 掃描對象 (Enemies & Characters)
+        local Folders = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("Characters")}
+        
+        for _, folder in pairs(Folders) do
+            if folder then
+                for _, enemy in ipairs(folder:GetChildren()) do
+                    local head = enemy:FindFirstChild("Head")
+                    if head and IsAlive(enemy) and enemy ~= MyChar then
+                        local dist = (head.Position - MyPos).Magnitude
+                        if dist < Settings.Distance then
+                            table.insert(OthersEnemies, { enemy, head })
+                            TargetPart = head
+                        end
+                    end
+                end
+            end
+        end
+
+        -- 執行攻擊
+        if #OthersEnemies > 0 and TargetPart then
+            RegisterAttack:FireServer(Settings.ClickDelay)
+            RegisterHit:FireServer(TargetPart, OthersEnemies)
         end
     end
 
     function FastAttack:BladeHits()
-        local Equipped = IsAlive(Player.Character)
-            and Player.Character:FindFirstChildOfClass("Tool")
-        if Equipped and Equipped.ToolTip ~= "Gun" then
+        local tool = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
+        if tool and tool.ToolTip ~= "Gun" then
             self:AttackNearest()
-        else
-            task.wait(0)
         end
     end
 
     _ENV.rz_FastAttack = FastAttack
 end
 
--- ===== 5. 控制殼（真正的 ON / OFF 核心）=====
+-- ===== 4. 執行迴圈 =====
 task.spawn(function()
-    print("✅ Neko FastAttack PVP Loaded | ID:", scriptId)
+    print("🚀 Speed Mode Loaded | Delay: " .. Settings.ClickDelay .. " | Dist: " .. Settings.Distance)
 
     while _G.CurrentFastAtkID == scriptId do
         if _G.FastAttack and Settings.AutoClick then
@@ -133,6 +91,6 @@ task.spawn(function()
         end
         task.wait(Settings.ClickDelay)
     end
-
-    print("🛑 Neko FastAttack PVP Stopped | ID:", scriptId)
+    
+    print("🛑 Speed Mode Stopped.")
 end)
