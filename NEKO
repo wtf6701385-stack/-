@@ -1,18 +1,18 @@
 -- =====================================
 -- 🐱 貓貓腳本｜最終整合版
 -- UI: NEKOUI（已修復）
--- =====================================
-
--- 1️⃣ 載入 NEKOUI（⚠ 已修好，不用 Init）
+-- ====================================
+-- 1️⃣ 載入 NEKOUI（正確版）
 local CatLib = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"
 ))()
 
--- 防呆
 if not CatLib then
     warn("NEKOUI 載入失敗")
     return
 end
+
+CatLib:Init() -- ⭐ 必須
 
 -- 2️⃣ 全域狀態
 _G.PVP = false
