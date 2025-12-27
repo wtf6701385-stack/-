@@ -1,14 +1,26 @@
--- [[ Neko ESP 穩定修復版 ]]
+-- [[ Neko ESP 穩定修復版 - 自帶開關與 1000m 距離變色 ]]
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local player = Players.LocalPlayer
 
--- 防止腳本重複運行衝突
+-- 自動切換開關狀態
+_G.ESP_ENABLED = not _G.ESP_ENABLED
+
+-- 如果開關是關閉的，清除所有透視標籤並停止腳本
+if not _G.ESP_ENABLED then
+    local oldFolder = CoreGui:FindFirstChild("Neko_ESP_Storage")
+    if oldFolder then 
+        oldFolder:ClearAllChildren() 
+    end
+    _G.CurrentESP_ID = nil -- 停止舊的刷新循環
+    return
+end
+
+-- 如果是開啟，設定一個唯一的腳本執行 ID
 local scriptId = "NekoESP_v2_" .. tick()
 _G.CurrentESP_ID = scriptId
 
--- 創建存放 ESP 的容器
+-- 建立或獲取存放 ESP 的資料夾
 local ESP_Folder = CoreGui:FindFirstChild("Neko_ESP_Storage")
 if not ESP_Folder then
     ESP_Folder = Instance.new("Folder", CoreGui)
@@ -50,19 +62,21 @@ local function createESP(p)
         txt.Font = Enum.Font.SourceSansBold
         txt.TextSize = 14
 
-        -- 獨立的刷新線程
+        -- 刷新線程
         task.spawn(function()
-            while _G.CurrentESP_ID == scriptId and (_G.ESP or _G.ESP_ENABLED) and char.Parent and hum.Health > 0 do
-                local myHrp = getRoot(player.Character)
-                local dist = myHrp and math.floor((myHrp.Position - hrp.Position).Magnitude) or 0
+            -- 只要開關沒關、ID沒變、角色還在，就持續刷新
+            while _G.CurrentESP_ID == scriptId and _G.ESP_ENABLED and char.Parent and hum.Health > 0 do
+                local myChar = player.Character
+                local myHrp = myChar and getRoot(myChar)
+                local dist = (myHrp and hrp) and math.floor((myHrp.Position - hrp.Position).Magnitude) or 0
                 
                 txt.Text = string.format("%s\n[ %d HP ] • [ %dm ]", p.Name, math.floor(hum.Health), dist)
                 
-                -- 根據距離變色：近處紅色，遠處綠色
-                if dist < 50 then
-                    txt.TextColor3 = Color3.fromRGB(255, 80, 80)
+                -- 設定 1000m 變色邏輯
+                if dist < 1000 then
+                    txt.TextColor3 = Color3.fromRGB(255, 80, 80) -- 1000公尺內顯示紅色
                 else
-                    txt.TextColor3 = Color3.fromRGB(80, 255, 80)
+                    txt.TextColor3 = Color3.fromRGB(80, 255, 80) -- 超過顯示綠色
                 end
                 task.wait(0.1)
             end
@@ -70,41 +84,16 @@ local function createESP(p)
         end)
     end
 
+    -- 監聽角色重新生成
     p.CharacterAdded:Connect(function()
         task.wait(0.5)
-        if _G.ESP or _G.ESP_ENABLED then setup() end
+        if _G.ESP_ENABLED then setup() end
     end)
     
     setup()
 end
 
--- 啟動與監控邏輯
-local function toggleESP()
-    if _G.ESP or _G.ESP_ENABLED then
-        for _, p in ipairs(Players:GetPlayers()) do
-            createESP(p)
-        end
-    else
-        ESP_Folder:ClearAllChildren()
-    end
+-- 對目前伺服器所有玩家執行一次
+for _, v in ipairs(Players:GetPlayers()) do
+    createESP(v)
 end
-
--- 監聽玩家進出
-Players.PlayerAdded:Connect(createESP)
-Players.PlayerRemoving:Connect(clearESP)
-
--- 循環監測開關狀態 (當 _G.ESP 改變時自動反應)
-task.spawn(function()
-    local lastState = false
-    while _G.CurrentESP_ID == scriptId do
-        local currentState = (_G.ESP or _G.ESP_ENABLED)
-        if currentState ~= lastState then
-            lastState = currentState
-            toggleESP()
-        end
-        task.wait(0.5)
-    end
-end)
-
--- 初始執行
-toggleESP()
