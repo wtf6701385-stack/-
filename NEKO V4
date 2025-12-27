@@ -1,0 +1,53 @@
+-- 自动v4 (關閉時強制執行自殺協議)
+
+local toggleKey = "自动v4"
+local autoV4Task = nil
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local function getToggleState(key)
+    if not _G.ToggleStates then _G.ToggleStates = {} end
+    return _G.ToggleStates[key] or false
+end
+
+local function callAwakeningRemote()
+    local Backpack = LocalPlayer:FindFirstChild("Backpack")
+    if not Backpack then return end
+    
+    local Awakening = Backpack:FindFirstChild("Awakening")
+    if not Awakening then return end
+    
+    local RemoteFunc = Awakening:FindFirstChild("RemoteFunction")
+    if not RemoteFunc or not RemoteFunc:IsA("RemoteFunction") then return end
+    
+    local success, err = pcall(function()
+        RemoteFunc:InvokeServer(true)
+    end)
+    if not success then
+        warn("自动v4调用失败：", err)
+    end
+end
+
+local function toggleAutoV4(enable)
+    -- 自殺協議：只要調用 toggle 且 enable 為 false，
+    -- 或者原本就有任務在跑，就直接殺掉執行緒
+    if autoV4Task then
+        task.cancel(autoV4Task)
+        autoV4Task = nil
+    end
+    
+    if enable then
+        -- 正常開啟邏輯
+        autoV4Task = task.spawn(function()
+            while getToggleState(toggleKey) do
+                callAwakeningRemote()
+                task.wait(1) 
+            end
+            autoV4Task = nil
+        end)
+    else
+        -- 這裡就是關閉時的處理
+        -- 由於上面已經 task.cancel 了，這裡確保狀態清空
+        print("自动v4 已執行自殺協議停止運行")
+    end
+end
