@@ -1,5 +1,5 @@
 -- =====================================
--- 🐱 NEKOUI × 貓貓腳本｜最終整合版 (Clean Stop Optimized)
+-- 🐱 NEKOUI × 貓貓腳本｜最終整合版 (Total Kill Ver.)
 -- =====================================
 
 -- ===== Services =====
@@ -75,7 +75,7 @@ Pages.Size = UDim2.new(1,-140,1,-10)
 Pages.Position = UDim2.new(0,130,0,5)
 Pages.BackgroundTransparency = 1
 
--- ===== 收合功能 =====
+-- ===== 收合 =====
 local opened = true
 local fullSize = Main.Size
 local miniSize = UDim2.new(0,220,0,36)
@@ -92,7 +92,7 @@ MiniBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ===== 彩虹邊框動畫 =====
+-- 彩虹邊框
 RunService.RenderStepped:Connect(function()
     Stroke.Color = Color3.fromHSV((tick()*0.4)%1,0.6,1)
 end)
@@ -186,26 +186,24 @@ local function CreateInfo(parent, layout, title, desc)
 end
 
 -- =====================================
--- 🐱 功能與切換邏輯
+-- 🐱 戰鬥清理核心邏輯
 -- =====================================
 
 _G.PVP = false
 _G.MOB = false
-_G.ESP = false
-_G.AutoV4 = false
-_G.CatSpeed = false
-_G.FastAttack = false -- 核心攻擊開關
+_G.FastAttack = false
 
--- 停止函數：確保舊腳本線程關閉
-local function StopCombat()
+-- 直接殺死所有相關戰鬥迴圈的功能
+local function KillAllCombat()
     _G.FastAttack = false
-    _G.CurrentFastAtkID = "Stop_" .. tick()
+    _G.CurrentFastAtkID = "KILL_" .. tick() -- 改變 ID 會導致舊腳本內的 while 迴圈直接終止
+    print("⚔️ Combat Threads Killed")
 end
 
 -- 📢 公告
 local p0, l0 = CreateTab("貓公告", true)
 CreateInfo(p0,l0,"🐾 歡迎","歡迎使用貓貓腳本")
-CreateInfo(p0,l0,"⚠ 注意","不要點太快，切換模式會自動清理舊線程")
+CreateInfo(p0,l0,"⚠️ 提示","切換模式或關閉時，系統會強制殺死舊腳本線程。")
 
 -- ⚔ 戰鬥
 local p1, l1 = CreateTab("貓戰鬥")
@@ -214,16 +212,14 @@ local btnPVP, btnMOB
 btnPVP = CreateButton(p1,l1,"打架模式 : OFF",function(self)
     _G.PVP = not _G.PVP
     if _G.PVP then
-        -- 開啟 PVP：關閉 MOB 並重置攻擊 ID
         _G.MOB = false
         if btnMOB then btnMOB.Text = "  🐱 刷怪模式 : OFF" end
-        StopCombat()
+        KillAllCombat() -- 先殺死所有舊線程
         task.wait(0.1)
         _G.FastAttack = true
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"))()
     else
-        -- 關閉 PVP
-        StopCombat()
+        KillAllCombat() -- 關閉時直接殺死
     end
     self.Text = "  🐱 打架模式 : "..(_G.PVP and "ON" or "OFF")
 end)
@@ -231,16 +227,14 @@ end)
 btnMOB = CreateButton(p1,l1,"刷怪模式 : OFF",function(self)
     _G.MOB = not _G.MOB
     if _G.MOB then
-        -- 開啟 MOB：關閉 PVP 並重置攻擊 ID
         _G.PVP = false
         if btnPVP then btnPVP.Text = "  🐱 打架模式 : OFF" end
-        StopCombat()
+        KillAllCombat() -- 先殺死所有舊線程
         task.wait(0.1)
         _G.FastAttack = true
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"))()
     else
-        -- 關閉 MOB
-        StopCombat()
+        KillAllCombat() -- 關閉時直接殺死
     end
     self.Text = "  🐱 刷怪模式 : "..(_G.MOB and "ON" or "OFF")
 end)
@@ -266,7 +260,6 @@ end)
 
 -- 🧿 召喚
 local p3, l3 = CreateTab("貓召喚")
-
 CreateButton(p3,l3,"召喚飛行",function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))()
 end)
