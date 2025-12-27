@@ -1,5 +1,5 @@
 -- =====================================
--- 🐱 NEKOUI｜穩定修復版 UI Core
+-- 🐱 NEKOUI｜穩定最終版 UI Core
 -- =====================================
 
 local Players = game:GetService("Players")
@@ -13,32 +13,31 @@ end
 local Gui = Instance.new("ScreenGui", CoreGui)
 Gui.Name = "NEKOUI_MAIN"
 Gui.ResetOnSpawn = false
-Gui.IgnoreGuiInset = true
 
--- 主框（⚠️ 尺寸與透明度已修）
+-- 主框
 local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0, 360, 0, 240)
-Main.Position = UDim2.new(0.5, -180, 0.5, -120)
+Main.Size = UDim2.new(0, 420, 0, 260)
+Main.Position = UDim2.new(0.5, -210, 0.5, -130)
 Main.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-Main.BackgroundTransparency = 0.05
+Main.BackgroundTransparency = 0.15
 Main.BorderSizePixel = 0
 Main.Active = true
 Main.Draggable = true
 Main.ClipsDescendants = true
+
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
--- 彩色邊框
 local Stroke = Instance.new("UIStroke", Main)
 Stroke.Thickness = 2
 Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
--- 上方列
+-- 上方列（拖移只靠 Main）
 local Top = Instance.new("Frame", Main)
 Top.Size = UDim2.new(1, 0, 0, 36)
 Top.BackgroundTransparency = 1
 
 local Title = Instance.new("TextLabel", Top)
-Title.Size = UDim2.new(1, -50, 1, 0)
+Title.Size = UDim2.new(1, -60, 1, 0)
 Title.Position = UDim2.new(0, 14, 0, 0)
 Title.Text = " ฅ^•ﻌ•^ฅ NEKO UI "
 Title.Font = Enum.Font.GothamBold
@@ -63,23 +62,22 @@ Content.Position = UDim2.new(0, 0, 0, 36)
 Content.Size = UDim2.new(1, 0, 1, -36)
 Content.BackgroundTransparency = 1
 
--- Tab / Pages
+-- Tab / Page
 local TabBar = Instance.new("Frame", Content)
-TabBar.Size = UDim2.new(0, 100, 1, -10)
+TabBar.Size = UDim2.new(0, 110, 1, -10)
 TabBar.Position = UDim2.new(0, 10, 0, 5)
 TabBar.BackgroundTransparency = 1
-local tabLayout = Instance.new("UIListLayout", TabBar)
-tabLayout.Padding = UDim.new(0, 6)
+Instance.new("UIListLayout", TabBar).Padding = UDim.new(0, 6)
 
 local Pages = Instance.new("Frame", Content)
-Pages.Size = UDim2.new(1, -120, 1, -10)
-Pages.Position = UDim2.new(0, 120, 0, 5)
+Pages.Size = UDim2.new(1, -140, 1, -10)
+Pages.Position = UDim2.new(0, 130, 0, 5)
 Pages.BackgroundTransparency = 1
 
 -- 收合邏輯
 local opened = true
 local fullSize = Main.Size
-local miniSize = UDim2.new(0, 200, 0, 36)
+local miniSize = UDim2.new(0, 220, 0, 36)
 
 MiniBtn.MouseButton1Click:Connect(function()
     opened = not opened
@@ -93,12 +91,14 @@ MiniBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- 彩色貓邊框動畫
+-- 彩虹邊框
 RunService.RenderStepped:Connect(function()
     Stroke.Color = Color3.fromHSV((tick()*0.4)%1, 0.6, 1)
 end)
 
--- ================= API =================
+-- =====================================
+-- 📦 對外 API
+-- =====================================
 local Lib = {}
 
 function Lib:CreateTab(name, default)
@@ -108,9 +108,7 @@ function Lib:CreateTab(name, default)
     Page.CanvasSize = UDim2.new(0,0,0,0)
     Page.Visible = default or false
     Page.BackgroundTransparency = 1
-
-    local layout = Instance.new("UIListLayout", Page)
-    layout.Padding = UDim.new(0,8)
+    Instance.new("UIListLayout", Page).Padding = UDim.new(0,8)
 
     local Btn = Instance.new("TextButton", TabBar)
     Btn.Size = UDim2.new(1,0,0,32)
@@ -123,7 +121,7 @@ function Lib:CreateTab(name, default)
 
     Btn.MouseButton1Click:Connect(function()
         for _,p in pairs(Pages:GetChildren()) do
-            if p:IsA("ScrollingFrame") then p.Visible = false end
+            if p:IsA("ScrollingFrame") then p.Visible=false end
         end
         for _,b in pairs(TabBar:GetChildren()) do
             if b:IsA("TextButton") then
@@ -152,7 +150,7 @@ function Lib:CreateButton(parent, text, callback)
         if callback then callback(B) end
     end)
 
-    parent.CanvasSize = UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y + 10)
+    parent.CanvasSize = UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y+10)
     return B
 end
 
@@ -182,7 +180,7 @@ function Lib:CreateInfo(parent, title, desc)
     D.BackgroundTransparency = 1
     D.TextColor3 = Color3.fromRGB(200,200,200)
 
-    parent.CanvasSize = UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y + 10)
+    parent.CanvasSize = UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y+10)
 end
 
 return Lib
