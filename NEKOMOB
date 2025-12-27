@@ -1,21 +1,31 @@
--- [[ Neko MOB 強化版：內建拉怪與全域打擊 ]]
+-- [[ Neko MOB 修正版：僅拉怪、不拉玩家、不影響自己 ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
-local scriptId = "NekoMob_Bring_" .. tick()
+local scriptId = "NekoMob_Final_" .. tick()
 _G.CurrentMobID = scriptId
 
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack, RegHit = Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
 
 local function getRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso")) end
-local function alive(c) local h = c and c:FindFirstChildOfClass("Humanoid") return h and h.Health > 0 end
+
+local function isEnemy(c)
+    local h = c and c:FindFirstChildOfClass("Humanoid")
+    if h and h.Health > 0 and h.MaxHealth > 100 then
+        local name = c.Name:lower()
+        if name:find("npc") or name:find("shop") or name:find("quest") or name:find("deal") then
+            return false
+        end
+        return true
+    end
+    return false
+end
 
 local Targets = {}
 
--- 1. 掃描與過濾目標 (加大掃描範圍)
 task.spawn(function()
     local p = OverlapParams.new()
     while _G.CurrentMobID == scriptId do
@@ -23,19 +33,19 @@ task.spawn(function()
             local mr = getRoot(player.Character)
             if mr then
                 local filtered = {}
-                local parts = workspace:GetPartBoundsInRadius(mr.Position, 3000, p) -- 範圍設為 3000
+                local parts = workspace:GetPartBoundsInRadius(mr.Position, 2500, p)
                 for _, v in ipairs(parts) do
                     local m = v.Parent
-                    if m and alive(m) and m ~= player.Character then
+                    -- 確保目標不是自己，且不是 NPC
+                    if m and m ~= player.Character and isEnemy(m) then
                         local isP = Players:GetPlayerFromCharacter(m)
-                        -- 拉怪邏輯：如果是刷怪模式且不是玩家，或是打架模式是玩家
-                        if (not isP and _G.MOB) or (isP and _G.PVP) then
+                        if (isP and _G.PVP) or (not isP and _G.MOB) then
                             if not table.find(filtered, m) then
                                 table.insert(filtered, m)
                             end
                         end
-                        if #filtered >= 50 then break end -- 最多處理 50 隻防止卡頓
                     end
+                    if #filtered >= 50 then break end
                 end
                 Targets = filtered
             end
@@ -44,7 +54,6 @@ task.spawn(function()
     end
 end)
 
--- 2. 拉怪 (Bring) 與自動攻擊
 task.spawn(function()
     while _G.CurrentMobID == scriptId do
         if (_G.MOB or _G.PVP) and #Targets > 0 then
@@ -56,21 +65,25 @@ task.spawn(function()
                 local hitList = {}
                 for _, mob in ipairs(Targets) do
                     local tr = getRoot(mob)
+                    local isOtherPlayer = Players:GetPlayerFromCharacter(mob)
+                    
                     if tr then
-                        -- 【核心拉怪邏輯】：將怪物的座標強制拉到玩家面前 5 距離處
-                        -- 注意：部分遊戲會檢測怪物座標，若被踢請刪除下面這一行
-                        tr.CFrame = root.CFrame * CFrame.new(0, 0, -5) 
+                        -- 【關鍵修改】：
+                        -- 1. 只有「不是玩家」的怪物才會被拉過來 (避免 PVP 時畫面混亂或被踢)
+                        -- 2. 直接拉到玩家位置
+                        if not isOtherPlayer then
+                            tr.CFrame = root.CFrame
+                        end
                         
+                        -- 無論是否拉過來，都加入攻擊列表 (自動攻擊依然生效)
                         table.insert(hitList, {mob, tr})
                     end
                 end
                 
-                -- 發送攻擊封包
                 if #hitList > 0 then
                     RegAttack:FireServer(0)
-                    -- 這裡直接對列表內所有怪進行 RegisterHit
                     for _, data in ipairs(hitList) do
-                        RegHit:FireServer(data[2], hitList) -- data[2] 是怪物的 Root
+                        RegHit:FireServer(data[2], hitList)
                     end
                 end
             end
