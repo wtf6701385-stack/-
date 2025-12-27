@@ -1,96 +1,97 @@
--- [[ Neko x FastAttack : High-Speed Edition ]]
+-- [[ Neko x FastAttack : High-Speed Edition (Clean Stop Ver.) ]]
 
--- ===== 0. 自殺協議 =====
-local scriptId = "NekoFastAtk_Speed_" .. tick()
+-- ===== 0. 自殺協議與清理 =====
+local scriptId = "NekoFastAtk_" .. tick()
 _G.CurrentFastAtkID = scriptId
-_G.FastAttack = _G.FastAttack or true -- 預設開啟
 
--- ===== 1. 環境優化 =====
-local _ENV = (getgenv or getrenv or getfenv)()
+-- 確保全域開關存在
+if _G.FastAttack == nil then _G.FastAttack = true end
+
+-- ===== 1. 環境與參數 =====
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- 快速獲取遠端事件
-local Modules = ReplicatedStorage:WaitForChild("Modules")
-local Net = Modules:WaitForChild("Net")
+local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegisterAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegisterHit = Net:WaitForChild("RE/RegisterHit")
 
--- ===== 2. 參數設定 =====
 local Settings = {
-    AutoClick = true,
-    ClickDelay = 0.06,  -- 你要求的 0.06
-    Distance = 5000     -- 你要求的 5000
+    ClickDelay = 0.06,
+    Distance = 5000
 }
 
--- ===== 3. 核心功能 =====
-if not _ENV.rz_FastAttack then
-    local FastAttack = {
-        attackMobs = true,
-        attackPlayers = true
-    }
+-- ===== 2. 核心邏輯模組 =====
+local FastAttackModule = {
+    IsRunning = true
+}
 
-    local function IsAlive(char)
-        return char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0
-    end
+function FastAttackModule:IsAlive(char)
+    return char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0
+end
 
-    function FastAttack:AttackNearest()
-        local OthersEnemies = {}
-        local TargetPart = nil
-        local MyChar = Player.Character
-        if not IsAlive(MyChar) then return end
-        
-        local MyPos = MyChar.PrimaryPart and MyChar.PrimaryPart.Position
-        if not MyPos then return end
+function FastAttackModule:GetTargets()
+    local targets = {}
+    local myChar = Player.Character
+    if not self:IsAlive(myChar) then return targets end
+    
+    local myPos = myChar.PrimaryPart.Position
+    local folders = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("Characters")}
 
-        -- 掃描對象 (Enemies & Characters)
-        local Folders = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("Characters")}
-        
-        for _, folder in pairs(Folders) do
-            if folder then
-                for _, enemy in ipairs(folder:GetChildren()) do
-                    local head = enemy:FindFirstChild("Head")
-                    if head and IsAlive(enemy) and enemy ~= MyChar then
-                        local dist = (head.Position - MyPos).Magnitude
-                        if dist < Settings.Distance then
-                            table.insert(OthersEnemies, { enemy, head })
-                            TargetPart = head
-                        end
+    for _, folder in pairs(folders) do
+        if folder then
+            for _, obj in ipairs(folder:GetChildren()) do
+                local head = obj:FindFirstChild("Head")
+                if head and self:IsAlive(obj) and obj ~= myChar then
+                    if (head.Position - myPos).Magnitude < Settings.Distance then
+                        table.insert(targets, {obj, head})
                     end
                 end
             end
         end
-
-        -- 執行攻擊
-        if #OthersEnemies > 0 and TargetPart then
-            RegisterAttack:FireServer(Settings.ClickDelay)
-            RegisterHit:FireServer(TargetPart, OthersEnemies)
-        end
     end
+    return targets
+end
 
-    function FastAttack:BladeHits()
-        local tool = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
-        if tool and tool.ToolTip ~= "Gun" then
-            self:AttackNearest()
-        end
+function FastAttackModule:Execute()
+    -- 檢查：1.全域開關 2.腳本ID 3.手上是否有刀
+    if not _G.FastAttack or _G.CurrentFastAtkID ~= scriptId then return end
+    
+    local tool = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
+    if not (tool and tool.ToolTip ~= "Gun") then return end
+
+    local targets = self:GetTargets()
+    if #targets > 0 then
+        -- 這裡只取第一個 Target 的 Head 作為主要目標，但傳送整個 targets 表
+        local primaryHead = targets[1][2] 
+        RegisterAttack:FireServer(Settings.ClickDelay)
+        RegisterHit:FireServer(primaryHead, targets)
     end
+end
 
-    _ENV.rz_FastAttack = FastAttack
+-- ===== 3. 停止與清理函數 =====
+local function StopScript()
+    FastAttackModule.IsRunning = false
+    if _G.CurrentFastAtkID == scriptId then
+        _G.CurrentFastAtkID = nil
+    end
+    print("🛑 FastAttack Cleanly Stopped.")
 end
 
 -- ===== 4. 執行迴圈 =====
 task.spawn(function()
-    print("🚀 Speed Mode Loaded | Delay: " .. Settings.ClickDelay .. " | Dist: " .. Settings.Distance)
-
-    while _G.CurrentFastAtkID == scriptId do
-        if _G.FastAttack and Settings.AutoClick then
-            pcall(function()
-                _ENV.rz_FastAttack:BladeHits()
-            end)
+    print("🚀 Speed Mode Activated | ID: " .. scriptId)
+    
+    while FastAttackModule.IsRunning do
+        -- 如果 ID 被更新（代表啟動了新腳本），則自我終止
+        if _G.CurrentFastAtkID ~= scriptId then 
+            StopScript()
+            break 
         end
+
+        if _G.FastAttack then
+            pcall(function() FastAttackModule:Execute() end)
+        end
+        
         task.wait(Settings.ClickDelay)
     end
-    
-    print("🛑 Speed Mode Stopped.")
 end)
