@@ -44,7 +44,7 @@ end
 
 -- 以下為你原本的所有 UI 按鈕與功能邏輯，完全沒變動 --
 local p0, l0 = Lib:CreateTab("貓公告", true)
-Lib:AddInfo(p0, l0, "🐾 狀態", "UI 已成功載入")
+Lib:AddInfo(p0, l0, "🐾 ", " 歡迎使用貓貓腳本 ")
 
 local p1, l1 = Lib:CreateTab("貓戰鬥")
 local btnPVP, btnMOB
