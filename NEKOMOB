@@ -68,11 +68,9 @@ task.spawn(function()
                     local isOtherPlayer = Players:GetPlayerFromCharacter(mob)
                     
                     if tr then
-                        -- 【關鍵修改】：
-                        -- 1. 只有「不是玩家」的怪物才會被拉過來 (避免 PVP 時畫面混亂或被踢)
-                        -- 2. 直接拉到玩家位置
+                        -- 【關鍵修改】：將怪物拉到玩家上方 200 米
                         if not isOtherPlayer then
-                            tr.CFrame = root.CFrame
+                            tr.CFrame = root.CFrame * CFrame.new(0, 200, 0)
                         end
                         
                         -- 無論是否拉過來，都加入攻擊列表 (自動攻擊依然生效)
