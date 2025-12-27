@@ -32,7 +32,7 @@ function UI:Init()
     
     local T = Instance.new("TextLabel", Top)
     T.Size = UDim2.new(1,-50,1,0); T.Position = UDim2.new(0,14,0,0)
-    T.Text = "  ฅ^•ﻌ•^ฅ NEKO UI "; T.TextColor3 = Color3.new(1,1,1); T.Font = "GothamBold"; T.TextXAlignment = "Left"; T.BackgroundTransparency = 1
+    T.Text = "  ฅ^•ﻌ•^ฅ  "; T.TextColor3 = Color3.new(1,1,1); T.Font = "GothamBold"; T.TextXAlignment = "Left"; T.BackgroundTransparency = 1
 
     -- 大大的收合按鈕 (手機友好)
     local MiniBtn = Instance.new("TextButton", Top)
