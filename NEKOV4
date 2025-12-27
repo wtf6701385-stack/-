@@ -1,0 +1,33 @@
+-- [[ NEKO V4 - 自殺協議啟動版 ]]
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- 1. 確保自殺協議：如果之前已經有在跑的任務，先殺掉它防止疊加卡頓
+if _G.CurrentV4Task then
+    task.cancel(_G.CurrentV4Task)
+    _G.CurrentV4Task = nil
+end
+
+local function callAwakeningRemote()
+    -- 同時檢查背包與角色手上，確保 100% 偵測
+    local bp = LocalPlayer:FindFirstChild("Backpack")
+    local char = LocalPlayer.Character
+    local awake = (bp and bp:FindFirstChild("Awakening")) or (char and char:FindFirstChild("Awakening"))
+    
+    if awake and awake:FindFirstChild("RemoteFunction") then
+        pcall(function()
+            awake.RemoteFunction:InvokeServer(true)
+        end)
+    end
+end
+
+-- 2. 啟動核心循環
+_G.CurrentV4Task = task.spawn(function()
+    -- 這裡直接對接你主腳本的 _G.AutoV4 開關
+    while _G.AutoV4 do
+        callAwakeningRemote()
+        task.wait(1) -- 保持你要求的 1 秒頻率
+    end
+    _G.CurrentV4Task = nil
+end)
