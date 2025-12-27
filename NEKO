@@ -1,40 +1,41 @@
--- [[ GitHub: NEKO - Main Logic Layer ]]
+-- [[ GitHub: NEKO ]]
+local success, NEKOLib = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
+end)
 
--- 1. 載入 UI 庫
-local NEKOLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
+if not success or not NEKOLib then
+    warn("❌ NEKO UI 載入失敗！")
+    return
+end
+
 local Lib = NEKOLib:Init()
 
--- 2. 全域變數
 _G.PVP = false
 _G.MOB = false
 _G.FastAttack = false
 
--- 3. 強制殺死腳本線程的函數
 local function KillCombat()
     _G.FastAttack = false
-    -- 改變 ID 會讓舊的 while 迴圈立即 break
-    _G.CurrentFastAtkID = "KILL_" .. tick() 
+    _G.CurrentFastAtkID = "KILL_" .. tick()
 end
 
--- 4. 介面內容設定
 local p0, l0 = Lib:CreateTab("貓公告", true)
-Lib:AddInfo(p0, l0, "🐾 歡迎", "貓貓整合腳本已加載")
-Lib:AddInfo(p0, l0, "⚠️ 殺死機制", "切換模式時會強制終止所有舊的攻擊線程")
+Lib:AddInfo(p0, l0, "🐾 狀態", "UI 已成功載入")
 
 local p1, l1 = Lib:CreateTab("貓戰鬥")
-local btnPVP, btnMOB -- 預留引用
+local btnPVP, btnMOB
 
 btnPVP = Lib:AddButton(p1, l1, "打架模式 : OFF", function(self)
     _G.PVP = not _G.PVP
     if _G.PVP then
         _G.MOB = false
         if btnMOB then btnMOB.Text = "  🐱 刷怪模式 : OFF" end
-        KillCombat() -- 殺死現有的
+        KillCombat()
         task.wait(0.1)
         _G.FastAttack = true
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"))()
     else
-        KillCombat() -- 直接殺死
+        KillCombat()
     end
     self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
 end)
@@ -44,18 +45,17 @@ btnMOB = Lib:AddButton(p1, l1, "刷怪模式 : OFF", function(self)
     if _G.MOB then
         _G.PVP = false
         if btnPVP then btnPVP.Text = "  🐱 打架模式 : OFF" end
-        KillCombat() -- 殺死現有的
+        KillCombat()
         task.wait(0.1)
         _G.FastAttack = true
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"))()
     else
-        KillCombat() -- 直接殺死
+        KillCombat()
     end
     self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
 local p2, l2 = Lib:CreateTab("貓功能")
-Lib:AddButton(p2, l2, "自動 V4", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() end)
 Lib:AddButton(p2, l2, "貓貓神速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
 
 local p3, l3 = Lib:CreateTab("貓召喚")
