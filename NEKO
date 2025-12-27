@@ -13,6 +13,23 @@ local Lib = NEKOLib:Init()
 _G.PVP = false
 _G.MOB = false
 _G.FastAttack = false
+_G.AutoV4 = false -- 初始化 V4 開關
+
+-- [[ 核心邏輯：每幀檢查並自動啟動 V4 ]]
+game:GetService("RunService").Heartbeat:Connect(function()
+    if _G.AutoV4 then
+        pcall(function()
+            local player = game:GetService("Players").LocalPlayer
+            local bp = player:FindFirstChild("Backpack")
+            local char = player.Character
+            -- 檢查覺醒物件位置
+            local awake = (bp and bp:FindFirstChild("Awakening")) or (char and char:FindFirstChild("Awakening"))
+            if awake then 
+                awake.RemoteFunction:InvokeServer(true) 
+            end
+        end)
+    end
+end)
 
 local function KillCombat()
     _G.FastAttack = false
@@ -57,6 +74,13 @@ end)
 
 local p2, l2 = Lib:CreateTab("貓功能")
 Lib:AddButton(p2, l2, "貓貓神速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
+Lib:AddButton(p2, l2, "貓貓透視", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end)
+
+-- 新增：自動 V4 按鈕
+Lib:AddButton(p2, l2, "自動 V4 : OFF", function(self)
+    _G.AutoV4 = not _G.AutoV4
+    self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
+end)
 
 local p3, l3 = Lib:CreateTab("貓召喚")
 Lib:AddButton(p3, l3, "召喚飛行", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
