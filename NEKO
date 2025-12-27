@@ -1,12 +1,18 @@
 -- =====================================
 -- 🐱 貓貓腳本｜最終整合版
--- UI: NEKOUI
+-- UI: NEKOUI（已修復）
 -- =====================================
 
--- 1️⃣ 載入 NEKOUI
+-- 1️⃣ 載入 NEKOUI（⚠ 已修好，不用 Init）
 local CatLib = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"
-))().Init()
+))()
+
+-- 防呆
+if not CatLib then
+    warn("NEKOUI 載入失敗")
+    return
+end
 
 -- 2️⃣ 全域狀態
 _G.PVP = false
@@ -98,12 +104,12 @@ CatLib:CreateButton(p2, "透視對手 : OFF", function(self)
     self.Text = "  🐱 透視對手 : " .. (_G.ESP and "ON" or "OFF")
 end)
 
--- ⚡ 神速（無輸入框，穩定版）
+-- ⚡ 神速
 CatLib:CreateButton(p2, "貓貓神速 : OFF", function(self)
     _G.CatSpeed = not _G.CatSpeed
 
     if _G.CatSpeed then
-        _G.CatSpeedValue = 50 -- 改這裡調速度
+        _G.CatSpeedValue = 50
         loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"
         ))()
