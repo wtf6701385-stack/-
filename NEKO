@@ -1,265 +1,64 @@
--- =====================================
--- 🐱 NEKOUI × 貓貓腳本｜最終整合版 (Total Kill Ver.)
--- =====================================
+-- [[ NEKO x FastAttack : Loader ]]
 
--- ===== Services =====
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-local player = Players.LocalPlayer
+-- 1. 載入來自 GitHub 的 UI 庫
+-- 確保你的 https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI 內容是下方的「UI 庫腳本」
+local NEKOLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
+local Lib = NEKOLib:Init() -- 初始化 UI 並獲取工具箱
 
--- ===== 清理舊 UI =====
-if CoreGui:FindFirstChild("NEKOUI_MAIN") then
-    CoreGui.NEKOUI_MAIN:Destroy()
-end
-
--- ===== ScreenGui =====
-local Gui = Instance.new("ScreenGui")
-Gui.Name = "NEKOUI_MAIN"
-Gui.ResetOnSpawn = false
-Gui.Parent = CoreGui
-
--- ===== 主框 =====
-local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0, 420, 0, 260)
-Main.Position = UDim2.new(0.5, -210, 0.5, -130)
-Main.BackgroundColor3 = Color3.fromRGB(20,20,24)
-Main.BackgroundTransparency = 0.15
-Main.BorderSizePixel = 0
-Main.Active = true
-Main.Draggable = true
-Main.ClipsDescendants = true
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0,14)
-
-local Stroke = Instance.new("UIStroke", Main)
-Stroke.Thickness = 2
-
--- ===== 標題列 =====
-local Top = Instance.new("Frame", Main)
-Top.Size = UDim2.new(1,0,0,36)
-Top.BackgroundTransparency = 1
-
-local Title = Instance.new("TextLabel", Top)
-Title.Size = UDim2.new(1,-60,1,0)
-Title.Position = UDim2.new(0,14,0,0)
-Title.Text = " ฅ^•ﻌ•^ฅ NEKO UI "
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.TextColor3 = Color3.new(1,1,1)
-Title.BackgroundTransparency = 1
-
-local MiniBtn = Instance.new("TextButton", Top)
-MiniBtn.Size = UDim2.new(0,36,0,36)
-MiniBtn.Position = UDim2.new(1,-40,0,0)
-MiniBtn.Text = "≡"
-MiniBtn.Font = Enum.Font.GothamBold
-MiniBtn.TextSize = 16
-MiniBtn.BackgroundTransparency = 1
-MiniBtn.TextColor3 = Color3.fromRGB(200,200,200)
-
--- ===== 內容區 =====
-local Content = Instance.new("Frame", Main)
-Content.Position = UDim2.new(0,0,0,36)
-Content.Size = UDim2.new(1,0,1,-36)
-Content.BackgroundTransparency = 1
-
-local TabBar = Instance.new("Frame", Content)
-TabBar.Size = UDim2.new(0,110,1,-10)
-TabBar.Position = UDim2.new(0,10,0,5)
-TabBar.BackgroundTransparency = 1
-Instance.new("UIListLayout", TabBar).Padding = UDim.new(0,6)
-
-local Pages = Instance.new("Frame", Content)
-Pages.Size = UDim2.new(1,-140,1,-10)
-Pages.Position = UDim2.new(0,130,0,5)
-Pages.BackgroundTransparency = 1
-
--- ===== 收合 =====
-local opened = true
-local fullSize = Main.Size
-local miniSize = UDim2.new(0,220,0,36)
-
-MiniBtn.MouseButton1Click:Connect(function()
-    opened = not opened
-    if not opened then
-        Content.Visible = false
-        Main:TweenSize(miniSize,"Out","Quart",0.25,true)
-    else
-        Main:TweenSize(fullSize,"Out","Quart",0.25,true,function()
-            Content.Visible = true
-        end)
-    end
-end)
-
--- 彩虹邊框
-RunService.RenderStepped:Connect(function()
-    Stroke.Color = Color3.fromHSV((tick()*0.4)%1,0.6,1)
-end)
-
--- =====================================
--- 🧩 UI 函式
--- =====================================
-local function CreateTab(name, default)
-    local Page = Instance.new("ScrollingFrame", Pages)
-    Page.Size = UDim2.new(1,0,1,0)
-    Page.ScrollBarThickness = 0
-    Page.Visible = default or false
-    Page.CanvasSize = UDim2.new(0,0,0,0)
-    Page.BackgroundTransparency = 1
-    local layout = Instance.new("UIListLayout", Page)
-    layout.Padding = UDim.new(0,8)
-
-    local Btn = Instance.new("TextButton", TabBar)
-    Btn.Size = UDim2.new(1,0,0,32)
-    Btn.Text = name
-    Btn.Font = Enum.Font.GothamMedium
-    Btn.TextSize = 11
-    Btn.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(160,160,160)
-    Btn.BackgroundColor3 = Color3.fromRGB(30,30,36)
-    Instance.new("UICorner", Btn)
-
-    Btn.MouseButton1Click:Connect(function()
-        for _,p in ipairs(Pages:GetChildren()) do
-            if p:IsA("ScrollingFrame") then p.Visible = false end
-        end
-        for _,b in ipairs(TabBar:GetChildren()) do
-            if b:IsA("TextButton") then
-                b.TextColor3 = Color3.fromRGB(160,160,160)
-            end
-        end
-        Page.Visible = true
-        Btn.TextColor3 = Color3.new(1,1,1)
-    end)
-
-    return Page, layout
-end
-
-local function CreateButton(parent, layout, text, callback)
-    local B = Instance.new("TextButton", parent)
-    B.Size = UDim2.new(0.95,0,0,36)
-    B.Text = "  🐱 "..text
-    B.Font = Enum.Font.Gotham
-    B.TextSize = 12
-    B.TextXAlignment = Enum.TextXAlignment.Left
-    B.TextColor3 = Color3.new(1,1,1)
-    B.BackgroundColor3 = Color3.fromRGB(26,26,32)
-    Instance.new("UICorner", B)
-
-    B.MouseButton1Click:Connect(function()
-        if callback then callback(B) end
-    end)
-
-    task.wait()
-    parent.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+10)
-    return B
-end
-
-local function CreateInfo(parent, layout, title, desc)
-    local F = Instance.new("Frame", parent)
-    F.Size = UDim2.new(0.95,0,0,56)
-    F.BackgroundColor3 = Color3.fromRGB(22,22,28)
-    Instance.new("UICorner", F)
-
-    local T = Instance.new("TextLabel", F)
-    T.Size = UDim2.new(1,-10,0,22)
-    T.Position = UDim2.new(0,8,0,6)
-    T.Text = title
-    T.Font = Enum.Font.GothamBold
-    T.TextSize = 12
-    T.TextXAlignment = Enum.TextXAlignment.Left
-    T.BackgroundTransparency = 1
-    T.TextColor3 = Color3.fromRGB(255,200,200)
-
-    local D = Instance.new("TextLabel", F)
-    D.Size = UDim2.new(1,-10,0,22)
-    D.Position = UDim2.new(0,8,0,28)
-    D.Text = desc
-    D.Font = Enum.Font.Gotham
-    D.TextSize = 11
-    D.TextXAlignment = Enum.TextXAlignment.Left
-    D.BackgroundTransparency = 1
-    D.TextColor3 = Color3.fromRGB(200,200,200)
-
-    task.wait()
-    parent.CanvasSize = UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+10)
-end
-
--- =====================================
--- 🐱 戰鬥清理核心邏輯
--- =====================================
-
+-- 2. 全域變數初始化
 _G.PVP = false
 _G.MOB = false
 _G.FastAttack = false
 
--- 直接殺死所有相關戰鬥迴圈的功能
-local function KillAllCombat()
+-- 3. 核心清理函數 (殺死舊線程)
+local function KillCombat()
     _G.FastAttack = false
-    _G.CurrentFastAtkID = "KILL_" .. tick() -- 改變 ID 會導致舊腳本內的 while 迴圈直接終止
-    print("⚔️ Combat Threads Killed")
+    _G.CurrentFastAtkID = "KILL_" .. tick()
+    print("⚔️ Previous combat threads terminated.")
 end
 
--- 📢 公告
-local p0, l0 = CreateTab("貓公告", true)
-CreateInfo(p0,l0,"🐾 歡迎","歡迎使用貓貓腳本")
-CreateInfo(p0,l0,"⚠️ 提示","切換模式或關閉時，系統會強制殺死舊腳本線程。")
+-- 4. 建立分頁與功能
+local p0, l0 = Lib:CreateTab("貓公告", true)
+Lib:AddInfo(p0, l0, "🐾 歡迎", "介面已從 GitHub 成功加載")
+Lib:AddInfo(p0, l0, "⚠️ 提示", "切換模式會自動清理舊的攻擊線程")
 
--- ⚔ 戰鬥
-local p1, l1 = CreateTab("貓戰鬥")
-local btnPVP, btnMOB
+local p1, l1 = Lib:CreateTab("貓戰鬥")
 
-btnPVP = CreateButton(p1,l1,"打架模式 : OFF",function(self)
+local btnPVP, btnMOB -- 預留變數以便互相改字
+
+btnPVP = Lib:AddButton(p1, l1, "打架模式 : OFF", function(self)
     _G.PVP = not _G.PVP
     if _G.PVP then
         _G.MOB = false
         if btnMOB then btnMOB.Text = "  🐱 刷怪模式 : OFF" end
-        KillAllCombat() -- 先殺死所有舊線程
+        KillCombat()
         task.wait(0.1)
         _G.FastAttack = true
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP"))()
     else
-        KillAllCombat() -- 關閉時直接殺死
+        KillCombat()
     end
-    self.Text = "  🐱 打架模式 : "..(_G.PVP and "ON" or "OFF")
+    self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
 end)
 
-btnMOB = CreateButton(p1,l1,"刷怪模式 : OFF",function(self)
+btnMOB = Lib:AddButton(p1, l1, "刷怪模式 : OFF", function(self)
     _G.MOB = not _G.MOB
     if _G.MOB then
         _G.PVP = false
         if btnPVP then btnPVP.Text = "  🐱 打架模式 : OFF" end
-        KillAllCombat() -- 先殺死所有舊線程
+        KillCombat()
         task.wait(0.1)
         _G.FastAttack = true
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB"))()
     else
-        KillAllCombat() -- 關閉時直接殺死
+        KillCombat()
     end
-    self.Text = "  🐱 刷怪模式 : "..(_G.MOB and "ON" or "OFF")
+    self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
--- 🧩 功能
-local p2, l2 = CreateTab("貓功能")
+local p2, l2 = Lib:CreateTab("貓功能")
+Lib:AddButton(p2, l2, "自動 V4", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() end)
+Lib:AddButton(p2, l2, "貓貓神速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
 
-CreateButton(p2,l2,"自動 V4 : OFF",function(self)
-    _G.AutoV4 = not _G.AutoV4
-    if _G.AutoV4 then
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))()
-    end
-    self.Text = "  🐱 自動 V4 : "..(_G.AutoV4 and "ON" or "OFF")
-end)
-
-CreateButton(p2,l2,"貓貓神速 : OFF",function(self)
-    _G.CatSpeed = not _G.CatSpeed
-    if _G.CatSpeed then
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))()
-    end
-    self.Text = "  🐱 貓貓神速 : "..(_G.CatSpeed and "ON" or "OFF")
-end)
-
--- 🧿 召喚
-local p3, l3 = CreateTab("貓召喚")
-CreateButton(p3,l3,"召喚飛行",function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))()
-end)
+local p3, l3 = Lib:CreateTab("貓召喚")
+Lib:AddButton(p3, l3, "召喚飛行", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
