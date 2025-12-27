@@ -1,20 +1,14 @@
 -- =====================================
--- 🐱 NEKOUI Library
--- Base UI for Cat Scripts
+-- 🐱 NEKOUI Library (Draggable Stable)
 -- =====================================
 
 local NEKOUI = {}
 NEKOUI.__index = NEKOUI
 
--- =====================
--- Init
--- =====================
 function NEKOUI.Init()
     local self = setmetatable({}, NEKOUI)
 
     local CoreGui = game:GetService("CoreGui")
-    local Players = game:GetService("Players")
-    local UIS = game:GetService("UserInputService")
     local TweenService = game:GetService("TweenService")
 
     if CoreGui:FindFirstChild("NEKOUI_MAIN") then
@@ -36,6 +30,10 @@ function NEKOUI.Init()
     Main.BorderSizePixel = 0
     Main.ClipsDescendants = true
 
+    -- ✅ 核心：引擎級拖移
+    Main.Active = true
+    Main.Draggable = true
+
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
     local Stroke = Instance.new("UIStroke", Main)
@@ -51,6 +49,11 @@ function NEKOUI.Init()
     Top.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
     Top.BackgroundTransparency = 0.1
     Top.BorderSizePixel = 0
+
+    -- ✅ Top 也可拖（雙保險）
+    Top.Active = true
+    Top.Draggable = true
+
     Instance.new("UICorner", Top).CornerRadius = UDim.new(0, 14)
 
     local Title = Instance.new("TextLabel", Top)
@@ -85,14 +88,11 @@ function NEKOUI.Init()
     Content.Size = UDim2.new(1, 0, 1, -36)
     Content.BackgroundTransparency = 1
 
-    -- Tabs
     local TabBar = Instance.new("Frame", Content)
     TabBar.Size = UDim2.new(0, 110, 1, -10)
     TabBar.Position = UDim2.new(0, 10, 0, 5)
     TabBar.BackgroundTransparency = 1
-
-    local TabLayout = Instance.new("UIListLayout", TabBar)
-    TabLayout.Padding = UDim.new(0, 6)
+    Instance.new("UIListLayout", TabBar).Padding = UDim.new(0, 6)
 
     local Pages = Instance.new("Frame", Content)
     Pages.Size = UDim2.new(1, -135, 1, -10)
@@ -101,39 +101,8 @@ function NEKOUI.Init()
 
     self.Gui = Gui
     self.Main = Main
-    self.Content = Content
     self.TabBar = TabBar
     self.Pages = Pages
-
-    -- =====================
-    -- Drag
-    -- =====================
-    local dragging, dragStart, startPos
-    Top.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = i.Position
-            startPos = Main.Position
-        end
-    end)
-
-    UIS.InputChanged:Connect(function(i)
-        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = i.Position - dragStart
-            Main.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-
-    UIS.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
 
     -- =====================
     -- Minimize Logic (短條)
@@ -143,7 +112,6 @@ function NEKOUI.Init()
 
     MiniBtn.MouseButton1Click:Connect(function()
         minimized = not minimized
-
         if minimized then
             Content.Visible = false
             TweenService:Create(
@@ -167,7 +135,7 @@ function NEKOUI.Init()
 end
 
 -- =====================
--- Create Tab
+-- CreateTab
 -- =====================
 function NEKOUI:CreateTab(name, default)
     local TabBtn = Instance.new("TextButton", self.TabBar)
@@ -187,15 +155,11 @@ function NEKOUI:CreateTab(name, default)
     Page.CanvasSize = UDim2.new(0,0,0,0)
     Page.ScrollBarThickness = 0
     Page.BackgroundTransparency = 1
-
-    local Layout = Instance.new("UIListLayout", Page)
-    Layout.Padding = UDim.new(0, 8)
+    Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
 
     TabBtn.MouseButton1Click:Connect(function()
         for _,p in pairs(self.Pages:GetChildren()) do
-            if p:IsA("ScrollingFrame") then
-                p.Visible = false
-            end
+            if p:IsA("ScrollingFrame") then p.Visible = false end
         end
         for _,b in pairs(self.TabBar:GetChildren()) do
             if b:IsA("TextButton") then
@@ -210,7 +174,7 @@ function NEKOUI:CreateTab(name, default)
 end
 
 -- =====================
--- Create Info
+-- CreateInfo
 -- =====================
 function NEKOUI:CreateInfo(parent, title, desc)
     local Frame = Instance.new("Frame", parent)
@@ -226,7 +190,7 @@ function NEKOUI:CreateInfo(parent, title, desc)
     T.Text = title
     T.Font = Enum.Font.GothamBold
     T.TextSize = 12
-    T.TextXAlignment = Left
+    T.TextXAlignment = Enum.TextXAlignment.Left
     T.BackgroundTransparency = 1
     T.TextColor3 = Color3.fromRGB(255,200,200)
 
@@ -236,7 +200,7 @@ function NEKOUI:CreateInfo(parent, title, desc)
     D.Text = desc
     D.Font = Enum.Font.Gotham
     D.TextSize = 11
-    D.TextXAlignment = Left
+    D.TextXAlignment = Enum.TextXAlignment.Left
     D.BackgroundTransparency = 1
     D.TextColor3 = Color3.fromRGB(200,200,200)
 
@@ -244,7 +208,7 @@ function NEKOUI:CreateInfo(parent, title, desc)
 end
 
 -- =====================
--- Create Button
+-- CreateButton
 -- =====================
 function NEKOUI:CreateButton(parent, text, callback)
     local Btn = Instance.new("TextButton", parent)
@@ -255,19 +219,16 @@ function NEKOUI:CreateButton(parent, text, callback)
     Btn.Text = "  🐱 " .. text
     Btn.Font = Enum.Font.GothamMedium
     Btn.TextSize = 12
-    Btn.TextXAlignment = Left
+    Btn.TextXAlignment = Enum.TextXAlignment.Left
     Btn.TextColor3 = Color3.fromRGB(235,235,235)
 
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0,8)
 
     Btn.MouseButton1Click:Connect(function()
-        if callback then
-            callback(Btn)
-        end
+        if callback then callback(Btn) end
     end)
 
     parent.CanvasSize = UDim2.new(0,0,0,parent.UIListLayout.AbsoluteContentSize.Y + 10)
-
     return Btn
 end
 
