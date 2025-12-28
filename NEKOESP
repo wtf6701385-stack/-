@@ -1,99 +1,49 @@
--- [[ Neko ESP 穩定修復版 - 自帶開關與 1000m 距離變色 ]]
+-- [[ NEKOESP - 修正版 ]]
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local player = Players.LocalPlayer
 
--- 自動切換開關狀態
-_G.ESP_ENABLED = not _G.ESP_ENABLED
+if _G.ESP_Loop_Started then return end
+_G.ESP_Loop_Started = true
 
--- 如果開關是關閉的，清除所有透視標籤並停止腳本
-if not _G.ESP_ENABLED then
-    local oldFolder = CoreGui:FindFirstChild("Neko_ESP_Storage")
-    if oldFolder then 
-        oldFolder:ClearAllChildren() 
-    end
-    _G.CurrentESP_ID = nil -- 停止舊的刷新循環
-    return
-end
+local ESP_Folder = CoreGui:FindFirstChild("Neko_ESP_Storage") or Instance.new("Folder", CoreGui)
+ESP_Folder.Name = "Neko_ESP_Storage"
 
--- 如果是開啟，設定一個唯一的腳本執行 ID
-local scriptId = "NekoESP_v2_" .. tick()
-_G.CurrentESP_ID = scriptId
-
--- 建立或獲取存放 ESP 的資料夾
-local ESP_Folder = CoreGui:FindFirstChild("Neko_ESP_Storage")
-if not ESP_Folder then
-    ESP_Folder = Instance.new("Folder", CoreGui)
-    ESP_Folder.Name = "Neko_ESP_Storage"
-end
-
-local function getRoot(char)
-    return char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
-end
-
-local function clearESP(p)
-    local old = ESP_Folder:FindFirstChild(p.Name)
-    if old then old:Destroy() end
-end
+local function getRoot(char) return char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")) end
 
 local function createESP(p)
     if p == player then return end
-    clearESP(p)
-
-    local function setup()
-        local char = p.Character
-        if not char then return end
-        local hrp = getRoot(char)
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hrp or not hum then return end
-
-        local bb = Instance.new("BillboardGui", ESP_Folder)
-        bb.Name = p.Name
-        bb.Adornee = hrp
-        bb.AlwaysOnTop = true
-        bb.Size = UDim2.new(0, 200, 0, 50)
-        bb.ExtentsOffset = Vector3.new(0, 3, 0)
-
-        local txt = Instance.new("TextLabel", bb)
-        txt.Size = UDim2.new(1, 0, 1, 0)
-        txt.BackgroundTransparency = 1
-        txt.TextColor3 = Color3.new(1, 1, 1)
-        txt.TextStrokeTransparency = 0
-        txt.Font = Enum.Font.SourceSansBold
-        txt.TextSize = 14
-
-        -- 刷新線程
-        task.spawn(function()
-            -- 只要開關沒關、ID沒變、角色還在，就持續刷新
-            while _G.CurrentESP_ID == scriptId and _G.ESP_ENABLED and char.Parent and hum.Health > 0 do
-                local myChar = player.Character
-                local myHrp = myChar and getRoot(myChar)
-                local dist = (myHrp and hrp) and math.floor((myHrp.Position - hrp.Position).Magnitude) or 0
-                
-                txt.Text = string.format("%s\n[ %d HP ] • [ %dm ]", p.Name, math.floor(hum.Health), dist)
-                
-                -- 設定 1000m 變色邏輯
-                if dist < 1000 then
-                    txt.TextColor3 = Color3.fromRGB(255, 80, 80) -- 1000公尺內顯示紅色
-                else
-                    txt.TextColor3 = Color3.fromRGB(80, 255, 80) -- 超過顯示綠色
+    task.spawn(function()
+        while true do
+            if _G.ESP then -- 對接主腳本開關
+                local char = p.Character
+                if char and char.Parent and getRoot(char) then
+                    local bb = ESP_Folder:FindFirstChild(p.Name) or Instance.new("BillboardGui", ESP_Folder)
+                    bb.Name = p.Name
+                    bb.Adornee = getRoot(char)
+                    bb.AlwaysOnTop = true
+                    bb.Size = UDim2.new(0, 200, 0, 50)
+                    
+                    local txt = bb:FindFirstChild("TextLabel") or Instance.new("TextLabel", bb)
+                    txt.Size = UDim2.new(1, 0, 1, 0)
+                    txt.BackgroundTransparency = 1
+                    txt.TextStrokeTransparency = 0
+                    txt.Font = Enum.Font.SourceSansBold
+                    txt.TextSize = 14
+                    
+                    local dist = math.floor((getRoot(player.Character).Position - getRoot(char).Position).Magnitude)
+                    txt.Text = string.format("%s\n[%dm]", p.Name, dist)
+                    txt.TextColor3 = dist < 1000 and Color3.new(1, 0, 0) or Color3.new(0, 1, 0)
+                    bb.Enabled = true
                 end
-                task.wait(0.1)
+            else
+                local bb = ESP_Folder:FindFirstChild(p.Name)
+                if bb then bb.Enabled = false end -- 關閉時隱藏
             end
-            bb:Destroy()
-        end)
-    end
-
-    -- 監聽角色重新生成
-    p.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        if _G.ESP_ENABLED then setup() end
+            task.wait(0.2)
+        end
     end)
-    
-    setup()
 end
 
--- 對目前伺服器所有玩家執行一次
-for _, v in ipairs(Players:GetPlayers()) do
-    createESP(v)
-end
+for _, v in ipairs(Players:GetPlayers()) do createESP(v) end
+Players.PlayerAdded:Connect(createESP)
