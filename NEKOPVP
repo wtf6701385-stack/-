@@ -1,64 +1,59 @@
--- [[ GitHub: NEKOPVP - 超級適配版 ]]
--- 邏輯：不論主腳本給什麼 ID，加載即強制執行，並接管自殺協議
+-- [[ GitHub: NEKOPVP - 神刀引擎 x SessionID 對接版 ]]
 
--- 1. 強行重設開關，確保啟動
-_G.FastAttack = true
-local SessionID = "NEKO_PVP_FORCE_" .. tick() 
-_G.CurrentFastAtkID = SessionID -- 強行覆蓋主腳本的 KILL ID，奪取控制權
+-- [ 1. 唯一 Session 對接 (這是為了配合主腳本的 KillCombat) ]
+local CurrentSession = _G.CurrentFastAtkID 
+if not _G.FastAttack or not CurrentSession then return end
 
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LP = game.Players.LocalPlayer
-local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
-local RegAttack = Net:WaitForChild("RE/RegisterAttack")
-local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- 配置
-local Settings = {
-    Range = 5000, 
-    AttackDelay = 0.1,
-    MaxTargets = 20
-}
-
--- 獲取玩家目標
-local function GetTargets()
-    local targets = {}
-    local center = nil
-    local char = LP.Character
-    if not (char and char.PrimaryPart) then return nil, {} end
-    
-    for _, p in pairs(game.Players:GetPlayers()) do
-        if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
-            local root = p.Character:FindFirstChild("HumanoidRootPart")
-            if root and p.Character.Humanoid.Health > 0 then
-                if (root.Position - char.PrimaryPart.Position).Magnitude <= Settings.Range then
-                    if not center then center = root end
-                    table.insert(targets, {p.Character, root})
-                end
-            end
-        end
-        if #targets >= Settings.MaxTargets then break end
-    end
-    return center, targets
+-- [ 2. 神刀組件抓取 ]
+local function GetCore()
+    local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+    return Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
 end
 
--- 殺戮循環
+-- [ 3. 神刀殺戮循環 ]
 task.spawn(function()
-    print("⚔️ 貓戰鬥：PVP 強制適配版已奪取控制權！")
-    print("🎯 目前 Session: " .. SessionID)
-
-    while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
-        local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
-        if tool then
-            local center, allTargets = GetTargets()
-            if center and #allTargets > 0 then
-                -- 執行零式注入
-                RegAttack:FireServer(0)
-                pcall(function()
-                    RegHit:FireServer(center, allTargets)
-                end)
+    print("🚀 神刀引擎：對接模式啟動！ ID: " .. CurrentSession)
+    
+    -- 只有當 ID 匹配時才運作，不匹配就立即自殺 (防止堆疊)
+    while _G.FastAttack and _G.CurrentFastAtkID == CurrentSession do
+        pcall(function()
+            local RegAtk, RegHit = GetCore()
+            local char = LP.Character
+            if not (char and char:FindFirstChild("HumanoidRootPart")) then return end
+            
+            local targets = {}
+            local mainPart = nil
+            
+            -- 神刀掃描：5000 範圍全體玩家 (PVP 專用)
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
+                    local hum = p.Character.Humanoid
+                    local root = p.Character:FindFirstChild("HumanoidRootPart")
+                    if hum.Health > 0 and root then
+                        if (root.Position - char.HumanoidRootPart.Position).Magnitude < 5000 then
+                            if not mainPart then mainPart = root end
+                            table.insert(targets, {p.Character, root})
+                        end
+                    end
+                end
+                if #targets >= 20 then break end -- 限制封包流量
             end
-        end
-        task.wait(Settings.AttackDelay)
+            
+            -- 神刀注入發動
+            if #targets > 0 and mainPart then
+                local tool = char:FindFirstChildOfClass("Tool")
+                if tool and tool.ToolTip ~= "Gun" then
+                    RegAtk:FireServer(0.1) -- 神刀極速延遲
+                    RegHit:FireServer(mainPart, targets)
+                end
+            end
+        end)
+        task.wait(0.1) -- 神刀暴力頻率
     end
     
-    print("💀 偵測到主腳本切換或關閉，PVP 核心優雅退場。")
+    print("💀 偵測到 ID 變更 (KillCombat)，神刀核心已自毀。")
 end)
