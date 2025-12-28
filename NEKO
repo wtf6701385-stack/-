@@ -1,33 +1,28 @@
---[[
-    零域 (ZERO SECTOR) | 權限分流器 (帶通知版)
-]]
-
+-- // [ 貓貓腳本 | 核心加載器 ] // --
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local localPlayer = Players.LocalPlayer
 
--- 【 1. 更新後的白名單名單 】
+-- // [ 第一層：授權資料庫 ] // --
 local Whitelist = {
     ["Zn6xx"] = true,
     ["jay04_23"] = true,
     ["iandsere"] = true,
 }
 
--- 【 2. 認證判斷與分流 】
+-- // [ 第二層：認證邏輯處理 ] // --
 local function Authenticate()
     local name = localPlayer.Name
     
     if Whitelist[name] then
-        -- =======================================================
-        -- 【 成功通知 】
-        -- =======================================================
+        -- // 成功分流：發送認證通知
         StarterGui:SetCore("SendNotification", {
-            Title = "零域 | 認證成功",
-            Text = "歡迎回來: " .. name .. "\n正在啟動 NEKO UI...",
+            Title = " 貓貓腳本 啟動成功 ",
+            Text = " 貓貓好想你！！！ ",
             Duration = 5
         })
 
-        -- 【 成功路徑：NEKO UI 框架 】
+        -- // 核心組件：UI 庫初始化
         local success, NEKOLib = pcall(function()
             return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
         end)
@@ -35,16 +30,19 @@ local function Authenticate()
 
         local Lib = NEKOLib:Init()
 
+        -- // 環境狀態：全域變量與模組鎖
         _G.PVP = false
         _G.MOB = false
         _G.AutoV4 = false
         _G.ESP = false
         local Loaded = { PVP = false, MOB = false, V4 = false, ESP = false }
 
+        -- // UI 頁面：貓公告 (公告看板)
         local Tab0 = Lib:CreateTab("貓公告", true) 
-        Tab0:AddInfo("NEKO HUB 系統公告", "歡迎使用校準版，功能已全面對接開關。")
-        Tab0:AddInfo("更新日誌", "12/28: 修復分頁渲染失敗與按鈕不顯示問題。")
+        Tab0:AddInfo("貓貓公告", "貓貓一個人做的，如果有問題馬上說")
+        Tab0:AddInfo("貓貓抱怨", "腦袋要炸了，終於可以啟動了")
 
+        -- // UI 頁面：貓戰鬥 (自動化功能)
         local Tab1 = Lib:CreateTab("貓戰鬥", false)
         local btnPVP, btnMOB
 
@@ -74,6 +72,7 @@ local function Authenticate()
             self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
         end)
 
+        -- // UI 頁面：貓功能 (視覺與角色強化)
         local Tab2 = Lib:CreateTab("貓功能", false)
         Tab2:AddButton("自動 V4 : OFF", function(self)
             _G.AutoV4 = not _G.AutoV4
@@ -93,6 +92,7 @@ local function Authenticate()
             self.Text = "  🐱 貓透視 (ESP) : " .. (_G.ESP and "ON" or "OFF")
         end)
 
+        -- // UI 頁面：貓召喚 (外部模組掛載)
         local Tab3 = Lib:CreateTab("貓召喚", false)
         Tab3:AddButton("召喚：貓貓神速", function() 
             task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() end) end)
@@ -102,6 +102,7 @@ local function Authenticate()
             task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end) end)
         end)
 
+        -- // 後台模組：視距鎖定守護進程
         task.spawn(function()
             local LP = game:GetService("Players").LocalPlayer
             while true do
@@ -115,16 +116,14 @@ local function Authenticate()
         end)
         
     else
-        -- =======================================================
-        -- 【 失敗通知 】
-        -- =======================================================
+        -- // 失敗分流：發送攔截通知
         StarterGui:SetCore("SendNotification", {
-            Title = "零域 | 認證失敗",
-            Text = "您不在白名單中，正在跳轉備用腳本...",
+            Title = " 貓貓腳本 不歡迎你 ",
+            Text = " 給我走開！！！ ",
             Duration = 5
         })
 
-        -- 【 失敗路徑：備用貓貓腳本網址 】
+        -- // 外部掛載：備用核心執行
         local failUrl = "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/%E8%B2%93%E8%B2%93%E7%9A%84%E8%85%B3%E6%9C%AC"
         pcall(function()
             loadstring(game:HttpGet(failUrl))()
@@ -132,5 +131,5 @@ local function Authenticate()
     end
 end
 
--- 啟動
+-- // [ 第三層：正式啟動 ] // --
 Authenticate()
