@@ -1,56 +1,120 @@
--- [[ Neko x FastAttack : 真正的「全自動填充」修復版 ]]
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
--- 重新確認路徑，有些版本會隱藏在不同子目錄下
-local RegisterAttack = Net:WaitForChild("RE/RegisterAttack")
-local RegisterHit = Net:WaitForChild("RE/RegisterHit")
+-- [[ NEKO x 凌霄 2025 : 幽靈瞬殺 x 階級填充 x 硬灌協議 ]]
+-- 此腳本專門供主腳本 loadstring 使用，具備完整的自殺協議
 
-local Settings = {
-    Distance = 3000,
-    -- 這裡不再傳送 0，而是模擬一個極其微小但「合法」的數值
-    ClickValue = 0.125
+if not _G.FastAttack then return end
+local SessionID = _G.CurrentFastAtkID -- 綁定主腳本 KillCombat 訊號
+local LP = game.Players.LocalPlayer
+
+local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
+local RegAttack = Net:WaitForChild("RE/RegisterAttack")
+local RegHit = Net:WaitForChild("RE/RegisterHit")
+local oldPos = nil 
+
+-- [ 究極殺戮配置 ]
+local Config = {
+    PlayerDist = 5000,   -- 5000 距離鎖定玩家
+    BringDist = 1500,    -- 1500 啟動「強制抓取」與「幽靈瞬殺」
+    MaxTargets = 20,     -- 20 目標填充上限
+    TeleportOffset = 3,  -- 瞬移偏置
+    MinDelay = 0.08, 
+    MaxDelay = 0.15 
 }
 
-local function GetValidTargets()
-    local heads = {}
-    local pChar = game.Players.LocalPlayer.Character
-    if not pChar or not pChar:FindFirstChild("HumanoidRootPart") then return heads end
+-- [ 目標處理：強制抓取與玩家優先邏輯 ]
+local function ProcessTargets()
+    local targets = {}
+    local char = LP.Character
+    if not (char and char:FindFirstChild("HumanoidRootPart")) then return targets end
+    local myRoot = char.HumanoidRootPart
+    local myPos = myRoot.Position
     
-    -- 擴大搜索範圍到所有可能的怪物路徑
-    local enemyPaths = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("Characters"), workspace}
-    for _, folder in pairs(enemyPaths) do
-        if folder then
-            for _, m in pairs(folder:GetChildren()) do
-                if m:IsA("Model") and m:FindFirstChild("Humanoid") and m.Humanoid.Health > 0 then
-                    local head = m:FindFirstChild("Head") or m:FindFirstChild("HumanoidRootPart")
-                    if head and (head.Position - pChar.HumanoidRootPart.Position).Magnitude < Settings.Distance then
-                        table.insert(heads, head)
-                    end
-                end
+    local allCandidates = {}
+    
+    -- 1. 優先鎖定玩家 (5000 範圍)
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+            local root = p.Character:FindFirstChild("HumanoidRootPart")
+            if root and (root.Position - myPos).Magnitude <= Config.PlayerDist then
+                table.insert(allCandidates, {v = p.Character, r = root})
             end
         end
     end
-    return heads
+    
+    -- 2. 補充怪物 (1500 範圍內且有血量)
+    for _, v in pairs(workspace:GetChildren()) do
+        local h = v:FindFirstChild("Humanoid")
+        local root = v:FindFirstChild("HumanoidRootPart")
+        if h and h.Health > 0 and root and not game.Players:GetPlayerFromCharacter(v) then
+            if (root.Position - myPos).Magnitude <= Config.BringDist then
+                table.insert(allCandidates, {v = v, r = root})
+            end
+        end
+    end
+
+    -- 3. 處理瞬移與抓取
+    local activeTargets = {}
+    for i, data in ipairs(allCandidates) do
+        if i > Config.MaxTargets then break end
+        
+        local dist = (data.r.Position - myPos).Magnitude
+        if dist <= Config.BringDist then
+            if not oldPos then oldPos = myRoot.CFrame end
+            pcall(function()
+                -- 核心 A：幽靈瞬移 (身邊攻擊)
+                myRoot.CFrame = data.r.CFrame * CFrame.new(0, 0, Config.TeleportOffset)
+                -- 核心 B：強制抓取 (拉到面前)
+                data.r.CFrame = myRoot.CFrame * CFrame.new(0, 0, -Config.TeleportOffset)
+            end)
+        end
+        table.insert(activeTargets, {data.v, data.r})
+    end
+    return activeTargets
 end
 
+-- ==========================================
+-- 【核心引擎 A：幽靈觸發與硬灌協議】
+-- ==========================================
 task.spawn(function()
-    while _G.FastAttack do
-        RunService.RenderStepped:Wait() -- 使用渲染步進達到最高同步率
+    while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
+        local char = LP.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        if tool and (tool.ToolTip == "Melee" or tool.ToolTip == "Sword" or tool.ToolTip == "Blox Fruit") then
+            task.spawn(function() tool:Activate() end) 
+            -- 直接宣告命中 (硬灌協議)
+            RegAttack:FireServer(0.125) 
+        end
+        task.wait(math.random(Config.MinDelay * 100, Config.MaxDelay * 100) / 100)
         
-        local tool = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
-        if tool then
-            local targets = GetValidTargets()
-            if #targets > 0 then
-                -- 【核心修復】：先觸發攻擊動作，確保伺服器認為你在揮刀
-                RegisterAttack:FireServer(Settings.ClickValue)
-                
-                -- 【核心修復】：將所有目標一次性寫入 Hit 封包，模仿範圍傷害
-                -- 注意：如果還是不行，試著把 targets 改成只傳 targets[1]
+        -- 安全返回原始座標
+        if oldPos and char and char.HumanoidRootPart then
+            pcall(function() char.HumanoidRootPart.CFrame = oldPos end)
+            oldPos = nil 
+        end
+    end
+end)
+
+-- ==========================================
+-- 【核心引擎 B：極限填充與 20 目標抹除】
+-- ==========================================
+task.spawn(function()
+    while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
+        game:GetService("RunService").RenderStepped:Wait()
+        local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
+        if tool and (tool.ToolTip == "Melee" or tool.ToolTip == "Sword" or tool.ToolTip == "Blox Fruit") then
+            local enemies = ProcessTargets()
+            if #enemies > 0 then
+                local hitData = {}
+                for _, data in ipairs(enemies) do
+                    table.insert(hitData, {data[1], data[2]})
+                end
                 pcall(function()
-                    RegisterHit:FireServer(targets[1], targets)
+                    -- 8 倍暴力填充
+                    for i = 1, 8 do 
+                        RegHit:FireServer(tool, hitData)
+                    end
                 end)
             end
         end
     end
+    print("💀 幽靈核心：自殺協議已執行，代碼清理完畢。")
 end)
