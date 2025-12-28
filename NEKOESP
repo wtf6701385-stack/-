@@ -1,49 +1,20 @@
--- [[ NEKOESP - 修正版 ]]
-local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-local player = Players.LocalPlayer
-
-if _G.ESP_Loop_Started then return end
-_G.ESP_Loop_Started = true
-
-local ESP_Folder = CoreGui:FindFirstChild("Neko_ESP_Storage") or Instance.new("Folder", CoreGui)
-ESP_Folder.Name = "Neko_ESP_Storage"
-
-local function getRoot(char) return char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")) end
-
-local function createESP(p)
-    if p == player then return end
-    task.spawn(function()
-        while true do
-            if _G.ESP then -- 對接主腳本開關
-                local char = p.Character
-                if char and char.Parent and getRoot(char) then
-                    local bb = ESP_Folder:FindFirstChild(p.Name) or Instance.new("BillboardGui", ESP_Folder)
-                    bb.Name = p.Name
-                    bb.Adornee = getRoot(char)
-                    bb.AlwaysOnTop = true
-                    bb.Size = UDim2.new(0, 200, 0, 50)
-                    
-                    local txt = bb:FindFirstChild("TextLabel") or Instance.new("TextLabel", bb)
-                    txt.Size = UDim2.new(1, 0, 1, 0)
-                    txt.BackgroundTransparency = 1
-                    txt.TextStrokeTransparency = 0
-                    txt.Font = Enum.Font.SourceSansBold
-                    txt.TextSize = 14
-                    
-                    local dist = math.floor((getRoot(player.Character).Position - getRoot(char).Position).Magnitude)
-                    txt.Text = string.format("%s\n[%dm]", p.Name, dist)
-                    txt.TextColor3 = dist < 1000 and Color3.new(1, 0, 0) or Color3.new(0, 1, 0)
-                    bb.Enabled = true
+if _G.ESPStarted then return end; _G.ESPStarted = true
+local Folder = game:GetService("CoreGui"):FindFirstChild("NekoESP") or Instance.new("Folder", game:GetService("CoreGui")); Folder.Name = "NekoESP"
+task.spawn(function()
+    while true do
+        for _, p in ipairs(game.Players:GetPlayers()) do
+            if p ~= game.Players.LocalPlayer then
+                local char = p.Character; local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if _G.ESP and hrp and char:FindFirstChildOfClass("Humanoid").Health > 0 then
+                    local bb = Folder:FindFirstChild(p.Name) or Instance.new("BillboardGui", Folder)
+                    bb.Name = p.Name; bb.Adornee = hrp; bb.AlwaysOnTop = true; bb.Size = UDim2.new(0,100,0,30); bb.Enabled = true
+                    local l = bb:FindFirstChild("L") or Instance.new("TextLabel", bb); l.Name = "L"; l.Size = UDim2.new(1,0,1,0); l.BackgroundTransparency = 1; l.TextColor3 = Color3.new(1,1,1); l.TextSize = 12
+                    l.Text = p.Name .. " [" .. math.floor((hrp.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude) .. "m]"
+                else
+                    if Folder:FindFirstChild(p.Name) then Folder[p.Name].Enabled = false end
                 end
-            else
-                local bb = ESP_Folder:FindFirstChild(p.Name)
-                if bb then bb.Enabled = false end -- 關閉時隱藏
             end
-            task.wait(0.2)
         end
-    end)
-end
-
-for _, v in ipairs(Players:GetPlayers()) do createESP(v) end
-Players.PlayerAdded:Connect(createESP)
+        task.wait(0.5)
+    end
+end)
