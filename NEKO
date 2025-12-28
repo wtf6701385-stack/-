@@ -1,9 +1,29 @@
--- --- [[ 主腳本：按鈕邏輯修正 ]] --- --
+-- [[ 1. 安全召喚 UI 框架 ]]
+local success, NEKOLib = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
+end)
+if not success or not NEKOLib then return end
+
+local Lib = NEKOLib:Init()
+
+-- [[ 2. 全域狀態初始化 ]]
+_G.PVP = false
+_G.MOB = false
+_G.AutoV4 = false
+_G.ESP = false
+
+-- --- [[ 3. 建立 Tab0：貓公告 ]] --- --
+local Tab0 = Lib:CreateTab("貓公告", true) 
+Tab0:AddInfo("NEKO HUB 系統公告", "功能已切換為「OFF即終止」自殺協議模式。")
+Tab0:AddInfo("使用說明", "開啟功能後會自動載入腳本，關閉則會徹底釋放記憶體。")
+
+-- --- [[ 4. 建立 Tab1：貓戰鬥 ]] --- --
+local Tab1 = Lib:CreateTab("貓戰鬥", false)
 
 Tab1:AddButton("打架模式 : OFF", function(self)
     _G.PVP = not _G.PVP
     if _G.PVP then
-        -- 每次開啟都重新載入，因為舊的已經在 OFF 時自殺了
+        -- 啟動時才 loadstring
         task.spawn(function()
             pcall(function() 
                 loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))() 
@@ -16,7 +36,7 @@ end)
 Tab1:AddButton("刷怪模式 : OFF", function(self)
     _G.MOB = not _G.MOB
     if _G.MOB then
-        -- 每次開啟都重新載入
+        -- 啟動時才 loadstring
         task.spawn(function()
             pcall(function() 
                 loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))() 
@@ -24,4 +44,42 @@ Tab1:AddButton("刷怪模式 : OFF", function(self)
         end)
     end
     self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
+end)
+
+-- --- [[ 5. 建立 Tab2：貓功能 ]] --- --
+local Tab2 = Lib:CreateTab("貓功能", false)
+
+Tab2:AddButton("自動 V4 : OFF", function(self)
+    _G.AutoV4 = not _G.AutoV4
+    if _G.AutoV4 then
+        task.spawn(function()
+            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4?t="..tick()))() end)
+        end)
+    end
+    self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
+end)
+
+Tab2:AddButton("貓透視 (ESP) : OFF", function(self)
+    _G.ESP = not _G.ESP
+    if _G.ESP then
+        task.spawn(function()
+            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP?t="..tick()))() end)
+        end)
+    end
+    self.Text = "  🐱 貓透視 (ESP) : " .. (_G.ESP and "ON" or "OFF")
+end)
+
+-- --- [[ 6. 建立 Tab3：貓召喚 ]] --- --
+local Tab3 = Lib:CreateTab("貓召喚", false)
+
+Tab3:AddButton("召喚：貓貓神速", function() 
+    task.spawn(function() 
+        pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() end) 
+    end)
+end)
+
+Tab3:AddButton("召喚：貓貓飛行", function() 
+    task.spawn(function() 
+        pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly?t="..tick()))() end) 
+    end)
 end)
