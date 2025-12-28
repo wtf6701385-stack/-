@@ -1,8 +1,7 @@
+-- [[ NEKOMOB - 核心修正版 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
-if _G.MobLoopStarted then return end
-_G.MobLoopStarted = true
 
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack, RegHit = Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
@@ -18,47 +17,67 @@ local function isEnemy(c)
 end
 
 local Targets = {}
+
+-- 掃描
 task.spawn(function()
     while true do
-        if _G.MOB then
-            local mr = getRoot(player.Character)
-            if mr then
-                local filtered = {}
-                for _, v in ipairs(workspace:GetChildren()) do
-                    if isEnemy(v) and not Players:GetPlayerFromCharacter(v) then
-                        local tr = getRoot(v)
-                        if tr and (tr.Position - mr.Position).Magnitude < 2500 then table.insert(filtered, v) end
+        if _G.MOB == true then
+            pcall(function()
+                local char = player.Character
+                local mr = getRoot(char)
+                if mr then
+                    local filtered = {}
+                    local all = workspace:GetChildren()
+                    for i = 1, #all do
+                        local v = all[i]
+                        if isEnemy(v) and not Players:GetPlayerFromCharacter(v) then
+                            local tr = getRoot(v)
+                            if tr and (tr.Position - mr.Position).Magnitude < 2500 then
+                                table.insert(filtered, v)
+                            end
+                        end
+                        if #filtered >= 30 then break end
                     end
-                    if #filtered >= 30 then break end
+                    Targets = filtered
                 end
-                Targets = filtered
-            end
-        else Targets = {} end
+            end)
+        else
+            Targets = {}
+        end
         task.wait(0.5)
     end
 end)
 
+-- 攻擊與拉怪
 task.spawn(function()
     while true do
-        if _G.MOB and #Targets > 0 then
+        if _G.MOB == true and #Targets > 0 then
             pcall(function()
                 local char = player.Character
                 local root = getRoot(char)
                 local tool = char and char:FindFirstChildOfClass("Tool")
+                
                 if tool and root then
-                    local hitList = {}; local mainPart = nil
+                    local hitList = {}
+                    local mainPart = nil
+                    
                     for _, mob in ipairs(Targets) do
                         local tr = getRoot(mob)
                         if tr then
-                            tr.CFrame = root.CFrame * CFrame.new(0, 100, 0)
+                            -- 強制拉怪
+                            tr.CFrame = root.CFrame * CFrame.new(0, 50, 0)
                             if not mainPart then mainPart = tr end
                             table.insert(hitList, mob)
                         end
                     end
-                    if #hitList > 0 then RegAttack:FireServer(0); RegHit:FireServer(mainPart, hitList) end
+                    
+                    if #hitList > 0 and mainPart then
+                        RegAttack:FireServer(0)
+                        RegHit:FireServer(mainPart, hitList)
+                    end
                 end
             end)
         end
-        task.wait(0.1)
+        task.wait(0.1) -- 攻擊頻率
     end
 end)
