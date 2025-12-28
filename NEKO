@@ -80,3 +80,17 @@ end)
 Tab3:AddButton("召喚：貓貓飛行", function() 
     task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end) end)
 end)
+-- [[ 視距永久鎖定模組 ]]
+task.spawn(function()
+    local LP = game:GetService("Players").LocalPlayer
+    while true do
+        pcall(function()
+            -- 如果視距被遊戲重置，就立刻把它改回一萬
+            if LP.CameraMaxZoomDistance ~= 10000 then
+                LP.CameraMaxZoomDistance = 10000
+            end
+        end)
+        task.wait(1) -- 每秒校準一次，完全不佔手機效能
+    end
+end)
+
