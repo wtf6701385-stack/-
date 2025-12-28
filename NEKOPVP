@@ -1,76 +1,88 @@
--- [[ NEKO x 凌霄 2025 : V9 偽裝命脈核心 ]]
--- 核心邏輯：修正 GhoulSwing 缺失問題，模擬真實 DMG 封包格式
+-- [[ NEKO x 凌霄 2025 : 5000 全域秒殺核心 ]]
+-- 核心邏輯：取消分層，5000 內全體隨機零件採樣 + 批量注入
 
 if not _G.FastAttack then return end
 local SessionID = _G.CurrentFastAtkID
 local LP = game.Players.LocalPlayer
+local RS = game:GetService("ReplicatedStorage")
+local WS = game:GetService("Workspace")
 
-local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
+local Net = RS:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- [ 針對截圖的優化配置 ]
+-- [ 殺戮配置 ]
 local Config = {
-    PlayerDist = 5000,
-    MonsterDist = 1500,
+    KillDist = 5000,     -- 只有一個標準：5000 距離
     MaxTargets = 20,
-    AttackName = "Slash" -- 嘗試改用通用的攻擊名稱
+    ClickDelay = 0.1 
 }
 
-local function GetEnemies()
-    local targets = {}
+-- [ 隨機零件採樣 (零式核心精髓) ]
+local function GetRandomValidPart(target)
+    local allParts = target:GetDescendants()
+    local validParts = {}
+    for _, part in ipairs(allParts) do
+        if part:IsA("BasePart") and part.CanCollide then
+            table.insert(validParts, part)
+        end
+    end
+    return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
+end
+
+-- [ 全域目標搜刮 ]
+local function GetAllTargets()
+    local mainPart = nil
+    local othersEnemies = {}
     local char = LP.Character
-    if not (char and char.PrimaryPart) then return targets end
-    for _, v in pairs(workspace:GetChildren()) do
+    if not (char and char.PrimaryPart) then return nil, {} end
+    local myPos = char.PrimaryPart.Position
+    
+    local candidates = {}
+    
+    -- 遍歷所有帶有血量的生物 (不論玩家或怪物)
+    for _, v in pairs(WS:GetChildren()) do
         local h = v:FindFirstChild("Humanoid")
         local r = v:FindFirstChild("HumanoidRootPart")
         if h and h.Health > 0 and r and v ~= char then
-            local isP = game.Players:GetPlayerFromCharacter(v)
-            if (isP and (r.Position - char.PrimaryPart.Position).Magnitude <= Config.PlayerDist) or 
-               (not isP and (r.Position - char.PrimaryPart.Position).Magnitude <= Config.MonsterDist) then
-                table.insert(targets, {v, r})
+            if (r.Position - myPos).Magnitude <= Config.KillDist then
+                table.insert(candidates, v)
             end
         end
-        if #targets >= Config.MaxTargets then break end
     end
-    return targets
+
+    -- 封裝成零腳本要求的格式
+    for i, enemy in ipairs(candidates) do
+        if i > Config.MaxTargets then break end
+        local part = GetRandomValidPart(enemy)
+        if part then
+            if not mainPart then mainPart = part end 
+            table.insert(othersEnemies, {enemy, part})
+        end
+    end
+    
+    return mainPart, othersEnemies
 end
 
 -- ==========================================
--- 【核心 A：動作補完】(解決 DOES NOT EXIST 報錯)
+-- 【秒殺引擎啟動】
 -- ==========================================
 task.spawn(function()
     while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
         local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
-        if tool then
-            -- 修正：不僅要 Activate，還要發送正確的攻擊標籤
-            task.spawn(function() tool:Activate() end)
-            RegAttack:FireServer(0.125) -- 維持截圖中看到的攻擊頻率
-        end
-        task.wait(0.12)
-    end
-end)
-
--- ==========================================
--- 【核心 B：精準傷害注入】(適配截圖格式)
--- ==========================================
-task.spawn(function()
-    while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
-        game:GetService("RunService").Heartbeat:Wait() -- 改用 Heartbeat 同步
-        local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
-        if tool then
-            local enemies = GetEnemies()
-            if #enemies > 0 then
+        if tool and tool.ToolTip ~= "Gun" then
+            local mainPart, enemyList = GetAllTargets()
+            
+            if mainPart and #enemyList > 0 then
+                -- 1. 發送揮刀訊號
+                RegAttack:FireServer(Config.ClickDelay)
+                
+                -- 2. 直接注入零式封包
                 pcall(function()
-                    -- 修正：根據截圖，我們需要模擬「一對一」的命中封包
-                    for _, data in ipairs(enemies) do
-                        local enemyChar = data[1]
-                        local enemyPart = data[2]
-                        -- 2025 最新封包格式：模擬 Sword 的真實打擊
-                        RegHit:FireServer(tool, {{enemyChar, enemyPart}})
-                    end
+                    RegHit:FireServer(mainPart, enemyList)
                 end)
             end
         end
+        task.wait(Config.ClickDelay)
     end
 end)
