@@ -1,5 +1,5 @@
--- [[ NEKO x 凌霄 2025 : 純粹暴力填充核心 ]]
--- 核心邏輯：絕對不動主體、絕對不拉人、純傷害注入
+-- [[ NEKO x 凌霄 2025 : 修正版純粹攻擊核心 ]]
+-- 核心邏輯：修正封包格式，確保 100% 命中
 
 if not _G.FastAttack then return end
 local SessionID = _G.CurrentFastAtkID
@@ -9,80 +9,73 @@ local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitFor
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- [ 暴力配置 ]
+-- [ 殺戮配置 ]
 local Config = {
-    PlayerDist = 5000,   -- 5000 距離內玩家受死
-    MonsterDist = 1500,  -- 1500 距離內怪物受死
-    MaxTargets = 20,
-    MinDelay = 0.08, 
-    MaxDelay = 0.15 
+    PlayerDist = 5000,
+    MonsterDist = 1500,
+    MaxTargets = 20
 }
 
--- [ 純粹目標獲取 ]
+-- [ 目標獲取函數 ]
 local function GetEnemies()
     local targets = {}
     local char = LP.Character
-    if not (char and char.PrimaryPart) then return targets end
-    local myPos = char.PrimaryPart.Position
+    if not (char and char:FindFirstChild("HumanoidRootPart")) then return targets end
+    local myPos = char.HumanoidRootPart.Position
     
-    local candidates = {}
     for _, v in pairs(workspace:GetChildren()) do
         local h = v:FindFirstChild("Humanoid")
-        local root = v:FindFirstChild("HumanoidRootPart")
-        if h and h.Health > 0 and root and v ~= char then
+        local r = v:FindFirstChild("HumanoidRootPart")
+        if h and h.Health > 0 and r and v ~= char then
             local isPlayer = game.Players:GetPlayerFromCharacter(v)
-            local dist = (root.Position - myPos).Magnitude
+            local dist = (r.Position - myPos).Magnitude
             
-            -- 分段判定範圍
             if (isPlayer and dist <= Config.PlayerDist) or (not isPlayer and dist <= Config.MonsterDist) then
-                table.insert(candidates, {v = v, r = root})
+                -- 修正：封包格式必須包含對象與其 RootPart
+                table.insert(targets, {v, r})
             end
         end
-    end
-
-    -- 封包打包 (上限 20)
-    for i = 1, math.min(#candidates, Config.MaxTargets) do
-        table.insert(targets, {candidates[i].v, candidates[i].r})
+        if #targets >= Config.MaxTargets then break end
     end
     return targets
 end
 
 -- ==========================================
--- 【核心 A：訊號觸發】
+-- 【核心 A：攻擊觸發】
 -- ==========================================
 task.spawn(function()
     while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
-        local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
+        local char = LP.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
         if tool then
+            -- 模擬揮刀動畫 (不可省略)
             task.spawn(function() tool:Activate() end)
+            -- 修正：加入 0.125 的標準揮刀延遲
             RegAttack:FireServer(0.125)
         end
-        task.wait(math.random(Config.MinDelay * 100, Config.MaxDelay * 100) / 100)
+        task.wait(0.12) -- 固定於安全高頻
     end
 end)
 
 -- ==========================================
--- 【核心 B：暴力填充引擎】
+-- 【核心 B：命中注入】
 -- ==========================================
 task.spawn(function()
     while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
-        game:GetService("RunService").RenderStepped:Wait()
-        local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
+        game:GetService("RunService").Stepped:Wait() -- 與伺服器頻率同步
+        local char = LP.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
         if tool then
             local enemies = GetEnemies()
             if #enemies > 0 then
-                local hitData = {}
-                for _, data in ipairs(enemies) do
-                    table.insert(hitData, {data[1], data[2]})
-                end
-                -- 極限硬灌命中封包
+                -- 修正：這部分是 BF 目前最穩定的封包填充方式
                 pcall(function()
-                    for i = 1, 10 do -- 提升至 10 倍填充
-                        RegHit:FireServer(tool, hitData)
+                    for i = 1, 10 do 
+                        -- 直接傳送對象與 RootPart，模擬真實碰撞
+                        RegHit:FireServer(tool, enemies)
                     end
                 end)
             end
         end
     end
-    print("💀 純粹核心：自毀成功。")
 end)
