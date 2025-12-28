@@ -1,54 +1,95 @@
+-- [[ 1. 安全召喚 UI 框架 ]]
 local success, NEKOLib = pcall(function()
     return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
 end)
-if not success or not NEKOLib then return end
+if not success or not NEKOLib then return "UI Load Failed" end
 
 local Lib = NEKOLib:Init()
 _G.PVP = false; _G.MOB = false; _G.AutoV4 = false; _G.ESP = false
-local Loaded = { PVP = false, MOB = false, V4 = false, ESP = false }
 
-local Tab0 = Lib:CreateTab("貓公告", true) 
-Tab0:AddInfo("NEKO HUB 終極整合版", "所有功能已校準完畢，請放心使用。")
-Tab0:AddInfo("操作提醒", "刷怪與打架互不干涉，開啟後請確保手上拿著武器。")
+-- --- [[ 2. 核心邏輯直接植入 (不用 loadstring) ]] --- --
+local player = game.Players.LocalPlayer
+local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
+local RegAtk = Net:WaitForChild("RE/RegisterAttack")
+local RegHit = Net:WaitForChild("RE/RegisterHit")
+
+-- 刷怪 & 打架 混合監聽循環
+task.spawn(function()
+    while task.wait(0.1) do
+        pcall(function()
+            local char = player.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            local tool = char and char:FindFirstChildOfClass("Tool")
+            
+            if tool and root then
+                local targets = {}; local mainPart = nil
+                
+                -- 如果開了刷怪
+                if _G.MOB then
+                    for _, v in ipairs(workspace:GetChildren()) do
+                        local hum = v:FindFirstChildOfClass("Humanoid")
+                        local tRoot = v:FindFirstChild("HumanoidRootPart")
+                        if hum and hum.Health > 0 and tRoot and not game.Players:GetPlayerFromCharacter(v) then
+                            if not v.Name:lower():find("npc") then
+                                tRoot.CFrame = root.CFrame * CFrame.new(0, 50, 0)
+                                if not mainPart then mainPart = tRoot end
+                                table.insert(targets, v)
+                            end
+                        end
+                        if #targets >= 10 then break end
+                    end
+                -- 如果開了打架
+                elseif _G.PVP then
+                    for _, p in ipairs(game.Players:GetPlayers()) do
+                        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            local tRoot = p.Character.HumanoidRootPart
+                            if (tRoot.Position - root.Position).Magnitude < 1000 then
+                                if not mainPart then mainPart = tRoot end
+                                table.insert(targets, p.Character)
+                            end
+                        end
+                    end
+                end
+                
+                if #targets > 0 and mainPart then
+                    RegAtk:FireServer(0); RegHit:FireServer(mainPart, targets)
+                end
+            end
+        end)
+    end
+end)
+
+-- 自動 V4 監聽
+task.spawn(function()
+    while task.wait(1) do
+        if _G.AutoV4 then
+            pcall(function()
+                local awake = player.Character:FindFirstChild("Awakening") or player.Backpack:FindFirstChild("Awakening")
+                if awake then awake.RemoteFunction:InvokeServer(true) end
+            end)
+        end
+    end
+end)
+
+-- --- [[ 3. UI 分頁與按鈕 ]] --- --
+local Tab0 = Lib:CreateTab("貓公告", true)
+Tab0:AddInfo("NEKO HUB 手機單文件版", "已將所有腳本整合，無需多次下載。")
 
 local Tab1 = Lib:CreateTab("貓戰鬥", false)
 Tab1:AddButton("打架模式 : OFF", function(self)
-    _G.PVP = not _G.PVP
-    if _G.PVP and not Loaded.PVP then
-        Loaded.PVP = true
-        task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))() end) end)
-    end
+    _G.PVP = not _G.PVP; _G.MOB = false
     self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
 end)
-
 Tab1:AddButton("刷怪模式 : OFF", function(self)
-    _G.MOB = not _G.MOB
-    if _G.MOB and not Loaded.MOB then
-        Loaded.MOB = true
-        task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))() end) end)
-    end
+    _G.MOB = not _G.MOB; _G.PVP = false
     self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
 local Tab2 = Lib:CreateTab("貓功能", false)
 Tab2:AddButton("自動 V4 : OFF", function(self)
     _G.AutoV4 = not _G.AutoV4
-    if _G.AutoV4 and not Loaded.V4 then
-        Loaded.V4 = true
-        task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4?t="..tick()))() end) end)
-    end
     self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
 end)
+Tab2:AddButton("貓透視 : 尚未整合", function() print("ESP 暫未放入單文件") end)
 
-Tab2:AddButton("貓透視 (ESP) : OFF", function(self)
-    _G.ESP = not _G.ESP
-    if _G.ESP and not Loaded.ESP then
-        Loaded.ESP = true
-        task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP?t="..tick()))() end) end)
-    end
-    self.Text = "  🐱 貓透視 (ESP) : " .. (_G.ESP and "ON" or "OFF")
-end)
-
-local Tab3 = Lib:CreateTab("貓召喚", false)
-Tab3:AddButton("召喚：貓貓神速", function() task.spawn(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() end) end)
-Tab3:AddButton("召喚：貓貓飛行", function() task.spawn(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly?t="..tick()))() end) end)
+print("🐱 [NEKO] 終極合體版已啟動！")
