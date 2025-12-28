@@ -1,88 +1,62 @@
--- [[ NEKO x 凌霄 2025 : 5000 全域秒殺核心 ]]
--- 核心邏輯：取消分層，5000 內全體隨機零件採樣 + 批量注入
-
+-- [[ GitHub: NEKOPVP - 零式秒殺對接核心 ]]
 if not _G.FastAttack then return end
-local SessionID = _G.CurrentFastAtkID
+local CurrentSession = _G.CurrentFastAtkID -- 鎖定啟動時的 ID
+
 local LP = game.Players.LocalPlayer
 local RS = game:GetService("ReplicatedStorage")
-local WS = game:GetService("Workspace")
-
 local Net = RS:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- [ 殺戮配置 ]
-local Config = {
-    KillDist = 5000,     -- 只有一個標準：5000 距離
-    MaxTargets = 20,
-    ClickDelay = 0.1 
+-- 配置
+local Settings = {
+    Range = 5000, 
+    AttackDelay = 0.1,
+    MaxTargets = 20
 }
 
--- [ 隨機零件採樣 (零式核心精髓) ]
-local function GetRandomValidPart(target)
-    local allParts = target:GetDescendants()
-    local validParts = {}
-    for _, part in ipairs(allParts) do
-        if part:IsA("BasePart") and part.CanCollide then
-            table.insert(validParts, part)
-        end
-    end
-    return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
-end
-
--- [ 全域目標搜刮 ]
-local function GetAllTargets()
-    local mainPart = nil
-    local othersEnemies = {}
+-- 搜尋目標玩家
+local function GetPVPTargets()
+    local targets = {}
+    local center = nil
     local char = LP.Character
     if not (char and char.PrimaryPart) then return nil, {} end
-    local myPos = char.PrimaryPart.Position
     
-    local candidates = {}
-    
-    -- 遍歷所有帶有血量的生物 (不論玩家或怪物)
-    for _, v in pairs(WS:GetChildren()) do
-        local h = v:FindFirstChild("Humanoid")
-        local r = v:FindFirstChild("HumanoidRootPart")
-        if h and h.Health > 0 and r and v ~= char then
-            if (r.Position - myPos).Magnitude <= Config.KillDist then
-                table.insert(candidates, v)
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
+            local hum = p.Character.Humanoid
+            local root = p.Character:FindFirstChild("HumanoidRootPart")
+            if hum.Health > 0 and root then
+                local dist = (root.Position - char.PrimaryPart.Position).Magnitude
+                if dist <= Settings.Range then
+                    if not center then center = root end
+                    table.insert(targets, {p.Character, root})
+                end
             end
         end
+        if #targets >= Settings.MaxTargets then break end
     end
-
-    -- 封裝成零腳本要求的格式
-    for i, enemy in ipairs(candidates) do
-        if i > Config.MaxTargets then break end
-        local part = GetRandomValidPart(enemy)
-        if part then
-            if not mainPart then mainPart = part end 
-            table.insert(othersEnemies, {enemy, part})
-        end
-    end
-    
-    return mainPart, othersEnemies
+    return center, targets
 end
 
--- ==========================================
--- 【秒殺引擎啟動】
--- ==========================================
+-- 殺戮循環
 task.spawn(function()
-    while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
+    print("⚔️ NEKO PVP 核心：啟動成功！Session: " .. CurrentSession)
+    
+    while _G.FastAttack and _G.CurrentFastAtkID == CurrentSession do
         local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
-        if tool and tool.ToolTip ~= "Gun" then
-            local mainPart, enemyList = GetAllTargets()
-            
-            if mainPart and #enemyList > 0 then
-                -- 1. 發送揮刀訊號
-                RegAttack:FireServer(Config.ClickDelay)
-                
-                -- 2. 直接注入零式封包
+        if tool then
+            local center, allTargets = GetPVPTargets()
+            if center and #allTargets > 0 then
+                -- 執行零式批量注入
+                RegAttack:FireServer(0)
                 pcall(function()
-                    RegHit:FireServer(mainPart, enemyList)
+                    RegHit:FireServer(center, allTargets)
                 end)
             end
         end
-        task.wait(Config.ClickDelay)
+        task.wait(Settings.AttackDelay)
     end
+    
+    print("💀 NEKO PVP 核心：ID 變更，自動銷毀中...")
 end)
