@@ -1,8 +1,9 @@
--- [[ NEKOMOB - 血量判斷優化版 ]]
+-- [[ NEKOMOB - OFF即終止自殺版 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
+-- 自殺協議：分配唯一的 ID
 local scriptId = tick()
 _G.CurrentMobID = scriptId
 
@@ -10,78 +11,61 @@ local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack, RegHit = Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
 
 local function getRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso")) end
-
--- [[ 修正後的血量與敵對判斷 ]]
 local function isEnemy(c)
     local h = c and c:FindFirstChildOfClass("Humanoid")
-    if h and h.Health > 0 then
-        -- 如果你是指要打「高血量」的怪，這裡維持 MaxHealth > 100
-        -- 如果是想打「所有」有血條的怪，可以把後面的條件放寬
-        if h.MaxHealth >= 10 then 
-            local name = c.Name:lower()
-            -- 過濾 NPC 與 安全區生物
-            if name:find("npc") or name:find("shop") or name:find("quest") or name:find("deal") then
-                return false
-            end
-            return true
-        end
+    if h and h.Health > 0 and h.MaxHealth > 10 then 
+        local name = c.Name:lower()
+        return not (name:find("npc") or name:find("shop") or name:find("quest") or name:find("deal"))
     end
     return false
 end
 
 local Targets = {}
 
--- 1. 掃描線程
+-- 1. 掃描線程：當開關關閉或ID不符時徹底結束
 task.spawn(function()
-    while _G.CurrentMobID == scriptId do
-        if _G.MOB then
-            local mr = getRoot(player.Character)
-            if mr then
-                local filtered = {}
-                for _, v in ipairs(workspace:GetChildren()) do
-                    if isEnemy(v) and not Players:GetPlayerFromCharacter(v) then
-                        local tr = getRoot(v)
-                        if tr and (tr.Position - mr.Position).Magnitude < 2500 then
-                            table.insert(filtered, v)
-                        end
+    while _G.CurrentMobID == scriptId and _G.MOB do
+        local mr = getRoot(player.Character)
+        if mr then
+            local filtered = {}
+            for _, v in ipairs(workspace:GetChildren()) do
+                if isEnemy(v) and not Players:GetPlayerFromCharacter(v) then
+                    local tr = getRoot(v)
+                    if tr and (tr.Position - mr.Position).Magnitude < 2500 then
+                        table.insert(filtered, v)
                     end
-                    if #filtered >= 30 then break end
                 end
-                Targets = filtered
+                if #filtered >= 30 then break end
             end
-        else Targets = {} end
+            Targets = filtered
+        end
         task.wait(0.5)
     end
+    -- 這裡可以清除殘留資料
+    Targets = {}
 end)
 
--- 2. 動作線程 (拉怪與攻擊)
+-- 2. 動作線程：當開關關閉或ID不符時徹底結束
 task.spawn(function()
-    while _G.CurrentMobID == scriptId do
-        if _G.MOB and #Targets > 0 then
+    while _G.CurrentMobID == scriptId and _G.MOB do
+        if #Targets > 0 then
             pcall(function()
                 local char = player.Character
                 local root = getRoot(char)
                 local tool = char and char:FindFirstChildOfClass("Tool")
-                
                 if tool and root then
                     local hitList = {}
                     local mainTargetPart = nil
-                    
                     for _, mob in ipairs(Targets) do
                         local tr = getRoot(mob)
                         if tr then
-                            -- 拉怪到上方 100 米
                             tr.CFrame = root.CFrame * CFrame.new(0, 100, 0)
-                            
-                            -- 記錄主目標部件與目標列表
                             if not mainTargetPart then mainTargetPart = tr end
-                            table.insert(hitList, mob) -- 傳入 Model 確保 RegisterHit 識別
+                            table.insert(hitList, mob)
                         end
                     end
-                    
                     if #hitList > 0 and mainTargetPart then
                         RegAttack:FireServer(0)
-                        -- 確保格式正確：(主目標 HRP, 目標列表)
                         RegHit:FireServer(mainTargetPart, hitList)
                     end
                 end
