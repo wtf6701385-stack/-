@@ -1,68 +1,65 @@
--- [[ GitHub: NEKO - 最終校準版主腳本 ]]
+-- [[ GitHub: NEKO - 最終校準主腳本 ]]
 local success, NEKOLib = pcall(function()
     return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
 end)
 
-if not success or not NEKOLib then
-    warn("❌ NEKO UI 載入失敗！")
-    return
-end
+if not success or not NEKOLib then return end
 
 local Lib = NEKOLib:Init()
 local player = game:GetService("Players").LocalPlayer
 
+-- [[ 全域變數：同步 MOB 的布林開關 ]]
 _G.PVP = false
 _G.MOB = false
-_G.FastAttack = false
-_G.CurrentFastAtkID = ""
+_G.FastAttack = false -- 雖然因果律不用，但保留給 UI 相容性
 
-local function KillCombat()
-    _G.FastAttack = false
-    _G.CurrentFastAtkID = "KILL_" .. tick()
-    task.wait(0.2) -- 給核心自毀的時間
-end
+-- 核心加載旗標 (防止重複 loadstring 導致卡頓)
+local PVPLoaded = false
+local MOBLoaded = false
 
--- 貓戰鬥頁面
+-- 核心邏輯 (Zoom)
+game:GetService("RunService").Heartbeat:Connect(function()
+    pcall(function() player.CameraMaxZoomDistance = 1000 end)
+end)
+
+-- --- UI 按鈕與功能邏輯 --- --
+
 local Tab1 = Lib:CreateTab("貓戰鬥", false)
 local btnPVP, btnMOB
 
--- PVP 神刀開關
+-- [[ PVP 開關：完全照抄 MOB 的運作方式 ]]
 btnPVP = Tab1:AddButton("打架模式 : OFF", function(self)
     _G.PVP = not _G.PVP
     if _G.PVP then
+        -- 1. 互斥切換
         _G.MOB = false
         if btnMOB then btnMOB.Text = "  刷怪模式 : OFF" end
-        KillCombat()
         
-        -- 【啟動關鍵】產生生命標籤並載入
-        _G.CurrentFastAtkID = "START_PVP_" .. tick()
-        _G.FastAttack = true
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))()
-    else
-        KillCombat()
+        -- 2. 靜默啟動 (像 MOB 一樣，點了就 load)
+        if not PVPLoaded then
+            PVPLoaded = true
+            -- 載入那份已經被調教成「因果律破碎版」的核心
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))()
+        end
     end
     self.Text = "  打架模式 : " .. (_G.PVP and "ON" or "OFF")
 end)
 
--- MOB 神刀開關
+-- [[ MOB 開關：維持原本正常的樣子 ]]
 btnMOB = Tab1:AddButton("刷怪模式 : OFF", function(self)
     _G.MOB = not _G.MOB
     if _G.MOB then
         _G.PVP = false
         if btnPVP then btnPVP.Text = "  打架模式 : OFF" end
-        KillCombat()
         
-        _G.CurrentFastAtkID = "START_MOB_" .. tick()
-        _G.FastAttack = true
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))()
-    else
-        KillCombat()
+        if not MOBLoaded then
+            MOBLoaded = true
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))()
+        end
     end
     self.Text = "  刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
--- 貓功能與公告保留
-local Tab0 = Lib:CreateTab("貓公告", true)
-Tab0:AddInfo("🐾 歡迎", "神刀引擎已完成校準！")
+-- 貓功能保持不變
 local Tab2 = Lib:CreateTab("貓功能", false)
 Tab2:AddButton("貓貓神速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
