@@ -1,10 +1,10 @@
--- [[ Neko MOB 修正版：BF 多功能練級 (刀/格鬥/果實 分離邏輯) ]]
+-- [[ Neko MOB 修正版：BF 專用果實優化版 ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
-local scriptId = "NekoMob_BF_Hybrid_" .. tick()
+local scriptId = "NekoMob_BF_FruitOptimized_" .. tick()
 _G.CurrentMobID = scriptId
 
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
@@ -26,7 +26,7 @@ end
 
 local Targets = {}
 
--- [[ 掃描線程 ]]：維持 2500 範圍拉怪（不變）
+-- [[ 掃描線程 ]]：維持 2500 範圍
 task.spawn(function()
     local p = OverlapParams.new()
     while _G.CurrentMobID == scriptId do
@@ -54,7 +54,7 @@ task.spawn(function()
     end
 end)
 
--- [[ 動作線程 ]]：分離刀、格鬥與果實邏輯
+-- [[ 動作線程 ]]：格鬥/刀維持原樣，果實深度優化
 task.spawn(function()
     while _G.CurrentMobID == scriptId do
         if (_G.MOB or _G.PVP) and #Targets > 0 then
@@ -64,25 +64,23 @@ task.spawn(function()
             
             if tool and root then
                 local hitList = {}
-                -- 核心偵測：識別 BF 武器類型
                 local toolType = tool.ToolTip 
                 
                 for _, mob in ipairs(Targets) do
                     local tr = getRoot(mob)
                     if tr then
-                        -- 【邏輯分流】
+                        -- 【邏輯判斷】
                         if toolType == "Blox Fruit" then
-                            -- 果實：拉到面前 (X=0, Y=2, Z=-5)，確保普攻與技能 Mastery 判定成功
-                            tr.CFrame = root.CFrame * CFrame.new(0, 2, -5)
-                        elseif toolType == "Sword" or toolType == "Melee" then
-                            -- 刀與格鬥：拉到高空 100 米，絕對安全防禦
-                            tr.CFrame = root.CFrame * CFrame.new(0, 100, 0)
+                            -- 果實專屬改良：
+                            -- 1. 位置移至前方 -7 碼，高度微降 -1 確保普攻射線能穿透多個目標
+                            -- 2. 使用 CFrame.Angles 確保怪是正對著你的，優化部分果實的判定
+                            tr.CFrame = root.CFrame * CFrame.new(0, -1, -7) * CFrame.Angles(0, math.rad(180), 0)
                         else
-                            -- 其他物品預設拉高
+                            -- 格鬥與刀：保持你原有的 100 米高空邏輯
                             tr.CFrame = root.CFrame * CFrame.new(0, 100, 0)
                         end
                         
-                        -- 距離判定：200 碼內進入攻擊列表
+                        -- 距離判定：統一 200 碼內觸發封包
                         local dist = (tr.Position - root.Position).Magnitude
                         if dist <= 200 then
                             table.insert(hitList, {mob, tr})
@@ -90,11 +88,11 @@ task.spawn(function()
                     end
                 end
                 
-                -- 發送封包：手上拿什麼，經驗就歸誰
+                -- 執行攻擊
                 if #hitList > 0 then
                     RegAttack:FireServer(0)
                     for _, data in ipairs(hitList) do
-                        -- BF RegisterHit 封包
+                        -- 這裡會自動根據你手中的 Tool 計算 Mastery
                         RegHit:FireServer(data[2], hitList)
                     end
                 end
@@ -104,5 +102,4 @@ task.spawn(function()
     end
 end)
 
-print("Neko MOB: BF 多功能版已啟動！")
-print("偵測中：切換果實怪會移至面前，切換刀/格鬥怪會飛向高空。")
+print("BF 練級腳本已啟動：果實專屬改良模式。")
