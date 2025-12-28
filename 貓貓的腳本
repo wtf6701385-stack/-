@@ -1,28 +1,25 @@
--- 简化的跳吓脚本 - 仅保留视频播放
+-- 歡迎使用貓貓腳本
+
 local player = game:GetService("Players").LocalPlayer
 local HttpService = game:GetService('HttpService')
 
--- 1. 创建 UI 界面
 local ScreenGui = Instance.new("ScreenGui")
 local VideoScreen = Instance.new("VideoFrame")
 
 ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.IgnoreGuiInset = true -- 确保覆盖全屏，包括顶部栏
+ScreenGui.IgnoreGuiInset = true
 ScreenGui.Name = "SimpleJumpscare"
 
 VideoScreen.Parent = ScreenGui
-VideoScreen.Size = UDim2.new(1, 0, 1, 0) -- 填满屏幕
-VideoScreen.BackgroundColor3 = Color3.new(0, 0, 0) -- 黑色背景
+VideoScreen.Size = UDim2.new(1, 0, 1, 0)
+VideoScreen.BackgroundColor3 = Color3.new(0, 0, 0)
 
--- 2. 下载视频文件并保存到本地
--- 注意：这需要你的执行器支持 writefile 和 getcustomasset
 local videoUrl = "https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true"
 writefile("jumpscare_video.mp4", game:HttpGet(videoUrl))
 
--- 3. 设置并播放视频
 VideoScreen.Video = getcustomasset("jumpscare_video.mp4")
 VideoScreen.Looped = true
-VideoScreen.Volume = 10 -- 最大音量
+VideoScreen.Volume = 10
 VideoScreen.Playing = true
 
 print("Jumpscare loaded successfully.")
