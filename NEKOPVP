@@ -1,5 +1,5 @@
--- [[ NEKO x 凌霄 2025 : 純粹強拽 x 虛擬填充核心 ]]
--- 核心邏輯：主人不動，獵物過來，血量 > 0 才抓
+-- [[ NEKO x 凌霄 2025 : 純粹暴力填充核心 ]]
+-- 核心邏輯：絕對不動主體、絕對不拉人、純傷害注入
 
 if not _G.FastAttack then return end
 local SessionID = _G.CurrentFastAtkID
@@ -9,26 +9,23 @@ local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitFor
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- [ 捕獲配置 ]
+-- [ 暴力配置 ]
 local Config = {
-    PlayerDist = 5000,   -- 5000 鎖定玩家數據
-    BringDist = 1500,    -- 1500 強行拉到面前
+    PlayerDist = 5000,   -- 5000 距離內玩家受死
+    MonsterDist = 1500,  -- 1500 距離內怪物受死
     MaxTargets = 20,
     MinDelay = 0.08, 
     MaxDelay = 0.15 
 }
 
--- [ 核心：純粹拉人邏輯 ]
-local function ProcessTargets()
+-- [ 純粹目標獲取 ]
+local function GetEnemies()
     local targets = {}
     local char = LP.Character
-    if not (char and char:FindFirstChild("HumanoidRootPart")) then return targets end
-    local myRoot = char.HumanoidRootPart
-    local myPos = myRoot.Position
+    if not (char and char.PrimaryPart) then return targets end
+    local myPos = char.PrimaryPart.Position
     
     local candidates = {}
-    
-    -- 1. 蒐集玩家與怪物 (統一邏輯)
     for _, v in pairs(workspace:GetChildren()) do
         local h = v:FindFirstChild("Humanoid")
         local root = v:FindFirstChild("HumanoidRootPart")
@@ -36,37 +33,27 @@ local function ProcessTargets()
             local isPlayer = game.Players:GetPlayerFromCharacter(v)
             local dist = (root.Position - myPos).Magnitude
             
-            -- 分段判斷：玩家 5000，怪物 1500
+            -- 分段判定範圍
             if (isPlayer and dist <= Config.PlayerDist) or (not isPlayer and dist <= Config.MonsterDist) then
-                table.insert(candidates, {v = v, r = root, dist = dist})
+                table.insert(candidates, {v = v, r = root})
             end
         end
     end
 
-    -- 2. 執行強拽與打包
-    for i, data in ipairs(candidates) do
-        if i > Config.MaxTargets then break end
-        
-        -- 【關鍵：只拉敵人，主人絕對不動】
-        -- 只要在 1500 內，就把對方的座標強行修改到主人面前 3 格
-        if data.dist <= Config.BringDist then
-            pcall(function()
-                data.r.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
-            end)
-        end
-        table.insert(targets, {data.v, data.r})
+    -- 封包打包 (上限 20)
+    for i = 1, math.min(#candidates, Config.MaxTargets) do
+        table.insert(targets, {candidates[i].v, candidates[i].r})
     end
     return targets
 end
 
 -- ==========================================
--- 【核心 A：訊號硬灌】
+-- 【核心 A：訊號觸發】
 -- ==========================================
 task.spawn(function()
     while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
         local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
         if tool then
-            -- 模擬揮刀動畫，但不移動實體
             task.spawn(function() tool:Activate() end)
             RegAttack:FireServer(0.125)
         end
@@ -75,27 +62,27 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 【核心 B：空間填充引擎】
+-- 【核心 B：暴力填充引擎】
 -- ==========================================
 task.spawn(function()
     while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
         game:GetService("RunService").RenderStepped:Wait()
         local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
         if tool then
-            local enemies = ProcessTargets()
+            local enemies = GetEnemies()
             if #enemies > 0 then
                 local hitData = {}
                 for _, data in ipairs(enemies) do
                     table.insert(hitData, {data[1], data[2]})
                 end
-                -- 硬灌命中數據，無視距離判定
+                -- 極限硬灌命中封包
                 pcall(function()
-                    for i = 1, 8 do 
+                    for i = 1, 10 do -- 提升至 10 倍填充
                         RegHit:FireServer(tool, hitData)
                     end
                 end)
             end
         end
     end
-    print("💀 凌霄強拽核心：清理完畢。")
+    print("💀 純粹核心：自毀成功。")
 end)
