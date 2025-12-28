@@ -1,12 +1,11 @@
--- [[ Neko MOB：BF 多模式切換自殺版 ]]
+-- [[ Neko MOB 修正版：拉怪 2500 / 攻擊範圍 200 / 距離 100 ]]
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
--- 全域變數控制
-_G.CurrentMobID = tick()
-local currentMode = "" -- 記錄當前模式：Melee, Sword, Fruit
+local scriptId = "NekoMob_CustomRange_" .. tick()
+_G.CurrentMobID = scriptId
 
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack, RegHit = Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
@@ -25,100 +24,73 @@ local function isEnemy(c)
     return false
 end
 
--- 掃描線程 (持續運作，不參與自殺)
 local Targets = {}
+
+-- 掃描線程：維持 2500 範圍拉怪
 task.spawn(function()
     local p = OverlapParams.new()
-    local myID = _G.CurrentMobID
-    while _G.CurrentMobID == myID do
-        if _G.MOB then
+    while _G.CurrentMobID == scriptId do
+        if _G.MOB or _G.PVP then
             local mr = getRoot(player.Character)
             if mr then
                 local filtered = {}
-                local parts = workspace:GetPartBoundsInRadius(mr.Position, 2500, p)
+                local parts = workspace:GetPartBoundsInRadius(mr.Position, 2500, p) -- 維持 2500
                 for _, v in ipairs(parts) do
                     local m = v.Parent
                     if m and m ~= player.Character and isEnemy(m) then
-                        if not table.find(filtered, m) then table.insert(filtered, m) end
+                        local isP = Players:GetPlayerFromCharacter(m)
+                        if (isP and _G.PVP) or (not isP and _G.MOB) then
+                            if not table.find(filtered, m) then
+                                table.insert(filtered, m)
+                            end
+                        end
                     end
                     if #filtered >= 50 then break end
                 end
                 Targets = filtered
             end
-        end
+        else Targets = {} end
         task.wait(0.5)
     end
 end)
 
--- [[ 核心邏輯：自動偵測並切換模式 ]]
+-- 動作線程：拉怪到 100 米處，攻擊 200 範圍內目標
 task.spawn(function()
-    local myID = _G.CurrentMobID
-    local activeThread = nil -- 用來存儲當前的攻擊線程
-
-    while _G.CurrentMobID == myID do
-        local char = player.Character
-        local tool = char and char:FindFirstChildOfClass("Tool")
-        
-        if tool then
-            local toolType = tool.ToolTip
-            local newMode = ""
-
-            -- 判定新模式
-            if toolType == "Blox Fruit" then newMode = "Fruit"
-            elseif toolType == "Sword" then newMode = "Sword"
-            elseif toolType == "Melee" then newMode = "Melee"
-            end
-
-            -- 如果模式切換了，就殺死舊的，啟動新的
-            if newMode ~= "" and newMode ~= currentMode then
-                currentMode = newMode
-                
-                -- 1. 殺死前一個攻擊方式 (自殺邏輯)
-                if activeThread then
-                    task.cancel(activeThread)
-                    activeThread = nil
-                    print("模式切換：" .. currentMode .. " 啟動，舊模式已自殺。")
-                end
-
-                -- 2. 啟動對應模式的攻擊線程
-                activeThread = task.spawn(function()
-                    while currentMode == newMode do
-                        if #Targets > 0 and getRoot(char) then
-                            local hitList = {}
-                            local root = getRoot(char)
-                            
-                            for _, mob in ipairs(Targets) do
-                                local tr = getRoot(mob)
-                                if tr then
-                                    -- 分流拉怪邏輯
-                                    if newMode == "Fruit" then
-                                        -- 果實專屬：拉到面前
-                                        tr.CFrame = root.CFrame * CFrame.new(0, -1, -8)
-                                    else
-                                        -- 刀/格鬥：拉到高空
-                                        tr.CFrame = root.CFrame * CFrame.new(0, 100, 0)
-                                    end
-                                    
-                                    if (tr.Position - root.Position).Magnitude <= 200 then
-                                        table.insert(hitList, {mob, tr})
-                                    end
-                                end
-                            end
-
-                            if #hitList > 0 then
-                                RegAttack:FireServer(0)
-                                for _, data in ipairs(hitList) do
-                                    RegHit:FireServer(data[2], hitList)
-                                end
-                            end
+    while _G.CurrentMobID == scriptId do
+        if (_G.MOB or _G.PVP) and #Targets > 0 then
+            local char = player.Character
+            local root = getRoot(char)
+            local tool = char and char:FindFirstChildOfClass("Tool")
+            
+            if tool and root then
+                local hitList = {}
+                for _, mob in ipairs(Targets) do
+                    local tr = getRoot(mob)
+                    if tr then
+                        -- 計算怪物與玩家的實際距離
+                        local dist = (tr.Position - root.Position).Magnitude
+                        
+                        -- 【拉怪邏輯】：將怪物拉到上方 100 米
+                        if not Players:GetPlayerFromCharacter(mob) then
+                            tr.CFrame = root.CFrame * CFrame.new(0, 100, 0)
                         end
-                        RunService.Heartbeat:Wait()
+                        
+                        -- 【攻擊邏輯】：只有在 200 範圍內才發送攻擊封包
+                        if dist <= 200 then
+                            table.insert(hitList, {mob, tr})
+                        end
                     end
-                end)
+                end
+                
+                if #hitList > 0 then
+                    RegAttack:FireServer(0)
+                    for _, data in ipairs(hitList) do
+                        -- 對 200 範圍內的目標發送 RegisterHit
+                        RegHit:FireServer(data[2], hitList)
+                    end
+                end
             end
         end
-        task.wait(0.1) -- 偵測工具切換的頻率
+        RunService.Heartbeat:Wait()
     end
 end)
-
-print("Neko MOB: 模式自殺切換系統已啟動。")
