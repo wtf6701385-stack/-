@@ -1,49 +1,45 @@
--- [[ NEKOMOB - 刷怪核心 ]]
+if not game:IsLoaded() then game.Loaded:Wait() end
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-
--- 獲取遊戲遠端事件
-local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
-local RegAttack = Net:WaitForChild("RE/RegisterAttack")
-local RegHit = Net:WaitForChild("RE/RegisterHit")
+local LP = Players.LocalPlayer
 
 task.spawn(function()
+    local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
+    local RegAtk = Net:WaitForChild("RE/RegisterAttack")
+    local RegHit = Net:WaitForChild("RE/RegisterHit")
+
     while true do
-        -- 核心：只看開關，不管別的
-        if _G.MOB == true then
+        if _G.MOB then
             pcall(function()
-                local char = player.Character
+                local char = LP.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
-                local tool = char and char:FindFirstChildOfClass("Tool")
-                
-                if tool and root then
+                -- 自動拿刀
+                local tool = char:FindFirstChildOfClass("Tool") or LP.Backpack:FindFirstChildOfClass("Tool")
+                if tool and tool.Parent ~= char then char.Humanoid:EquipTool(tool) end
+
+                if char and root and tool then
                     local targets = {}
-                    local mainPart = nil
+                    local candidates = workspace:FindFirstChild("Enemies") and workspace.Enemies:GetChildren() or workspace:GetChildren()
                     
-                    for _, v in ipairs(workspace:GetChildren()) do
-                        local hum = v:FindFirstChildOfClass("Humanoid")
-                        local tRoot = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Torso")
-                        
-                        -- 條件：是怪、活著、不是玩家、不是 NPC
-                        if hum and hum.Health > 0 and tRoot and not Players:GetPlayerFromCharacter(v) then
-                            local name = v.Name:lower()
-                            if not (name:find("npc") or name:find("shop") or name:find("quest")) then
+                    for _, v in ipairs(candidates) do
+                        local vHum = v:FindFirstChildOfClass("Humanoid")
+                        local vRoot = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Torso")
+                        if vHum and vHum.Health > 0 and vRoot and not Players:GetPlayerFromCharacter(v) then
+                            if not v.Name:lower():find("npc") then
                                 -- 拉怪到上方
-                                tRoot.CFrame = root.CFrame * CFrame.new(0, 50, 0)
-                                if not mainPart then mainPart = tRoot end
-                                table.insert(targets, v)
+                                vRoot.CFrame = root.CFrame * CFrame.new(0, 50, 0)
+                                table.insert(targets, {v, vRoot})
                             end
                         end
-                        if #targets >= 10 then break end
+                        if #targets >= 25 then break end
                     end
-                    
-                    if #targets > 0 and mainPart then
-                        RegAttack:FireServer(0)
-                        RegHit:FireServer(mainPart, targets)
+
+                    if #targets > 0 then
+                        RegAtk:FireServer(0)
+                        RegHit:FireServer(targets[1][2], targets)
                     end
                 end
             end)
         end
-        task.wait(0.1) -- 攻擊速度
+        task.wait(0.15)
     end
 end)
