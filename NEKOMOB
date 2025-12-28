@@ -1,11 +1,11 @@
--- [[ NEKOMOB - OFF即終止自殺版 ]]
+-- [[ NEKOMOB - 持續監聽版 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
--- 自殺協議：分配唯一的 ID
-local scriptId = tick()
-_G.CurrentMobID = scriptId
+-- 防止重複召喚多個循環
+if _G.MobLoopStarted then return end
+_G.MobLoopStarted = true
 
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack, RegHit = Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
@@ -22,33 +22,35 @@ end
 
 local Targets = {}
 
--- 1. 掃描線程：當開關關閉或ID不符時徹底結束
+-- 1. 掃描線程：永遠在背景跑，但只有開關為 true 才掃描
 task.spawn(function()
-    while _G.CurrentMobID == scriptId and _G.MOB do
-        local mr = getRoot(player.Character)
-        if mr then
-            local filtered = {}
-            for _, v in ipairs(workspace:GetChildren()) do
-                if isEnemy(v) and not Players:GetPlayerFromCharacter(v) then
-                    local tr = getRoot(v)
-                    if tr and (tr.Position - mr.Position).Magnitude < 2500 then
-                        table.insert(filtered, v)
+    while true do
+        if _G.MOB then
+            local mr = getRoot(player.Character)
+            if mr then
+                local filtered = {}
+                for _, v in ipairs(workspace:GetChildren()) do
+                    if isEnemy(v) and not Players:GetPlayerFromCharacter(v) then
+                        local tr = getRoot(v)
+                        if tr and (tr.Position - mr.Position).Magnitude < 2500 then
+                            table.insert(filtered, v)
+                        end
                     end
+                    if #filtered >= 30 then break end
                 end
-                if #filtered >= 30 then break end
+                Targets = filtered
             end
-            Targets = filtered
+        else
+            Targets = {}
         end
         task.wait(0.5)
     end
-    -- 這裡可以清除殘留資料
-    Targets = {}
 end)
 
--- 2. 動作線程：當開關關閉或ID不符時徹底結束
+-- 2. 動作線程：永遠在背景跑，只有開關為 true 且有怪才打
 task.spawn(function()
-    while _G.CurrentMobID == scriptId and _G.MOB do
-        if #Targets > 0 then
+    while true do
+        if _G.MOB and #Targets > 0 then
             pcall(function()
                 local char = player.Character
                 local root = getRoot(char)
