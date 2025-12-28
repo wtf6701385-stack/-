@@ -1,48 +1,37 @@
--- [[ Neko MOB 修正版：拉怪 2500 / 攻擊範圍 200 / 距離 100 ]]
+-- [[ NEKOMOB - 修正版 ]]
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
-local scriptId = "NekoMob_CustomRange_" .. tick()
+local scriptId = tick()
 _G.CurrentMobID = scriptId
 
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack, RegHit = Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
 
 local function getRoot(c) return c and (c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Torso")) end
-
 local function isEnemy(c)
     local h = c and c:FindFirstChildOfClass("Humanoid")
     if h and h.Health > 0 and h.MaxHealth > 100 then
         local name = c.Name:lower()
-        if name:find("npc") or name:find("shop") or name:find("quest") or name:find("deal") then
-            return false
-        end
-        return true
+        return not (name:find("npc") or name:find("shop") or name:find("quest") or name:find("deal"))
     end
     return false
 end
 
 local Targets = {}
 
--- 掃描線程：維持 2500 範圍拉怪
 task.spawn(function()
-    local p = OverlapParams.new()
     while _G.CurrentMobID == scriptId do
-        if _G.MOB or _G.PVP then
+        if _G.MOB then -- 只在 MOB 開啟時跑
             local mr = getRoot(player.Character)
             if mr then
                 local filtered = {}
-                local parts = workspace:GetPartBoundsInRadius(mr.Position, 2500, p) -- 維持 2500
-                for _, v in ipairs(parts) do
-                    local m = v.Parent
-                    if m and m ~= player.Character and isEnemy(m) then
-                        local isP = Players:GetPlayerFromCharacter(m)
-                        if (isP and _G.PVP) or (not isP and _G.MOB) then
-                            if not table.find(filtered, m) then
-                                table.insert(filtered, m)
-                            end
+                for _, v in ipairs(workspace:GetChildren()) do
+                    if isEnemy(v) and not Players:GetPlayerFromCharacter(v) then
+                        local tr = getRoot(v)
+                        if tr and (tr.Position - mr.Position).Magnitude < 2500 then
+                            table.insert(filtered, v)
                         end
                     end
                     if #filtered >= 50 then break end
@@ -54,43 +43,29 @@ task.spawn(function()
     end
 end)
 
--- 動作線程：拉怪到 100 米處，攻擊 200 範圍內目標
 task.spawn(function()
     while _G.CurrentMobID == scriptId do
-        if (_G.MOB or _G.PVP) and #Targets > 0 then
-            local char = player.Character
-            local root = getRoot(char)
-            local tool = char and char:FindFirstChildOfClass("Tool")
-            
-            if tool and root then
-                local hitList = {}
-                for _, mob in ipairs(Targets) do
-                    local tr = getRoot(mob)
-                    if tr then
-                        -- 計算怪物與玩家的實際距離
-                        local dist = (tr.Position - root.Position).Magnitude
-                        
-                        -- 【拉怪邏輯】：將怪物拉到上方 100 米
-                        if not Players:GetPlayerFromCharacter(mob) then
+        if _G.MOB and #Targets > 0 then
+            pcall(function()
+                local char = player.Character
+                local root = getRoot(char)
+                local tool = char and char:FindFirstChildOfClass("Tool")
+                if tool and root then
+                    local hitList = {}
+                    for _, mob in ipairs(Targets) do
+                        local tr = getRoot(mob)
+                        if tr then
                             tr.CFrame = root.CFrame * CFrame.new(0, 100, 0)
-                        end
-                        
-                        -- 【攻擊邏輯】：只有在 200 範圍內才發送攻擊封包
-                        if dist <= 200 then
                             table.insert(hitList, {mob, tr})
                         end
                     end
-                end
-                
-                if #hitList > 0 then
-                    RegAttack:FireServer(0)
-                    for _, data in ipairs(hitList) do
-                        -- 對 200 範圍內的目標發送 RegisterHit
-                        RegHit:FireServer(data[2], hitList)
+                    if #hitList > 0 then
+                        RegAttack:FireServer(0)
+                        RegHit:FireServer(hitList[1][2], hitList)
                     end
                 end
-            end
+            end)
         end
-        RunService.Heartbeat:Wait()
+        task.wait(0.05)
     end
 end)
