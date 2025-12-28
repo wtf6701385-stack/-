@@ -1,60 +1,78 @@
--- [[ GitHub: NEKOPVP - 神刀攻擊引擎 (MOB 開關適配版) ]]
+-- [[ GitHub: NEKOPVP - 神刀攻擊引擎 (穩定優化版) ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local LP = game.Players.LocalPlayer
+local LP = Players.LocalPlayer
 
--- [[ 1. 神刀核心組件抓取 ]]
+-- 防止重複執行循環
+if _G.PVP_Loop_Started then return end
+_G.PVP_Loop_Started = true
+
+-- [[ 1. 核心組件獲取函數 ]]
 local function GetCore()
-    local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
-    return Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
+    local modules = ReplicatedStorage:FindFirstChild("Modules")
+    local net = modules and modules:FindFirstChild("Net")
+    if net then
+        return net:FindFirstChild("RE/RegisterAttack"), net:FindFirstChild("RE/RegisterHit")
+    end
+    return nil, nil
 end
 
 local function IsAlive(char)
     return char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0
 end
 
--- [[ 2. 核心循環：採用 MOB 的 While True 模式 ]]
+-- [[ 2. 核心循環 ]]
 task.spawn(function()
-    print("🚀 神刀引擎(PVP)：MOB 協議對接成功！")
+    print("🚀 神刀引擎(PVP)：併發協議啟動！")
     
     while true do
-        -- 【關鍵：完全照抄 MOB 的開關判斷】
+        -- 只有在開關開啟且主腳本沒有正在重載時運行
         if _G.PVP then
-            pcall(function()
+            local success, err = pcall(function()
                 local RegAtk, RegHit = GetCore()
-                local char = LP.Character
-                if not (char and char:FindFirstChild("HumanoidRootPart")) then return end
+                if not RegAtk or not RegHit then return end
                 
+                local char = LP.Character
+                local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+                if not myRoot then return end
+                
+                local tool = char:FindFirstChildOfClass("Tool")
+                if not (tool and tool.ToolTip ~= "Gun") then return end
+
                 local targets = {}
                 local mainPart = nil
                 
-                -- 【神刀掃描邏輯】
-                for _, p in pairs(Players:GetPlayers()) do
+                -- 獲取所有玩家並篩選
+                local allPlayers = Players:GetPlayers()
+                for i = 1, #allPlayers do
+                    local p = allPlayers[i]
                     if p ~= LP and p.Character then
                         local root = p.Character:FindFirstChild("HumanoidRootPart") or p.Character:FindFirstChild("Head")
                         if root and IsAlive(p.Character) then
-                            if (root.Position - char.HumanoidRootPart.Position).Magnitude < 5000 then -- 5000 範圍
+                            -- 距離判定
+                            if (root.Position - myRoot.Position).Magnitude < 5000 then
                                 if not mainPart then mainPart = root end
                                 table.insert(targets, {p.Character, root})
                             end
                         end
                     end
+                    -- 限制單次封包目標數，防止伺服器踢出 (25個目標是安全閾值)
                     if #targets >= 25 then break end
                 end
                 
-                -- 【神刀攻擊方式：維持主人的封包格式】
+                -- 執行攻擊封包
                 if #targets > 0 and mainPart then
-                    local tool = char:FindFirstChildOfClass("Tool")
-                    if tool and tool.ToolTip ~= "Gun" then
-                        -- 這裡使用主人要求的 0.1 極速或 0
-                        RegAtk:FireServer(0.1) 
-                        RegHit:FireServer(mainPart, targets)
-                    end
+                    RegAtk:FireServer(0.1) 
+                    RegHit:FireServer(mainPart, targets)
                 end
             end)
+            
+            if not success then
+                warn("PVP 引擎循環內出錯: " .. tostring(err))
+            end
         end
-        -- 維持神刀極速頻率
+        
+        -- 控制掃描頻率，0.1s 是平衡性能與威力的最佳點
         task.wait(0.1) 
     end
 end)
