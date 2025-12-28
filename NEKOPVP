@@ -1,26 +1,23 @@
--- [[ NEKO x 凌霄 2025 : 幽靈瞬殺 x 階級填充 x 硬灌協議 ]]
--- 此腳本專門供主腳本 loadstring 使用，具備完整的自殺協議
+-- [[ NEKO x 凌霄 2025 : 虛擬座標欺騙 x 強制捕獲核心 ]]
 
 if not _G.FastAttack then return end
-local SessionID = _G.CurrentFastAtkID -- 綁定主腳本 KillCombat 訊號
+local SessionID = _G.CurrentFastAtkID
 local LP = game.Players.LocalPlayer
 
 local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
-local oldPos = nil 
 
--- [ 究極殺戮配置 ]
+-- [ 幽靈捕獲配置 ]
 local Config = {
-    PlayerDist = 5000,   -- 5000 距離鎖定玩家
-    BringDist = 1500,    -- 1500 啟動「強制抓取」與「幽靈瞬殺」
-    MaxTargets = 20,     -- 20 目標填充上限
-    TeleportOffset = 3,  -- 瞬移偏置
+    PlayerDist = 5000,   -- 5000 預瞄玩家
+    BringDist = 1500,    -- 1500 強制拉扯 + 假座標攻擊
+    MaxTargets = 20,
     MinDelay = 0.08, 
     MaxDelay = 0.15 
 }
 
--- [ 目標處理：強制抓取與玩家優先邏輯 ]
+-- [ 核心邏輯：目標過濾與強制拉扯 ]
 local function ProcessTargets()
     local targets = {}
     local char = LP.Character
@@ -30,7 +27,7 @@ local function ProcessTargets()
     
     local allCandidates = {}
     
-    -- 1. 優先鎖定玩家 (5000 範圍)
+    -- 1. 蒐集玩家 (優先)
     for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
             local root = p.Character:FindFirstChild("HumanoidRootPart")
@@ -40,7 +37,7 @@ local function ProcessTargets()
         end
     end
     
-    -- 2. 補充怪物 (1500 範圍內且有血量)
+    -- 2. 蒐集怪物
     for _, v in pairs(workspace:GetChildren()) do
         local h = v:FindFirstChild("Humanoid")
         local root = v:FindFirstChild("HumanoidRootPart")
@@ -51,50 +48,40 @@ local function ProcessTargets()
         end
     end
 
-    -- 3. 處理瞬移與抓取
-    local activeTargets = {}
+    -- 3. 強制拉扯邏輯
+    local finalTargets = {}
     for i, data in ipairs(allCandidates) do
         if i > Config.MaxTargets then break end
         
         local dist = (data.r.Position - myPos).Magnitude
         if dist <= Config.BringDist then
-            if not oldPos then oldPos = myRoot.CFrame end
+            -- 【強制拉扯】：只拉敵人，不移動主人
             pcall(function()
-                -- 核心 A：幽靈瞬移 (身邊攻擊)
-                myRoot.CFrame = data.r.CFrame * CFrame.new(0, 0, Config.TeleportOffset)
-                -- 核心 B：強制抓取 (拉到面前)
-                data.r.CFrame = myRoot.CFrame * CFrame.new(0, 0, -Config.TeleportOffset)
+                data.r.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3) -- 拉到主人面前 3 格
             end)
         end
-        table.insert(activeTargets, {data.v, data.r})
+        table.insert(finalTargets, {data.v, data.r})
     end
-    return activeTargets
+    return finalTargets
 end
 
 -- ==========================================
--- 【核心引擎 A：幽靈觸發與硬灌協議】
+-- 【核心 A：純粹偽裝與訊號硬灌】
 -- ==========================================
 task.spawn(function()
     while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
-        local char = LP.Character
-        local tool = char and char:FindFirstChildOfClass("Tool")
+        local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
         if tool and (tool.ToolTip == "Melee" or tool.ToolTip == "Sword" or tool.ToolTip == "Blox Fruit") then
-            task.spawn(function() tool:Activate() end) 
-            -- 直接宣告命中 (硬灌協議)
-            RegAttack:FireServer(0.125) 
+            task.spawn(function() tool:Activate() end)
+            -- 這裡只發送攻擊訊號，身體絕對不動
+            RegAttack:FireServer(0.125)
         end
         task.wait(math.random(Config.MinDelay * 100, Config.MaxDelay * 100) / 100)
-        
-        -- 安全返回原始座標
-        if oldPos and char and char.HumanoidRootPart then
-            pcall(function() char.HumanoidRootPart.CFrame = oldPos end)
-            oldPos = nil 
-        end
     end
 end)
 
 -- ==========================================
--- 【核心引擎 B：極限填充與 20 目標抹除】
+-- 【核心 B：假座標填充引擎】
 -- ==========================================
 task.spawn(function()
     while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
@@ -108,13 +95,12 @@ task.spawn(function()
                     table.insert(hitData, {data[1], data[2]})
                 end
                 pcall(function()
-                    -- 8 倍暴力填充
                     for i = 1, 8 do 
+                        -- 【虛擬擊中】：直接硬灌數據，伺服器會判斷目標已經被主人「隔空」打爛了
                         RegHit:FireServer(tool, hitData)
                     end
                 end)
             end
         end
     end
-    print("💀 幽靈核心：自殺協議已執行，代碼清理完畢。")
 end)
