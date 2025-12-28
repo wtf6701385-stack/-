@@ -1,82 +1,54 @@
--- [[ 1. 安全召喚 UI 框架 ]]
 local success, NEKOLib = pcall(function()
     return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
 end)
 if not success or not NEKOLib then return end
 
 local Lib = NEKOLib:Init()
+_G.PVP = false; _G.MOB = false; _G.AutoV4 = false; _G.ESP = false
+local Loaded = { PVP = false, MOB = false, V4 = false, ESP = false }
 
--- [[ 2. 全域狀態 ]]
-_G.PVP = false
-_G.MOB = false
-_G.AutoV4 = false
-_G.ESP = false
-
--- --- [[ 3. 建立 Tab0：貓公告 ]] --- --
 local Tab0 = Lib:CreateTab("貓公告", true) 
-Tab0:AddInfo("NEKO HUB 專業校準版", "當前協議：OFF即終止，ON即重啟。")
-Tab0:AddInfo("穩定性", "已導入唯一執行ID，防止重複載入衝突。")
+Tab0:AddInfo("NEKO HUB 終極整合版", "所有功能已校準完畢，請放心使用。")
+Tab0:AddInfo("操作提醒", "刷怪與打架互不干涉，開啟後請確保手上拿著武器。")
 
--- --- [[ 4. 建立 Tab1：貓戰鬥 ]] --- --
 local Tab1 = Lib:CreateTab("貓戰鬥", false)
-local btnPVP, btnMOB
-
-btnPVP = Tab1:AddButton("打架模式 : OFF", function(self)
+Tab1:AddButton("打架模式 : OFF", function(self)
     _G.PVP = not _G.PVP
-    if _G.PVP then
-        _G.MOB = false
-        if btnMOB then btnMOB.Text = "  🐱 刷怪模式 : OFF" end
-        -- 開啟時直接 loadstring，讓子腳本的 ID 機制處理重複問題
-        task.spawn(function() 
-            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))() end) 
-        end)
+    if _G.PVP and not Loaded.PVP then
+        Loaded.PVP = true
+        task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))() end) end)
     end
     self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
 end)
 
-btnMOB = Tab1:AddButton("刷怪模式 : OFF", function(self)
+Tab1:AddButton("刷怪模式 : OFF", function(self)
     _G.MOB = not _G.MOB
-    if _G.MOB then
-        _G.PVP = false
-        if btnPVP then btnPVP.Text = "  🐱 打架模式 : OFF" end
-        -- 開啟時直接 loadstring
-        task.spawn(function() 
-            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))() end) 
-        end)
+    if _G.MOB and not Loaded.MOB then
+        Loaded.MOB = true
+        task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))() end) end)
     end
     self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
--- --- [[ 5. 建立 Tab2：貓功能 ]] --- --
 local Tab2 = Lib:CreateTab("貓功能", false)
-
 Tab2:AddButton("自動 V4 : OFF", function(self)
     _G.AutoV4 = not _G.AutoV4
-    if _G.AutoV4 then
-        task.spawn(function() 
-            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4?t="..tick()))() end) 
-        end)
+    if _G.AutoV4 and not Loaded.V4 then
+        Loaded.V4 = true
+        task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4?t="..tick()))() end) end)
     end
     self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
 end)
 
 Tab2:AddButton("貓透視 (ESP) : OFF", function(self)
     _G.ESP = not _G.ESP
-    if _G.ESP then
-        task.spawn(function() 
-            pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP?t="..tick()))() end) 
-        end)
+    if _G.ESP and not Loaded.ESP then
+        Loaded.ESP = true
+        task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP?t="..tick()))() end) end)
     end
     self.Text = "  🐱 貓透視 (ESP) : " .. (_G.ESP and "ON" or "OFF")
 end)
 
--- --- [[ 6. 建立 Tab3：貓召喚 ]] --- --
 local Tab3 = Lib:CreateTab("貓召喚", false)
-
-Tab3:AddButton("召喚：貓貓神速", function() 
-    task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() end) end)
-end)
-
-Tab3:AddButton("召喚：貓貓飛行", function() 
-    task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly?t="..tick()))() end) end)
-end)
+Tab3:AddButton("召喚：貓貓神速", function() task.spawn(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() end) end)
+Tab3:AddButton("召喚：貓貓飛行", function() task.spawn(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly?t="..tick()))() end) end)
