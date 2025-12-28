@@ -1,78 +1,86 @@
--- [[ GitHub: NEKO - 穩定校準版 ]]
+-- [[ 1. 初始化與安全檢查 ]]
 local success, NEKOLib = pcall(function()
     return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
 end)
 
 if not success or not NEKOLib then 
-    warn("UI 載入失敗")
+    warn("NEKO UI 框架載入失敗，請檢查 GitHub 鏈接")
     return 
 end
 
 local Lib = NEKOLib:Init()
 local player = game:GetService("Players").LocalPlayer
 
--- 全域變數
+-- [[ 2. 全域狀態管理 ]]
 _G.PVP = false
 _G.MOB = false
+local ScriptsLoaded = { PVP = false, MOB = false }
 
--- 狀態鎖（確保 loadstring 不會因為連點而重複觸發）
-local isLoading = false
-
--- 優化：將視距拉遠改為每 5 秒執行一次，而不是每幀執行，避免卡頓
-task.spawn(function()
-    while true do
-        pcall(function() player.CameraMaxZoomDistance = 1000 end)
-        task.wait(5)
-    end
-end)
+-- --- [[ 3. 建立分頁 (先建立所有分頁，防止 UI 消失) ]] --- --
 
 local Tab1 = Lib:CreateTab("貓戰鬥", false)
-local btnPVP, btnMOB
+local Tab2 = Lib:CreateTab("貓功能", false)
 
--- [[ PVP 模式 ]]
+-- --- [[ 4. 建立功能按鈕 (Tab1: 戰鬥) ]] --- --
+
+local btnPVP, btnMOB -- 預留變數用於文字切換
+
 btnPVP = Tab1:AddButton("打架模式 : OFF", function(self)
-    if isLoading then return end -- 如果正在加載中，禁止操作
-    
     _G.PVP = not _G.PVP
     if _G.PVP then
         _G.MOB = false
-        if btnMOB then btnMOB.Text = "  刷怪模式 : OFF" end
+        if btnMOB then btnMOB.Text = "刷怪模式 : OFF" end
         
-        -- 使用 task.spawn 異步加載，防止主線程被 loadstring 堵塞導致當機
-        task.spawn(function()
-            isLoading = true
-            pcall(function()
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))()
+        -- 啟動 PVP 核心 (只載入一次)
+        if not ScriptsLoaded.PVP then
+            ScriptsLoaded.PVP = true
+            task.spawn(function()
+                pcall(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))()
+                end)
             end)
-            isLoading = false
-        end)
+        end
     end
-    self.Text = "  打架模式 : " .. (_G.PVP and "ON" or "OFF")
+    self.Text = "打架模式 : " .. (_G.PVP and "ON" or "OFF")
 end)
 
--- [[ MOB 模式 ]]
 btnMOB = Tab1:AddButton("刷怪模式 : OFF", function(self)
-    if isLoading then return end
-    
     _G.MOB = not _G.MOB
     if _G.MOB then
         _G.PVP = false
-        if btnPVP then btnPVP.Text = "  打架模式 : OFF" end
+        if btnPVP then btnPVP.Text = "打架模式 : OFF" end
         
-        task.spawn(function()
-            isLoading = true
-            pcall(function()
-                loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))()
+        -- 啟動 MOB 核心 (只載入一次)
+        if not ScriptsLoaded.MOB then
+            ScriptsLoaded.MOB = true
+            task.spawn(function()
+                pcall(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))()
+                end)
             end)
-            isLoading = false
-        end)
+        end
     end
-    self.Text = "  刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
+    self.Text = "刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
-local Tab2 = Lib:CreateTab("貓功能", false)
+-- --- [[ 5. 建立功能按鈕 (Tab2: 其他) ]] --- --
+
 Tab2:AddButton("貓貓神速", function() 
     task.spawn(function()
-        pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
+        pcall(function() 
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() 
+        end)
     end)
 end)
+
+-- --- [[ 6. 背景系統任務 ]] --- --
+
+-- 視距解鎖
+task.spawn(function()
+    while true do
+        pcall(function() player.CameraMaxZoomDistance = 1000 end)
+        task.wait(2)
+    end
+end)
+
+print("--- NEKO 主腳本已就緒 ---")
