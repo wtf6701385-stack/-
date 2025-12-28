@@ -1,10 +1,13 @@
--- [[ GitHub: NEKOPVP - 零式秒殺對接核心 ]]
-if not _G.FastAttack then return end
-local CurrentSession = _G.CurrentFastAtkID -- 鎖定啟動時的 ID
+-- [[ GitHub: NEKOPVP - 超級適配版 ]]
+-- 邏輯：不論主腳本給什麼 ID，加載即強制執行，並接管自殺協議
+
+-- 1. 強行重設開關，確保啟動
+_G.FastAttack = true
+local SessionID = "NEKO_PVP_FORCE_" .. tick() 
+_G.CurrentFastAtkID = SessionID -- 強行覆蓋主腳本的 KILL ID，奪取控制權
 
 local LP = game.Players.LocalPlayer
-local RS = game:GetService("ReplicatedStorage")
-local Net = RS:WaitForChild("Modules"):WaitForChild("Net")
+local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
@@ -15,8 +18,8 @@ local Settings = {
     MaxTargets = 20
 }
 
--- 搜尋目標玩家
-local function GetPVPTargets()
+-- 獲取玩家目標
+local function GetTargets()
     local targets = {}
     local center = nil
     local char = LP.Character
@@ -24,11 +27,9 @@ local function GetPVPTargets()
     
     for _, p in pairs(game.Players:GetPlayers()) do
         if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
-            local hum = p.Character.Humanoid
             local root = p.Character:FindFirstChild("HumanoidRootPart")
-            if hum.Health > 0 and root then
-                local dist = (root.Position - char.PrimaryPart.Position).Magnitude
-                if dist <= Settings.Range then
+            if root and p.Character.Humanoid.Health > 0 then
+                if (root.Position - char.PrimaryPart.Position).Magnitude <= Settings.Range then
                     if not center then center = root end
                     table.insert(targets, {p.Character, root})
                 end
@@ -41,14 +42,15 @@ end
 
 -- 殺戮循環
 task.spawn(function()
-    print("⚔️ NEKO PVP 核心：啟動成功！Session: " .. CurrentSession)
-    
-    while _G.FastAttack and _G.CurrentFastAtkID == CurrentSession do
+    print("⚔️ 貓戰鬥：PVP 強制適配版已奪取控制權！")
+    print("🎯 目前 Session: " .. SessionID)
+
+    while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
         local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
         if tool then
-            local center, allTargets = GetPVPTargets()
+            local center, allTargets = GetTargets()
             if center and #allTargets > 0 then
-                -- 執行零式批量注入
+                -- 執行零式注入
                 RegAttack:FireServer(0)
                 pcall(function()
                     RegHit:FireServer(center, allTargets)
@@ -58,5 +60,5 @@ task.spawn(function()
         task.wait(Settings.AttackDelay)
     end
     
-    print("💀 NEKO PVP 核心：ID 變更，自動銷毀中...")
+    print("💀 偵測到主腳本切換或關閉，PVP 核心優雅退場。")
 end)
