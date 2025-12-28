@@ -28,7 +28,8 @@ local function Authenticate()
         end)
         if not success or not NEKOLib then return end
 
-        local Lib = NEKOLib:Init()
+        -- // 設定 UI 標題僅顯示貓咪符號 // --
+        local Lib = NEKOLib:Init("ฅ^•ﻌ•^ฅ")
 
         -- // 環境狀態：全域變量與模組鎖
         _G.PVP = false
