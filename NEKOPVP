@@ -1,46 +1,40 @@
--- [[ NEKOPVP - 打架核心 ]]
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-
+local LP = Players.LocalPlayer
 local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
 task.spawn(function()
     while true do
-        -- 核心：只看開關
-        if _G.PVP == true then
+        if _G.MOB == true then
             pcall(function()
-                local char = player.Character
+                local char = LP.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
-                local tool = char and char:FindFirstChildOfClass("Tool")
+                local tool = char and char:FindFirstChildOfClass("Tool") or LP.Backpack:FindFirstChildOfClass("Tool")
                 
                 if tool and root then
+                    if tool.Parent ~= char then char.Humanoid:EquipTool(tool) end
                     local targets = {}
-                    local mainPart = nil
+                    local candidates = workspace:FindFirstChild("Enemies") and workspace.Enemies:GetChildren() or workspace:GetChildren()
                     
-                    for _, p in ipairs(Players:GetPlayers()) do
-                        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                            local tRoot = p.Character.HumanoidRootPart
-                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                            
-                            if hum and hum.Health > 0 then
-                                -- 範圍內玩家
-                                if (tRoot.Position - root.Position).Magnitude < 1000 then
-                                    if not mainPart then mainPart = tRoot end
-                                    table.insert(targets, p.Character)
-                                end
+                    for _, v in ipairs(candidates) do
+                        local vHum = v:FindFirstChildOfClass("Humanoid")
+                        local vRoot = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Torso")
+                        if vHum and vHum.Health > 0 and vRoot and not Players:GetPlayerFromCharacter(v) then
+                            if not v.Name:lower():find("npc") then
+                                vRoot.CFrame = root.CFrame * CFrame.new(0, 50, 0)
+                                table.insert(targets, {v, vRoot})
                             end
                         end
+                        if #targets >= 25 then break end
                     end
-                    
-                    if #targets > 0 and mainPart then
+                    if #targets > 0 then
                         RegAttack:FireServer(0)
-                        RegHit:FireServer(mainPart, targets)
+                        RegHit:FireServer(targets[1][2], targets)
                     end
                 end
             end)
         end
-        task.wait(0.1)
+        task.wait(0.15)
     end
 end)
