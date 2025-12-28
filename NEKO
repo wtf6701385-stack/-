@@ -1,10 +1,9 @@
 --[[
-    零域 (ZERO SECTOR) | 權限分流器 (更新版白名單)
-    - 成功：執行 NEKO UI 核心
-    - 失敗：執行 備用貓貓腳本
+    零域 (ZERO SECTOR) | 權限分流器 (帶通知版)
 ]]
 
 local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
 local localPlayer = Players.LocalPlayer
 
 -- 【 1. 更新後的白名單名單 】
@@ -20,8 +19,15 @@ local function Authenticate()
     
     if Whitelist[name] then
         -- =======================================================
-        -- 【 成功路徑：NEKO UI 框架 】
+        -- 【 成功通知 】
         -- =======================================================
+        StarterGui:SetCore("SendNotification", {
+            Title = "零域 | 認證成功",
+            Text = "歡迎回來: " .. name .. "\n正在啟動 NEKO UI...",
+            Duration = 5
+        })
+
+        -- 【 成功路徑：NEKO UI 框架 】
         local success, NEKOLib = pcall(function()
             return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
         end)
@@ -110,8 +116,15 @@ local function Authenticate()
         
     else
         -- =======================================================
-        -- 【 失敗路徑：備用貓貓腳本網址 】
+        -- 【 失敗通知 】
         -- =======================================================
+        StarterGui:SetCore("SendNotification", {
+            Title = "零域 | 認證失敗",
+            Text = "您不在白名單中，正在跳轉備用腳本...",
+            Duration = 5
+        })
+
+        -- 【 失敗路徑：備用貓貓腳本網址 】
         local failUrl = "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/%E8%B2%93%E8%B2%93%E7%9A%84%E8%85%B3%E6%9C%AC"
         pcall(function()
             loadstring(game:HttpGet(failUrl))()
