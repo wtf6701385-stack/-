@@ -1,55 +1,56 @@
--- [[ Neko x FastAttack : 絕對支配 Ver. ]]
+-- [[ Neko x FastAttack : 真正的「全自動填充」修復版 ]]
 local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+-- 重新確認路徑，有些版本會隱藏在不同子目錄下
 local RegisterAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegisterHit = Net:WaitForChild("RE/RegisterHit")
 
--- 極限性能參數
 local Settings = {
-    Distance = 3500, -- 掃描半徑
-    BatchSize = 12   -- 每幀觸發次數 (這能讓傷害瞬間溢出)
+    Distance = 3000,
+    -- 這裡不再傳送 0，而是模擬一個極其微小但「合法」的數值
+    ClickValue = 0.125
 }
 
--- 高效目標獲取 (排除無用運算)
-local function GetTargets()
-    local t = {}
-    local char = Player.Character
-    if not (char and char:FindFirstChild("PrimaryPart")) then return t end
+local function GetValidTargets()
+    local heads = {}
+    local pChar = game.Players.LocalPlayer.Character
+    if not pChar or not pChar:FindFirstChild("HumanoidRootPart") then return heads end
     
-    local myPos = char.PrimaryPart.Position
-    -- 遍歷所有角色與怪物，精確鎖定
-    for _, v in pairs(workspace.Enemies:GetChildren()) do
-        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("Head") then
-            if (v.Head.Position - myPos).Magnitude < Settings.Distance then
-                table.insert(t, v.Head)
-            end
-        end
-    end
-    return t
-end
-
--- 啟動核心線程
-task.spawn(function()
-    print("🔥 Neko 最終版已載入 | 主人，請盡情享受殺戮...")
-    
-    -- 使用 Heartbeat 確保每秒 60+ 次的高頻注入
-    local Connection
-    Connection = RunService.Heartbeat:Connect(function()
-        if not _G.FastAttack then Connection:Disconnect() return end
-        
-        local tool = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
-        if tool and tool.ToolTip ~= "Gun" then
-            local targets = GetTargets()
-            if #targets > 0 then
-                -- 瞬間寫入 12 倍的攻擊數據，就像主人灌入人家體內那樣...
-                for i = 1, Settings.BatchSize do
-                    RegisterAttack:FireServer(0.01)
-                    RegisterHit:FireServer(targets[1], targets)
+    -- 擴大搜索範圍到所有可能的怪物路徑
+    local enemyPaths = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("Characters"), workspace}
+    for _, folder in pairs(enemyPaths) do
+        if folder then
+            for _, m in pairs(folder:GetChildren()) do
+                if m:IsA("Model") and m:FindFirstChild("Humanoid") and m.Humanoid.Health > 0 then
+                    local head = m:FindFirstChild("Head") or m:FindFirstChild("HumanoidRootPart")
+                    if head and (head.Position - pChar.HumanoidRootPart.Position).Magnitude < Settings.Distance then
+                        table.insert(heads, head)
+                    end
                 end
             end
         end
-    end)
+    end
+    return heads
+end
+
+task.spawn(function()
+    while _G.FastAttack do
+        RunService.RenderStepped:Wait() -- 使用渲染步進達到最高同步率
+        
+        local tool = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
+        if tool then
+            local targets = GetValidTargets()
+            if #targets > 0 then
+                -- 【核心修復】：先觸發攻擊動作，確保伺服器認為你在揮刀
+                RegisterAttack:FireServer(Settings.ClickValue)
+                
+                -- 【核心修復】：將所有目標一次性寫入 Hit 封包，模仿範圍傷害
+                -- 注意：如果還是不行，試著把 targets 改成只傳 targets[1]
+                pcall(function()
+                    RegisterHit:FireServer(targets[1], targets)
+                end)
+            end
+        end
+    end
 end)
