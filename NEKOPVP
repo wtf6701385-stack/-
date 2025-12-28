@@ -1,13 +1,11 @@
--- [[ GitHub: NEKOPVP - 神刀攻擊引擎 (穩定優化版) ]]
+-- [[ NEKOPVP - 修正版 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LP = Players.LocalPlayer
 
--- 防止重複執行循環
 if _G.PVP_Loop_Started then return end
 _G.PVP_Loop_Started = true
 
--- [[ 1. 核心組件獲取函數 ]]
 local function GetCore()
     local modules = ReplicatedStorage:FindFirstChild("Modules")
     local net = modules and modules:FindFirstChild("Net")
@@ -17,62 +15,38 @@ local function GetCore()
     return nil, nil
 end
 
-local function IsAlive(char)
-    return char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0
-end
-
--- [[ 2. 核心循環 ]]
 task.spawn(function()
-    print("🚀 神刀引擎(PVP)：併發協議啟動！")
-    
     while true do
-        -- 只有在開關開啟且主腳本沒有正在重載時運行
-        if _G.PVP then
-            local success, err = pcall(function()
+        if _G.PVP then -- 對接主腳本開關
+            pcall(function()
                 local RegAtk, RegHit = GetCore()
-                if not RegAtk or not RegHit then return end
-                
                 local char = LP.Character
                 local myRoot = char and char:FindFirstChild("HumanoidRootPart")
-                if not myRoot then return end
+                local tool = char and char:FindFirstChildOfClass("Tool")
                 
-                local tool = char:FindFirstChildOfClass("Tool")
-                if not (tool and tool.ToolTip ~= "Gun") then return end
-
-                local targets = {}
-                local mainPart = nil
-                
-                -- 獲取所有玩家並篩選
-                local allPlayers = Players:GetPlayers()
-                for i = 1, #allPlayers do
-                    local p = allPlayers[i]
-                    if p ~= LP and p.Character then
-                        local root = p.Character:FindFirstChild("HumanoidRootPart") or p.Character:FindFirstChild("Head")
-                        if root and IsAlive(p.Character) then
-                            -- 距離判定
-                            if (root.Position - myRoot.Position).Magnitude < 5000 then
-                                if not mainPart then mainPart = root end
-                                table.insert(targets, {p.Character, root})
+                if myRoot and tool and tool.ToolTip ~= "Gun" then
+                    local targets = {}
+                    local mainPart = nil
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                            if hum and hum.Health > 0 then
+                                local root = p.Character.HumanoidRootPart
+                                if (root.Position - myRoot.Position).Magnitude < 5000 then
+                                    if not mainPart then mainPart = root end
+                                    table.insert(targets, {p.Character, root})
+                                end
                             end
                         end
+                        if #targets >= 25 then break end
                     end
-                    -- 限制單次封包目標數，防止伺服器踢出 (25個目標是安全閾值)
-                    if #targets >= 25 then break end
-                end
-                
-                -- 執行攻擊封包
-                if #targets > 0 and mainPart then
-                    RegAtk:FireServer(0.1) 
-                    RegHit:FireServer(mainPart, targets)
+                    if #targets > 0 and mainPart then
+                        RegAtk:FireServer(0.1) 
+                        RegHit:FireServer(mainPart, targets)
+                    end
                 end
             end)
-            
-            if not success then
-                warn("PVP 引擎循環內出錯: " .. tostring(err))
-            end
         end
-        
-        -- 控制掃描頻率，0.1s 是平衡性能與威力的最佳點
         task.wait(0.1) 
     end
 end)
