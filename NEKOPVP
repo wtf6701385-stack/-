@@ -1,6 +1,4 @@
--- [[ GitHub: NEKOPVP - 神刀引擎 x SessionID 對接版 ]]
-
--- [ 1. 唯一 Session 對接 (這是為了配合主腳本的 KillCombat) ]
+-- [[ GitHub: NEKOPVP - 神刀最強解鎖對接核心 ]]
 local CurrentSession = _G.CurrentFastAtkID 
 if not _G.FastAttack or not CurrentSession then return end
 
@@ -8,52 +6,47 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LP = game.Players.LocalPlayer
 
--- [ 2. 神刀組件抓取 ]
 local function GetCore()
     local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
     return Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
 end
 
--- [ 3. 神刀殺戮循環 ]
 task.spawn(function()
-    print("🚀 神刀引擎：對接模式啟動！ ID: " .. CurrentSession)
+    print("🚀 神刀引擎(PVP)啟動成功！對接 ID: " .. CurrentSession)
     
-    -- 只有當 ID 匹配時才運作，不匹配就立即自殺 (防止堆疊)
-    while _G.FastAttack and _G.CurrentFastAtkID == CurrentSession do
+    while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
         pcall(function()
             local RegAtk, RegHit = GetCore()
             local char = LP.Character
-            if not (char and char:FindFirstChild("HumanoidRootPart")) then return end
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
             
             local targets = {}
             local mainPart = nil
             
-            -- 神刀掃描：5000 範圍全體玩家 (PVP 專用)
+            -- 神刀全方位掃描 (5000 範圍)
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") then
-                    local hum = p.Character.Humanoid
-                    local root = p.Character:FindFirstChild("HumanoidRootPart")
-                    if hum.Health > 0 and root then
+                    local root = p.Character:FindFirstChild("HumanoidRootPart") or p.Character:FindFirstChild("Head")
+                    if p.Character.Humanoid.Health > 0 and root then
                         if (root.Position - char.HumanoidRootPart.Position).Magnitude < 5000 then
                             if not mainPart then mainPart = root end
                             table.insert(targets, {p.Character, root})
                         end
                     end
                 end
-                if #targets >= 20 then break end -- 限制封包流量
+                if #targets >= 25 then break end
             end
             
             -- 神刀注入發動
             if #targets > 0 and mainPart then
                 local tool = char:FindFirstChildOfClass("Tool")
                 if tool and tool.ToolTip ~= "Gun" then
-                    RegAtk:FireServer(0.1) -- 神刀極速延遲
+                    RegAtk:FireServer(0.1)
                     RegHit:FireServer(mainPart, targets)
                 end
             end
         end)
-        task.wait(0.1) -- 神刀暴力頻率
+        task.wait(0.001) -- 神刀極速頻率
     end
-    
-    print("💀 偵測到 ID 變更 (KillCombat)，神刀核心已自毀。")
+    print("💀 神刀 ID 變更，核心自殺。")
 end)
