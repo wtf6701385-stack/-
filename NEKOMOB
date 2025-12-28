@@ -1,9 +1,6 @@
--- [[ NEKOMOB - 持續監聽版 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
-
--- 防止重複召喚多個循環
 if _G.MobLoopStarted then return end
 _G.MobLoopStarted = true
 
@@ -21,8 +18,6 @@ local function isEnemy(c)
 end
 
 local Targets = {}
-
--- 1. 掃描線程：永遠在背景跑，但只有開關為 true 才掃描
 task.spawn(function()
     while true do
         if _G.MOB then
@@ -32,22 +27,17 @@ task.spawn(function()
                 for _, v in ipairs(workspace:GetChildren()) do
                     if isEnemy(v) and not Players:GetPlayerFromCharacter(v) then
                         local tr = getRoot(v)
-                        if tr and (tr.Position - mr.Position).Magnitude < 2500 then
-                            table.insert(filtered, v)
-                        end
+                        if tr and (tr.Position - mr.Position).Magnitude < 2500 then table.insert(filtered, v) end
                     end
                     if #filtered >= 30 then break end
                 end
                 Targets = filtered
             end
-        else
-            Targets = {}
-        end
+        else Targets = {} end
         task.wait(0.5)
     end
 end)
 
--- 2. 動作線程：永遠在背景跑，只有開關為 true 且有怪才打
 task.spawn(function()
     while true do
         if _G.MOB and #Targets > 0 then
@@ -56,20 +46,16 @@ task.spawn(function()
                 local root = getRoot(char)
                 local tool = char and char:FindFirstChildOfClass("Tool")
                 if tool and root then
-                    local hitList = {}
-                    local mainTargetPart = nil
+                    local hitList = {}; local mainPart = nil
                     for _, mob in ipairs(Targets) do
                         local tr = getRoot(mob)
                         if tr then
                             tr.CFrame = root.CFrame * CFrame.new(0, 100, 0)
-                            if not mainTargetPart then mainTargetPart = tr end
+                            if not mainPart then mainPart = tr end
                             table.insert(hitList, mob)
                         end
                     end
-                    if #hitList > 0 and mainTargetPart then
-                        RegAttack:FireServer(0)
-                        RegHit:FireServer(mainTargetPart, hitList)
-                    end
+                    if #hitList > 0 then RegAttack:FireServer(0); RegHit:FireServer(mainPart, hitList) end
                 end
             end)
         end
