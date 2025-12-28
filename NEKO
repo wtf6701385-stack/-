@@ -14,50 +14,51 @@ _G.ESP = false
 local Loaded = { PVP = false, MOB = false, V4 = false, ESP = false }
 
 -- --- [[ 3. 建立 Tab0：貓公告 ]] --- --
-local Tab0 = Lib:CreateTab("貓公告", false)
-Tab0:AddLabel("📢 NEKO HUB 啟動成功")
-Tab0:AddLabel("--------------------------")
-Tab0:AddLabel("✨ 內容顯示修復：按鈕已重新載入")
+-- 注意：這裡第二個參數設為 true，確保 UI 打開第一眼就看到它
+local Tab0 = Lib:CreateTab("貓公告", true) 
+Tab0:AddInfo("NEKO HUB 系統公告", "歡迎使用校準版，功能已全面對接開關。")
+Tab0:AddInfo("更新日誌", "12/28: 修復分頁渲染失敗與按鈕不顯示問題。")
 
--- --- [[ 4. 建立 Tab1：貓戰鬥 (內含按鈕) ]] --- --
+-- --- [[ 4. 建立 Tab1：貓戰鬥 ]] --- --
 local Tab1 = Lib:CreateTab("貓戰鬥", false)
-local btnPVP, btnMOB -- 預留變數供內部互斥使用
+local btnPVP, btnMOB
 
 btnPVP = Tab1:AddButton("打架模式 : OFF", function(self)
     _G.PVP = not _G.PVP
     if _G.PVP then
         _G.MOB = false
-        if btnMOB then btnMOB.Text = "刷怪模式 : OFF" end
+        if btnMOB then btnMOB.Text = "  🐱 刷怪模式 : OFF" end -- 注意：這裡要手動加 🐱 因為 UI 庫只有初次生成才加
         if not Loaded.PVP then
             Loaded.PVP = true
             task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))() end) end)
         end
     end
-    self.Text = "打架模式 : " .. (_G.PVP and "ON" or "OFF")
+    self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
 end)
 
 btnMOB = Tab1:AddButton("刷怪模式 : OFF", function(self)
     _G.MOB = not _G.MOB
     if _G.MOB then
         _G.PVP = false
-        if btnPVP then btnPVP.Text = "打架模式 : OFF" end
+        if btnPVP then btnPVP.Text = "  🐱 打架模式 : OFF" end
         if not Loaded.MOB then
             Loaded.MOB = true
             task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))() end) end)
         end
     end
-    self.Text = "刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
+    self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
--- --- [[ 5. 建立 Tab2：貓功能 (內含按鈕) ]] --- --
+-- --- [[ 5. 建立 Tab2：貓功能 ]] --- --
 local Tab2 = Lib:CreateTab("貓功能", false)
+
 Tab2:AddButton("自動 V4 : OFF", function(self)
     _G.AutoV4 = not _G.AutoV4
     if _G.AutoV4 and not Loaded.V4 then
         Loaded.V4 = true
         task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() end) end)
     end
-    self.Text = "自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
+    self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
 end)
 
 Tab2:AddButton("貓透視 (ESP) : OFF", function(self)
@@ -66,11 +67,12 @@ Tab2:AddButton("貓透視 (ESP) : OFF", function(self)
         Loaded.ESP = true
         task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end) end)
     end
-    self.Text = "貓透視 (ESP) : " .. (_G.ESP and "ON" or "OFF")
+    self.Text = "  🐱 貓透視 (ESP) : " .. (_G.ESP and "ON" or "OFF")
 end)
 
--- --- [[ 6. 建立 Tab3：貓召喚 (內含按鈕) ]] --- --
+-- --- [[ 6. 建立 Tab3：貓召喚 ]] --- --
 local Tab3 = Lib:CreateTab("貓召喚", false)
+
 Tab3:AddButton("召喚：貓貓神速", function() 
     task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() end) end)
 end)
@@ -78,5 +80,3 @@ end)
 Tab3:AddButton("召喚：貓貓飛行", function() 
     task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end) end)
 end)
-
-print("NEKO HUB 強制渲染完畢")
