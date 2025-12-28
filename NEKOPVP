@@ -1,32 +1,33 @@
--- [[ NEKOPVP - 核心修正版 ]]
+-- [[ NEKOPVP - 打架核心 ]]
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LP = Players.LocalPlayer
+local player = Players.LocalPlayer
 
-local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
-local RegAtk, RegHit = Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
+local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
+local RegAttack = Net:WaitForChild("RE/RegisterAttack")
+local RegHit = Net:WaitForChild("RE/RegisterHit")
 
 task.spawn(function()
     while true do
+        -- 核心：只看開關
         if _G.PVP == true then
             pcall(function()
-                local char = LP.Character
-                local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+                local char = player.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
                 local tool = char and char:FindFirstChildOfClass("Tool")
                 
-                if myRoot and tool then
+                if tool and root then
                     local targets = {}
                     local mainPart = nil
                     
-                    local allPlayers = Players:GetPlayers()
-                    for i = 1, #allPlayers do
-                        local p = allPlayers[i]
-                        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            local tRoot = p.Character.HumanoidRootPart
                             local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                            
                             if hum and hum.Health > 0 then
-                                local root = p.Character.HumanoidRootPart
-                                if (root.Position - myRoot.Position).Magnitude < 1000 then
-                                    if not mainPart then mainPart = root end
+                                -- 範圍內玩家
+                                if (tRoot.Position - root.Position).Magnitude < 1000 then
+                                    if not mainPart then mainPart = tRoot end
                                     table.insert(targets, p.Character)
                                 end
                             end
@@ -34,7 +35,7 @@ task.spawn(function()
                     end
                     
                     if #targets > 0 and mainPart then
-                        RegAtk:FireServer(0)
+                        RegAttack:FireServer(0)
                         RegHit:FireServer(mainPart, targets)
                     end
                 end
