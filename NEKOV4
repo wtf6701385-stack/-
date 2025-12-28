@@ -1,23 +1,12 @@
--- [[ NEKOV4 - 修正版 ]]
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
-
-if _G.V4_Loop_Started then return end
-_G.V4_Loop_Started = true
-
-local function callAwakeningRemote()
-    local bp = LP:FindFirstChild("Backpack")
-    local char = LP.Character
-    local awake = (bp and bp:FindFirstChild("Awakening")) or (char and char:FindFirstChild("Awakening"))
-    if awake and awake:FindFirstChild("RemoteFunction") then
-        pcall(function() awake.RemoteFunction:InvokeServer(true) end)
-    end
-end
-
+if _G.V4Started then return end; _G.V4Started = true
 task.spawn(function()
     while true do
-        if _G.AutoV4 then -- 對接主腳本開關
-            callAwakeningRemote()
+        if _G.AutoV4 then
+            pcall(function()
+                local char = game.Players.LocalPlayer.Character
+                local awake = char:FindFirstChild("Awakening") or game.Players.LocalPlayer.Backpack:FindFirstChild("Awakening")
+                if awake then awake.RemoteFunction:InvokeServer(true) end
+            end)
         end
         task.wait(1)
     end
