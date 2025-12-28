@@ -1,4 +1,4 @@
--- [[ GitHub: NEKO - 內嵌修復與核心注入版 ]]
+-- [[ GitHub: NEKO - 雙重模式核心注入版 ]]
 local success, NEKOLib = pcall(function()
     return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
 end)
@@ -24,7 +24,7 @@ _G.PVP = false
 _G.MOB = false
 _G.FastAttack = false
 
--- [[ 核心 FastAttack 執行函數 (本地注入版) ]]
+-- [[ 核心 FastAttack 執行函數 (PVP/MOB 智能切換版) ]]
 local function StartFastAttack()
     task.spawn(function()
         local scriptId = tick()
@@ -32,31 +32,44 @@ local function StartFastAttack()
         
         while _G.FastAttack and _G.CurrentFastAtkID == scriptId do
             RunService.Stepped:Wait()
-            
             local char = player.Character
             local tool = char and char:FindFirstChildOfClass("Tool")
             
             if tool and tool.ToolTip ~= "Gun" then
-                -- 尋找最近目標
                 local target = nil
                 local dist = 3000
                 local myPos = char.PrimaryPart.Position
                 
-                -- 根據模式切換目標來源 (這裡簡單處理，通用所有目標)
-                for _, v in pairs(workspace:GetDescendants()) do
-                    if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v ~= char then
-                        local head = v:FindFirstChild("Head") or v:FindFirstChild("HumanoidRootPart")
-                        if head and (head.Position - myPos).Magnitude < dist then
-                            dist = (head.Position - myPos).Magnitude
-                            target = head
+                if _G.PVP then
+                    -- 【打架模式】鎖定其他玩家
+                    for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+                        if p ~= player and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                            local h = p.Character:FindFirstChild("Head")
+                            if h and (h.Position - myPos).Magnitude < dist then
+                                dist = (h.Position - myPos).Magnitude
+                                target = h
+                            end
+                        end
+                    end
+                else
+                    -- 【刷怪模式】鎖定怪物 (排除玩家)
+                    local enemyPath = workspace:FindFirstChild("Enemies") or workspace
+                    for _, v in pairs(enemyPath:GetDescendants()) do
+                        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                            if not game:GetService("Players"):GetPlayerFromCharacter(v) then
+                                local h = v:FindFirstChild("Head") or v:FindFirstChild("HumanoidRootPart")
+                                if h and (h.Position - myPos).Magnitude < dist then
+                                    dist = (h.Position - myPos).Magnitude
+                                    target = h
+                                end
+                            end
                         end
                     end
                 end
 
                 if target then
-                    -- 暴力注入
-                    RegisterAttack:FireServer(0.1)
-                    for i = 1, 10 do -- 10 倍注入強度
+                    RegisterAttack:FireServer(0.125)
+                    for i = 1, 12 do -- 強化注入倍數至 12 倍
                         RegisterHit:FireServer(target, {target})
                     end
                 end
@@ -71,10 +84,7 @@ local function KillCombat()
     _G.MOB = false
 end
 
--- --- UI 構建 --- --
-
-local Tab0 = Lib:CreateTab("貓公告", true)
-Tab0:AddInfo("🐾 修復完成", "FastAttack 核心已本地化，一滴都不會漏喔❤")
+-- --- UI 按鈕設定 --- --
 
 local Tab1 = Lib:CreateTab("貓戰鬥", false)
 local btnPVP, btnMOB
@@ -85,7 +95,7 @@ btnPVP = Tab1:AddButton("打架模式 : OFF", function(self)
         _G.MOB = false
         if btnMOB then btnMOB.Text = "  刷怪模式 : OFF" end
         _G.FastAttack = true
-        StartFastAttack() -- 執行本地注入
+        StartFastAttack()
     else
         KillCombat()
     end
@@ -98,19 +108,16 @@ btnMOB = Tab1:AddButton("刷怪模式 : OFF", function(self)
         _G.PVP = false
         if btnPVP then btnPVP.Text = "  打架模式 : OFF" end
         _G.FastAttack = true
-        StartFastAttack() -- 執行本地注入
+        StartFastAttack()
     else
         KillCombat()
     end
     self.Text = "  刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
 end)
 
--- 其他功能保留
+-- 補上其他公告與功能 Tab 保持介面完整...
+Lib:CreateTab("貓公告", true):AddInfo("🐾 PVP 修復", "已修正無法鎖定玩家的問題。")
 local Tab2 = Lib:CreateTab("貓功能", false)
 Tab2:AddButton("貓貓神速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
-Tab2:AddButton("貓貓透視", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end)
 
-local Tab3 = Lib:CreateTab("貓召喚", false)
-Tab3:AddButton("召喚飛行", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
-
-print("✅ NEKO HUB 修復載入器已啟動，主人，請盡情頂穿對手。")
+print("✅ NEKO PVP/MOB 雙核心版本已注入！")
