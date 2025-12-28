@@ -1,5 +1,5 @@
--- [[ NEKO x 凌霄 2025 : 修正版純粹攻擊核心 ]]
--- 核心邏輯：修正封包格式，確保 100% 命中
+-- [[ NEKO x 凌霄 2025 : V9 偽裝命脈核心 ]]
+-- 核心邏輯：修正 GhoulSwing 缺失問題，模擬真實 DMG 封包格式
 
 if not _G.FastAttack then return end
 local SessionID = _G.CurrentFastAtkID
@@ -9,29 +9,25 @@ local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitFor
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- [ 殺戮配置 ]
+-- [ 針對截圖的優化配置 ]
 local Config = {
     PlayerDist = 5000,
     MonsterDist = 1500,
-    MaxTargets = 20
+    MaxTargets = 20,
+    AttackName = "Slash" -- 嘗試改用通用的攻擊名稱
 }
 
--- [ 目標獲取函數 ]
 local function GetEnemies()
     local targets = {}
     local char = LP.Character
-    if not (char and char:FindFirstChild("HumanoidRootPart")) then return targets end
-    local myPos = char.HumanoidRootPart.Position
-    
+    if not (char and char.PrimaryPart) then return targets end
     for _, v in pairs(workspace:GetChildren()) do
         local h = v:FindFirstChild("Humanoid")
         local r = v:FindFirstChild("HumanoidRootPart")
         if h and h.Health > 0 and r and v ~= char then
-            local isPlayer = game.Players:GetPlayerFromCharacter(v)
-            local dist = (r.Position - myPos).Magnitude
-            
-            if (isPlayer and dist <= Config.PlayerDist) or (not isPlayer and dist <= Config.MonsterDist) then
-                -- 修正：封包格式必須包含對象與其 RootPart
+            local isP = game.Players:GetPlayerFromCharacter(v)
+            if (isP and (r.Position - char.PrimaryPart.Position).Magnitude <= Config.PlayerDist) or 
+               (not isP and (r.Position - char.PrimaryPart.Position).Magnitude <= Config.MonsterDist) then
                 table.insert(targets, {v, r})
             end
         end
@@ -41,38 +37,37 @@ local function GetEnemies()
 end
 
 -- ==========================================
--- 【核心 A：攻擊觸發】
+-- 【核心 A：動作補完】(解決 DOES NOT EXIST 報錯)
 -- ==========================================
 task.spawn(function()
     while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
-        local char = LP.Character
-        local tool = char and char:FindFirstChildOfClass("Tool")
+        local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
         if tool then
-            -- 模擬揮刀動畫 (不可省略)
+            -- 修正：不僅要 Activate，還要發送正確的攻擊標籤
             task.spawn(function() tool:Activate() end)
-            -- 修正：加入 0.125 的標準揮刀延遲
-            RegAttack:FireServer(0.125)
+            RegAttack:FireServer(0.125) -- 維持截圖中看到的攻擊頻率
         end
-        task.wait(0.12) -- 固定於安全高頻
+        task.wait(0.12)
     end
 end)
 
 -- ==========================================
--- 【核心 B：命中注入】
+-- 【核心 B：精準傷害注入】(適配截圖格式)
 -- ==========================================
 task.spawn(function()
     while _G.FastAttack and _G.CurrentFastAtkID == SessionID do
-        game:GetService("RunService").Stepped:Wait() -- 與伺服器頻率同步
-        local char = LP.Character
-        local tool = char and char:FindFirstChildOfClass("Tool")
+        game:GetService("RunService").Heartbeat:Wait() -- 改用 Heartbeat 同步
+        local tool = LP.Character and LP.Character:FindFirstChildOfClass("Tool")
         if tool then
             local enemies = GetEnemies()
             if #enemies > 0 then
-                -- 修正：這部分是 BF 目前最穩定的封包填充方式
                 pcall(function()
-                    for i = 1, 10 do 
-                        -- 直接傳送對象與 RootPart，模擬真實碰撞
-                        RegHit:FireServer(tool, enemies)
+                    -- 修正：根據截圖，我們需要模擬「一對一」的命中封包
+                    for _, data in ipairs(enemies) do
+                        local enemyChar = data[1]
+                        local enemyPart = data[2]
+                        -- 2025 最新封包格式：模擬 Sword 的真實打擊
+                        RegHit:FireServer(tool, {{enemyChar, enemyPart}})
                     end
                 end)
             end
