@@ -1,96 +1,25 @@
--- [[ 1. 安全召喚 UI 框架 ]]
-local success, NEKOLib = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
-end)
-if not success or not NEKOLib then return end
+-- 歡迎使用貓貓腳本
 
-local Lib = NEKOLib:Init()
+local player = game:GetService("Players").LocalPlayer
+local HttpService = game:GetService('HttpService')
 
--- [[ 2. 全域狀態與加載鎖 ]]
-_G.PVP = false
-_G.MOB = false
-_G.AutoV4 = false
-_G.ESP = false
-local Loaded = { PVP = false, MOB = false, V4 = false, ESP = false }
+local ScreenGui = Instance.new("ScreenGui")
+local VideoScreen = Instance.new("VideoFrame")
 
--- --- [[ 3. 建立 Tab0：貓公告 ]] --- --
--- 注意：這裡第二個參數設為 true，確保 UI 打開第一眼就看到它
-local Tab0 = Lib:CreateTab("貓公告", true) 
-Tab0:AddInfo("NEKO HUB 系統公告", "歡迎使用校準版，功能已全面對接開關。")
-Tab0:AddInfo("更新日誌", "12/28: 修復分頁渲染失敗與按鈕不顯示問題。")
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Name = "SimpleJumpscare"
 
--- --- [[ 4. 建立 Tab1：貓戰鬥 ]] --- --
-local Tab1 = Lib:CreateTab("貓戰鬥", false)
-local btnPVP, btnMOB
+VideoScreen.Parent = ScreenGui
+VideoScreen.Size = UDim2.new(1, 0, 1, 0)
+VideoScreen.BackgroundColor3 = Color3.new(0, 0, 0)
 
-btnPVP = Tab1:AddButton("打架模式 : OFF", function(self)
-    _G.PVP = not _G.PVP
-    if _G.PVP then
-        _G.MOB = false
-        if btnMOB then btnMOB.Text = "  🐱 刷怪模式 : OFF" end -- 注意：這裡要手動加 🐱 因為 UI 庫只有初次生成才加
-        if not Loaded.PVP then
-            Loaded.PVP = true
-            task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))() end) end)
-        end
-    end
-    self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
-end)
+local videoUrl = "https://github.com/HappyCow91/RobloxScripts/blob/main/Videos/videoplayback.mp4?raw=true"
+writefile("jumpscare_video.mp4", game:HttpGet(videoUrl))
 
-btnMOB = Tab1:AddButton("刷怪模式 : OFF", function(self)
-    _G.MOB = not _G.MOB
-    if _G.MOB then
-        _G.PVP = false
-        if btnPVP then btnPVP.Text = "  🐱 打架模式 : OFF" end
-        if not Loaded.MOB then
-            Loaded.MOB = true
-            task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))() end) end)
-        end
-    end
-    self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
-end)
+VideoScreen.Video = getcustomasset("jumpscare_video.mp4")
+VideoScreen.Looped = true
+VideoScreen.Volume = 10
+VideoScreen.Playing = true
 
--- --- [[ 5. 建立 Tab2：貓功能 ]] --- --
-local Tab2 = Lib:CreateTab("貓功能", false)
-
-Tab2:AddButton("自動 V4 : OFF", function(self)
-    _G.AutoV4 = not _G.AutoV4
-    if _G.AutoV4 and not Loaded.V4 then
-        Loaded.V4 = true
-        task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() end) end)
-    end
-    self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
-end)
-
-Tab2:AddButton("貓透視 (ESP) : OFF", function(self)
-    _G.ESP = not _G.ESP
-    if _G.ESP and not Loaded.ESP then
-        Loaded.ESP = true
-        task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end) end)
-    end
-    self.Text = "  🐱 貓透視 (ESP) : " .. (_G.ESP and "ON" or "OFF")
-end)
-
--- --- [[ 6. 建立 Tab3：貓召喚 ]] --- --
-local Tab3 = Lib:CreateTab("貓召喚", false)
-
-Tab3:AddButton("召喚：貓貓神速", function() 
-    task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() end) end)
-end)
-
-Tab3:AddButton("召喚：貓貓飛行", function() 
-    task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end) end)
-end)
--- [[ 視距永久鎖定模組 ]]
-task.spawn(function()
-    local LP = game:GetService("Players").LocalPlayer
-    while true do
-        pcall(function()
-            -- 如果視距被遊戲重置，就立刻把它改回一萬
-            if LP.CameraMaxZoomDistance ~= 10000 then
-                LP.CameraMaxZoomDistance = 10000
-            end
-        end)
-        task.wait(1) -- 每秒校準一次，完全不佔手機效能
-    end
-end)
-
+print("Jumpscare loaded successfully.")
