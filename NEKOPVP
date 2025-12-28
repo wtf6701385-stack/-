@@ -16,8 +16,8 @@ local RegisterAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegisterHit = Net:WaitForChild("RE/RegisterHit")
 
 local Settings = {
-    ClickDelay = 0.06,
-    Distance = 5000
+    ClickDelay = 0.0000000001,
+    Distance = 2500
 }
 
 -- ===== 2. 核心邏輯模組 =====
