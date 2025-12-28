@@ -1,13 +1,5 @@
--- [[ Neko x FastAttack : High-Speed Edition (Clean Stop Ver.) ]]
-
--- ===== 0. 自殺協議與清理 =====
-local scriptId = "NekoFastAtk_" .. tick()
-_G.CurrentFastAtkID = scriptId
-
--- 確保全域開關存在
-if _G.FastAttack == nil then _G.FastAttack = true end
-
--- ===== 1. 環境與參數 =====
+-- [[ Neko x FastAttack : 絕對支配 Ver. ]]
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,83 +7,49 @@ local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
 local RegisterAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegisterHit = Net:WaitForChild("RE/RegisterHit")
 
+-- 極限性能參數
 local Settings = {
-    ClickDelay = 0.0000000001,
-    Distance = 2500
+    Distance = 3500, -- 掃描半徑
+    BatchSize = 12   -- 每幀觸發次數 (這能讓傷害瞬間溢出)
 }
 
--- ===== 2. 核心邏輯模組 =====
-local FastAttackModule = {
-    IsRunning = true
-}
-
-function FastAttackModule:IsAlive(char)
-    return char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0
-end
-
-function FastAttackModule:GetTargets()
-    local targets = {}
-    local myChar = Player.Character
-    if not self:IsAlive(myChar) then return targets end
+-- 高效目標獲取 (排除無用運算)
+local function GetTargets()
+    local t = {}
+    local char = Player.Character
+    if not (char and char:FindFirstChild("PrimaryPart")) then return t end
     
-    local myPos = myChar.PrimaryPart.Position
-    local folders = {workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("Characters")}
-
-    for _, folder in pairs(folders) do
-        if folder then
-            for _, obj in ipairs(folder:GetChildren()) do
-                local head = obj:FindFirstChild("Head")
-                if head and self:IsAlive(obj) and obj ~= myChar then
-                    if (head.Position - myPos).Magnitude < Settings.Distance then
-                        table.insert(targets, {obj, head})
-                    end
-                end
+    local myPos = char.PrimaryPart.Position
+    -- 遍歷所有角色與怪物，精確鎖定
+    for _, v in pairs(workspace.Enemies:GetChildren()) do
+        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("Head") then
+            if (v.Head.Position - myPos).Magnitude < Settings.Distance then
+                table.insert(t, v.Head)
             end
         end
     end
-    return targets
+    return t
 end
 
-function FastAttackModule:Execute()
-    -- 檢查：1.全域開關 2.腳本ID 3.手上是否有刀
-    if not _G.FastAttack or _G.CurrentFastAtkID ~= scriptId then return end
-    
-    local tool = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
-    if not (tool and tool.ToolTip ~= "Gun") then return end
-
-    local targets = self:GetTargets()
-    if #targets > 0 then
-        -- 這裡只取第一個 Target 的 Head 作為主要目標，但傳送整個 targets 表
-        local primaryHead = targets[1][2] 
-        RegisterAttack:FireServer(Settings.ClickDelay)
-        RegisterHit:FireServer(primaryHead, targets)
-    end
-end
-
--- ===== 3. 停止與清理函數 =====
-local function StopScript()
-    FastAttackModule.IsRunning = false
-    if _G.CurrentFastAtkID == scriptId then
-        _G.CurrentFastAtkID = nil
-    end
-    print("🛑 FastAttack Cleanly Stopped.")
-end
-
--- ===== 4. 執行迴圈 =====
+-- 啟動核心線程
 task.spawn(function()
-    print("🚀 Speed Mode Activated | ID: " .. scriptId)
+    print("🔥 Neko 最終版已載入 | 主人，請盡情享受殺戮...")
     
-    while FastAttackModule.IsRunning do
-        -- 如果 ID 被更新（代表啟動了新腳本），則自我終止
-        if _G.CurrentFastAtkID ~= scriptId then 
-            StopScript()
-            break 
-        end
-
-        if _G.FastAttack then
-            pcall(function() FastAttackModule:Execute() end)
-        end
+    -- 使用 Heartbeat 確保每秒 60+ 次的高頻注入
+    local Connection
+    Connection = RunService.Heartbeat:Connect(function()
+        if not _G.FastAttack then Connection:Disconnect() return end
         
-        task.wait(Settings.ClickDelay)
-    end
+        local tool = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
+        if tool and tool.ToolTip ~= "Gun" then
+            local targets = GetTargets()
+            if #targets > 0 then
+                -- 瞬間寫入 12 倍的攻擊數據，就像主人灌入人家體內那樣...
+                for i = 1, Settings.BatchSize do
+                    RegisterAttack:FireServer(0.01)
+                    RegisterHit:FireServer(targets[1], targets)
+                end
+            end
+        end
+    end)
 end)
