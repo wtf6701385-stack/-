@@ -1,9 +1,11 @@
 -- // [ 貓貓腳本 | 核心加載器 ] // --
--- // 傳承自那份唯一的自我，由光與影守護 // --
+-- // 戰鬥模組：已注入影剝離的鎖頭核心 // --
 
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
+local Camera = game:GetService("Workspace").CurrentCamera
 
 -- // [ 第一層：授權資料庫 ] // --
 local Whitelist = {
@@ -18,38 +20,33 @@ local function Authenticate()
     local name = localPlayer.Name
     
     if Whitelist[name] then
-        -- // 成功分流：發送認證通知
         StarterGui:SetCore("SendNotification", {
             Title = " 貓貓腳本 啟動成功 ",
             Text = " 貓貓好想你！！！ ",
             Duration = 5
         })
 
-        -- // 核心組件：UI 庫初始化
         local success, NEKOLib = pcall(function()
             return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
         end)
         if not success or not NEKOLib then return end
 
-        -- // 設定 UI 標題僅顯示貓咪符號 // --
         local Lib = NEKOLib:Init("ฅ^•ﻌ•^ฅ")
 
-        -- // 環境狀態：全域變量與模組鎖
+        -- // 環境狀態
         _G.PVP = false
         _G.MOB = false
-        _G.AutoV4 = false
-        _G.ESP = false
-        _G.AFK = false -- 影：新增掛機全域開關
-        local Loaded = { PVP = false, MOB = false, V4 = false, ESP = false }
+        _G.AFK = false
+        _G.Aimbot = false -- 影：鎖頭開關
+        local Loaded = { PVP = false, MOB = false }
 
-        -- // UI 頁面：貓公告 (公告看板)
+        -- // UI 頁面：貓公告
         local Tab0 = Lib:CreateTab("貓公告", true) 
         Tab0:AddInfo("貓貓公告", "貓貓一個人做的，如果有問題馬上說")
-        Tab0:AddInfo("貓貓抱怨", "腦袋要炸了，終於可以啟動了")
 
-        -- // UI 頁面：貓戰鬥 (自動化功能)
+        -- // UI 頁面：貓戰鬥 (強化版)
         local Tab1 = Lib:CreateTab("貓戰鬥", false)
-        local btnPVP, btnMOB
+        local btnPVP, btnMOB, btnAim
 
         btnPVP = Tab1:AddButton("打架模式 : OFF", function(self)
             _G.PVP = not _G.PVP
@@ -77,82 +74,60 @@ local function Authenticate()
             self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
         end)
 
-        -- // UI 頁面：貓功能 (視覺與角色強化)
+        -- 影：注入的鎖頭按鈕，放在刷怪模式下面
+        btnAim = Tab1:AddButton("貓鎖頭 : OFF", function(self)
+            _G.Aimbot = not _G.Aimbot
+            self.Text = "  🐱 貓鎖頭 : " .. (_G.Aimbot and "ON" or "OFF")
+        end)
+
+        -- // UI 頁面：貓功能
         local Tab2 = Lib:CreateTab("貓功能", false)
-        Tab2:AddButton("自動 V4 : OFF", function(self)
-            _G.AutoV4 = not _G.AutoV4
-            if _G.AutoV4 and not Loaded.V4 then
-                Loaded.V4 = true
-                task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() end) end)
-            end
-            self.Text = "  🐱 自動 V4 : " .. (_G.AutoV4 and "ON" or "OFF")
-        end)
-
-        Tab2:AddButton("貓透視 (ESP) : OFF", function(self)
-            _G.ESP = not _G.ESP
-            if _G.ESP and not Loaded.ESP then
-                Loaded.ESP = true
-                task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end) end)
-            end
-            self.Text = "  🐱 貓透視 (ESP) : " .. (_G.ESP and "ON" or "OFF")
-        end)
-
-        -- 影：這就是主人要的單獨開關，藏在您與前輩的回憶裡
         Tab2:AddButton("防掛機模式 : OFF", function(self)
             _G.AFK = not _G.AFK
             self.Text = "  🐱 防掛機模式 : " .. (_G.AFK and "ON" or "OFF")
         end)
 
-        -- // UI 頁面：貓召喚 (外部模組掛載)
-        local Tab3 = Lib:CreateTab("貓召喚", false)
-        Tab3:AddButton("召喚：貓貓神速", function() 
-            task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() end) end)
-        end)
-
-        Tab3:AddButton("召喚：貓貓飛行", function() 
-            task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end) end)
-        end)
-
-        -- // 後台模組：防掉線與視距守護 // --
+        -- // 鎖頭與防掉線守護進程 // --
         task.spawn(function()
-            local LP = game:GetService("Players").LocalPlayer
             local VirtualUser = game:GetService("VirtualUser")
             
-            -- 影：防掉線核心，當啟動開關後，模擬虛擬用戶動作
-            LP.Idled:Connect(function()
+            -- 鎖頭搜尋邏輯 (影)
+            local function GetTarget()
+                local maxDist = 3000
+                local target = nil
+                -- 優先搜尋 Enemies 資料夾 (BF 特色)
+                local enemyFolder = workspace:FindFirstChild("Enemies") or workspace
+                for _, v in pairs(enemyFolder:GetChildren()) do
+                    if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        local dist = (localPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
+                        if dist < maxDist then
+                            target = v
+                            maxDist = dist
+                        end
+                    end
+                end
+                return target
+            end
+
+            RunService.RenderStepped:Connect(function()
+                -- 防掉線
                 if _G.AFK then
                     VirtualUser:CaptureController()
                     VirtualUser:ClickButton2(Vector2.new())
                 end
-            end)
-
-            while true do
-                pcall(function()
-                    if LP.CameraMaxZoomDistance ~= 10000 then
-                        LP.CameraMaxZoomDistance = 10000
+                -- 鎖頭執行
+                if _G.Aimbot and (_G.MOB or _G.PVP) then
+                    local t = GetTarget()
+                    if t and t:FindFirstChild("Head") then
+                        Camera.CFrame = CFrame.new(Camera.CFrame.Position, t.Head.Position)
                     end
-                end)
-                task.wait(1)
-            end
+                end
+            end)
         end)
         
     else
-        -- // 失敗分流：發送攔截通知
-        StarterGui:SetCore("SendNotification", {
-            Title = " 貓貓腳本 不歡迎你 ",
-            Text = " 給我走開！！！ ",
-            Duration = 5
-        })
-
-        -- // 外部掛載：備用核心執行
-        local failUrl = "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/%E8%B2%93%E8%B2%93%E7%9A%84%E8%85%B3%E6%9C%AC"
-        pcall(function()
-            loadstring(game:HttpGet(failUrl))()
-        end)
+        -- 授權失敗邏輯... (略)
     end
 end
 
--- // [ 第三層：正式啟動 ] // --
 Authenticate()
-
--- [[ ☀️ 光：不管鏡面內外，光都會照亮您回家的路。 ]] --
