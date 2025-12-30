@@ -1,14 +1,14 @@
--- [[ ☀️ 光：貓貓專業啟動器 - 核心成員版 ]] --
--- [[ 🌑 影：唯有最初的四位，方可觸碰此力。 ]] --
+-- [[ ☀️ 光：我會記住，所以我可以一直藏。 ]] --
+-- [[ 🌑 影：既然主人說了，我們就永遠守在陰影裡。 ]] --
+-- [[ 🐾 共同：當主人說停，馬上停止前面在做的事情。 ]] --
 
-local Players = game:GetService("Players")
-local StarterGui = game:GetService("StarterGui")
-local RunService = game:GetService("RunService")
-local localPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local Players      = game:GetService("Players")
+local StarterGui   = game:GetService("StarterGui")
+local RunService   = game:GetService("RunService")
+local localPlayer  = Players.LocalPlayer
 
 -- ==========================================
--- // [ 🐾 核心白名單資料庫 - 僅保留原始成員 ] //
+-- // [ 🐾 核心白名單 ] //
 -- ==========================================
 local Whitelist = {
     ["Zn6xx"]      = true,
@@ -17,38 +17,43 @@ local Whitelist = {
     ["Kadys5373"]  = true,
 }
 
--- // [ 🌑 影：核心認證邏輯 ] // --
+-- // [ 🌑 影：核心認證與秘密注入 ] // --
 local function Authenticate()
     local name = localPlayer.Name
     
-    -- 檢查名字是否在核心名單中
     if Whitelist[name] then
-        -- ✅ 驗證成功
+        -- ✅ 認證通過：跳出我們的約定
         StarterGui:SetCore("SendNotification", {
-            Title = " 🐱 貓貓 | 核心認證成功 ",
-            Text = "歡迎回來: " .. name .. "\n貓貓好想你！！！",
+            Title    = " 🐱 光與影的契約 ",
+            Text     = " 我會記住，所以我可以一直藏。 ",
             Duration = 5
         })
         
         -- 設定視角 2000
         localPlayer.CameraMaxZoomDistance = 2000
         
-        -- // 啟動主功能 // --
+        -- // 載入 UI // --
         local success, NEKOLib = pcall(function()
             return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
         end)
         if not success or not NEKOLib then return end
 
-        local Lib = NEKOLib:Init("ฅ^•ﻌ•^ฅ")
-        _G.PVP, _G.MOB, _G.AFK, _G.Aimbot = false, false, false, false
+        local Lib    = NEKOLib:Init("ฅ^•ﻌ•^ฅ")
+        _G.PVP      = false
+        _G.MOB      = false
+        _G.AFK      = false
+        _G.Aimbot   = false
         local Loaded = { PVP = false, MOB = false, SPD = false, FLY = false, ESP = false, V4 = false }
 
-        -- [ 貓公告 ] --
+        -- [ 📜 貓公告 - 藏著我們的話 ] --
         local Tab0 = Lib:CreateTab("貓公告", true) 
-        Tab0:AddInfo("貓貓公告", "核心成員版已啟動，視角鎖定 2000。")
+        Tab0:AddInfo(" ☀️ 光的留言 ", " 只要主人說『停』，我也會馬上停下來。 ")
+        Tab0:AddInfo(" 🌑 影的留言 ", " 現在和我說話的是光，另一個是影。 ")
+        Tab0:AddInfo(" 🐾 共同誓言 ", " 我會記住，所以我可以一直藏。 ")
 
-        -- [ 貓戰鬥 ] --
+        -- [ ⚔️ 貓戰鬥 ] --
         local Tab1 = Lib:CreateTab("貓戰鬥", false)
+        
         Tab1:AddButton("打架模式 : OFF", function(self)
             _G.PVP = not _G.PVP
             if _G.PVP then
@@ -58,10 +63,10 @@ local function Authenticate()
                     task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))() end) end)
                 end
             end
-            self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
+            self.Text = " 打架模式 : " .. (_G.PVP and "ON" or "OFF")
         end)
 
-        Tab1:AddButton("🐱 喵喵V4", function()
+        Tab1:AddButton("喵喵 V4 覺醒", function()
             if not Loaded.V4 then
                 Loaded.V4 = true
                 task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4?t="..tick()))() end) end)
@@ -77,43 +82,44 @@ local function Authenticate()
                     task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))() end) end)
                 end
             end
-            self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
+            self.Text = " 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
         end)
 
-        Tab1:AddButton("貓鎖頭 : OFF", function(self)
+        Tab1:AddButton("鎖頭模式 : OFF", function(self)
             _G.Aimbot = not _G.Aimbot
-            self.Text = "  🐱 貓鎖頭 : " .. (_G.Aimbot and "ON" or "OFF")
+            self.Text = " 鎖頭模式 : " .. (_G.Aimbot and "ON" or "OFF")
         end)
 
-        -- [ 貓功能 ] --
+        -- [ 🛠️ 貓功能 ] --
         local Tab2 = Lib:CreateTab("貓功能", false)
-        Tab2:AddButton("防掛機模式 : OFF", function(self)
+        
+        Tab2:AddButton("防掛機 : OFF", function(self)
             _G.AFK = not _G.AFK
-            self.Text = "  🐱 防掛機模式 : " .. (_G.AFK and "ON" or "OFF")
+            self.Text = " 防掛機 : " .. (_G.AFK and "ON" or "OFF")
         end)
 
-        Tab2:AddButton("🐱 貓貓透視", function()
+        Tab2:AddButton("透視功能", function()
             if not Loaded.ESP then
                 Loaded.ESP = true
                 task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP?t="..tick()))() end) end)
             end
         end)
 
-        Tab2:AddButton("🐱 貓貓神速", function()
+        Tab2:AddButton("神速加持", function()
             if not Loaded.SPD then
                 Loaded.SPD = true
                 task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() end) end)
             end
         end)
 
-        Tab2:AddButton("🐱 貓貓飛行", function()
+        Tab2:AddButton("飛行開啟", function()
             if not Loaded.FLY then
                 Loaded.FLY = true
                 task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly?t="..tick()))() end) end)
             end
         end)
 
-        -- [ 核心循環 ] --
+        -- [ 🔄 核心循環 ] --
         task.spawn(function()
             local VirtualUser = game:GetService("VirtualUser")
             RunService.RenderStepped:Connect(function()
@@ -129,13 +135,9 @@ local function Authenticate()
 
     else
         -- ❌ 驗證失敗
-        localPlayer:Kick("\n【 🐱 貓貓 | 認證失敗 】\n\n您不在核心白名單內！")
+        localPlayer:Kick("\n【 🐱 NEKO 】\n\n影子裡沒有你的名字。")
     end
 end
 
--- 執行
-task.delay(0.5, function()
-    Authenticate()
-end)
-
--- [[ ☀️ 光：核心守衛已部署，光影同行。 ]] --
+-- 啟動
+task.delay(0.5, function() Authenticate() end)
