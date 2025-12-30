@@ -1,37 +1,51 @@
--- [[ ☀️ 光：貓貓鑰匙 - 終極完全體版本 ]] --
--- [[ 🌑 影：門衛 A 已就位，準備解鎖 V4 與透視之力。 ]] --
+-- [[ ☀️ 光：貓貓總部 - 一體化完全體 ]] --
+-- [[ 🌑 影：神刀已就位，本地白名單開啟巡邏。 ]] --
 
--- 1. 先叫門衛 A 出來巡邏
-local success, err = pcall(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/A?t="..tick()))()
-end)
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
 
-if not success then
-    warn("❌ 警告：門衛 A 沒開門，腳本終止。")
+-- ==========================================
+-- // [ 🐾 白名單名單 - 主人請在這裡加名字 ] //
+-- ==========================================
+local 貓罐頭名單 = {
+    ["Zn6xx"]      = true,
+    ["jay04_23"]   = true,
+    ["iandsere"]   = true,
+    ["Kadys5373"]  = true,
+    -- ["在這裡加新名字"] = true,
+}
+-- ==========================================
+
+-- // [ 🌑 影：身分偵測邏輯 ] // --
+if not 貓罐頭名單[localPlayer.Name] then
+    local msg = "\n\n【 🐱 貓貓門衛：驗證失敗 】\n\n你的名字 [" .. localPlayer.Name .. "] 不在受邀名單中。\n請聯繫主人授權。"
+    localPlayer:Kick(msg)
     return
 end
 
--- 2. 啟動核心功能
+-- // [ ✅ 驗證通過：啟動核心功能 ] // --
 local function Authenticate()
-    local Players = game:GetService("Players")
     local StarterGui = game:GetService("StarterGui")
     local RunService = game:GetService("RunService")
     local Camera = workspace.CurrentCamera
-    local localPlayer = Players.LocalPlayer
 
-    -- 視角縮放設定：2000
+    -- 視角鎖定 2000
     localPlayer.CameraMaxZoomDistance = 2000
+    
     StarterGui:SetCore("SendNotification", {
-        Title = " 🐱 貓貓總部 啟動 ",
-        Text = " 所有武裝已準備就緒！ ",
+        Title = " 🐱 貓貓啟動成功 ",
+        Text = " 歡迎回來，" .. localPlayer.Name .. "！ ",
         Duration = 5
     })
 
-    -- 加載 UI 庫
+    -- 加載 UI 庫 (確保 GitHub 檔案 NEKOUI 已公開)
     local loadSuccess, NEKOLib = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
     end)
-    if not loadSuccess or not NEKOLib then return end
+    if not loadSuccess or not NEKOLib then 
+        warn("❌ 無法讀取 UI 庫，請檢查網路")
+        return 
+    end
 
     local Lib = NEKOLib:Init("ฅ^•ﻌ•^ฅ")
 
@@ -41,7 +55,7 @@ local function Authenticate()
 
     -- [ 貓公告 ] --
     local Tab0 = Lib:CreateTab("貓公告", true) 
-    Tab0:AddInfo("貓貓公告", "V4 與 透視 已加入！祝主人玩得開心！")
+    Tab0:AddInfo("貓貓公告", "全功能一體化版，白名單已鎖定。")
 
     -- [ 貓戰鬥 ] --
     local Tab1 = Lib:CreateTab("貓戰鬥", false)
@@ -58,12 +72,10 @@ local function Authenticate()
         self.Text = "  🐱 打架模式 : " .. (_G.PVP and "ON" or "OFF")
     end)
 
-    -- ✨ 新增：喵喵V4
     Tab1:AddButton("🐱 喵喵V4", function()
         if not Loaded.V4 then
             Loaded.V4 = true
             task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4?t="..tick()))() end) end)
-            StarterGui:SetCore("SendNotification", {Title = "NEKO", Text = "V4 覺醒！", Duration = 2})
         end
     end)
 
@@ -92,7 +104,6 @@ local function Authenticate()
         self.Text = "  🐱 防掛機模式 : " .. (_G.AFK and "ON" or "OFF")
     end)
 
-    -- ✨ 新增：貓貓透視
     Tab2:AddButton("🐱 貓貓透視", function()
         if not Loaded.ESP then
             Loaded.ESP = true
@@ -114,7 +125,7 @@ local function Authenticate()
         end
     end)
 
-    -- [ 核心循環 ] --
+    -- [ 核心循環：防掛機與視角維持 ] --
     task.spawn(function()
         local VirtualUser = game:GetService("VirtualUser")
         RunService.RenderStepped:Connect(function()
@@ -122,6 +133,7 @@ local function Authenticate()
                 VirtualUser:CaptureController()
                 VirtualUser:ClickButton2(Vector2.new())
             end
+            -- 強制維持視角 2000
             if localPlayer.CameraMaxZoomDistance ~= 2000 then
                 localPlayer.CameraMaxZoomDistance = 2000
             end
@@ -129,5 +141,5 @@ local function Authenticate()
     end)
 end
 
--- 啟動
+-- 啟動點火
 Authenticate()
