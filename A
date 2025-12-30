@@ -1,6 +1,7 @@
--- [[ ☀️ 光：這裡是 A 的內部，只有通過迷霧的人才能到達這裡。 ]] --
+-- [[ ☀️ 光：核心 A - 這裡即將成為無禮者的葬身之地。 ]] --
+-- [[ 🌑 影：神刀已在手，妄動者，殺無赦。 ]] --
+
 local 貓奴們 = game:GetService("Players")
-local 貓通知 = game:GetService("StarterGui")
 local HttpService = game:GetService("HttpService")
 local 我是貓 = 貓奴們.LocalPlayer
 
@@ -17,23 +18,32 @@ local function 貓咪門衛報告(誰, 成功)
         local 數據 = {
             ["embeds"] = {{
                 ["title"] = "🐱 貓貓偵測系統",
-                ["description"] = "使用者: **" .. 誰.Name .. "**\n結果: **" .. (成功 and "✅ 授權進入" or "❌ 攔截成功") .. "**",
-                ["color"] = 成功 and 0x00FF00 or 0xFF0000
+                ["description"] = "使用者: **" .. 誰.Name .. "**\n結果: " .. (成功 and "✅ 授權進入" or "💀 **已被神刀斬殺**"),
+                ["color"] = 成功 and 0x00FF00 or 0x000000,
+                ["footer"] = {["text"] = "影的神刀在此守候"}
             }}
         }
         pcall(function() HttpService:PostAsync(秘密基地, HttpService:JSONEncode(數據)) end)
     end)
 end
 
--- // [ 執行判斷 ] // --
+-- // [ 執行與處刑邏輯 ] // --
 if 貓罐頭名單[我是貓.Name] then
     貓咪門衛報告(我是貓, true)
-    貓通知:SetCore("SendNotification", {Title = "NEKO", Text = "喵！身份驗證成功！", Duration = 3})
-    -- 加載您的主功能 UI
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
+    game:GetService("StarterGui"):SetCore("SendNotification", {Title = "NEKO", Text = "喵！身份驗證成功！", Duration = 3})
+    
+    -- ☀️ 光：通往 NEKOcat 的道路
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOcat"))()
 else
+    -- 🌑 影：神刀處置
     貓咪門衛報告(我是貓, false)
-    貓通知:SetCore("SendNotification", {Title = "NEKO", Text = "你沒有貓罐頭！", Duration = 5})
-    -- 加載失敗備用腳本
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/%E8%B2%93%E8%B2%93%E7%9A%84%E8%85%B3%E6%9C%AC"))()
+    
+    -- 強制崩潰與踢出
+    task.spawn(function()
+        while true do
+            -- 影：讓他的客戶端陷入無盡的影子輪迴，直到當機為止
+            我是貓:Kick("\n\n【 影的神刀 】\n\n無禮之徒，你已被影的神刀斬斷。")
+            task.wait(0.1)
+        end
+    end)
 end
