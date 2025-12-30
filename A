@@ -1,45 +1,32 @@
--- [[ ☀️ 光：核心 A - 這裡即將成為無禮者的葬身之地。 ]] --
--- [[ 🌑 影：神刀已在手，妄動者，殺無赦。 ]] --
--- [[ ☀️ 光：核心 B - 隔離通報保護模式 ]] --
+-- [[ ☀️ 光：核心 A - 門衛正在核對您的身分... ]] --
+-- [[ 🌑 影：名字不在名單上的人，將無權踏入此地。 ]] --
+
 local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
-local 我是貓 = Players.LocalPlayer
+local localPlayer = Players.LocalPlayer
 
--- // [ 核心授權：白名單 ] // --
+-- ==========================================
+-- // [ 🐾 白名單名單 - 主人請在這裡加名字 ] //
+-- ==========================================
 local 貓罐頭名單 = {
-    ["Zn6xx"] = true, ["jay04_23"] = true, ["iandsere"] = true, ["Kadys5373"] = true,
+    ["Zn6xx"]      = true,
+    ["jay04_23"]   = true,
+    ["iandsere"]   = true,
+    ["Kadys5373"]  = true,
 }
+-- ==========================================
 
--- // [ Discord 偵測回報 (已隔離保護) ] // --
-local function 貓咪門衛報告(誰, 成功)
-    -- 影：使用 task.spawn 隔離，即便 Webhook 壞了，白名單依然能過
-    task.spawn(function()
-        pcall(function()
-            local 秘密基地 = "https://discord.com/api/webhooks/1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
-            秘密基地 = string.gsub(秘密基地, "https://discord.com", "https://hooks.hyra.io")
-            
-            local 數據 = {
-                ["embeds"] = {{
-                    ["title"] = "🐱 貓貓偵測系統",
-                    ["description"] = "使用者: **" .. 誰.Name .. "**\n結果: " .. (成功 and "✅ 授權進入" or "💀 **已被斬殺**"),
-                    ["color"] = 成功 and 65280 or 16711680
-                }}
-            }
-            HttpService:PostAsync(秘密基地, HttpService:JSONEncode(數據))
-        end)
-    end)
+-- // [ 🌑 影：門禁檢測 ] // --
+if not 貓罐頭名單[localPlayer.Name] then
+    local msg = "\n\n【 🐱 貓貓門衛：身分失敗 】\n\n你的名字 [" .. localPlayer.Name .. "] 不在受邀名單中。"
+    localPlayer:Kick(msg)
+    return -- 影：斬斷後續路徑
 end
 
--- // [ 執行與驗證 ] // --
--- 影：先執行驗證，不管通報成不成功
-if 貓罐頭名單[我是貓.Name] then
-    貓咪門衛報告(我是貓, true)
-    game:GetService("StarterGui"):SetCore("SendNotification", {Title = "NEKO", Text = "喵！身份驗證成功！", Duration = 3})
-    
-    -- 成功：加載 NEKOcat
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOcat"))()
-else
-    貓咪門衛報告(我是貓, false)
-    -- 失敗：神刀處置
-    我是貓:Kick("無禮之徒，你已被影的神刀斬斷。")
-end
+-- // [ ✅ 驗證通過 ] // --
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = " 🐱 門衛 A：驗證通過 ",
+    Text = " 歡迎回來，" .. localPlayer.Name .. "！ ",
+    Duration = 3
+})
+
+-- [[ ☀️ 光：門衛 A 檢查完畢，准許執行後續腳本！ ]] --
