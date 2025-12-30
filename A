@@ -1,49 +1,45 @@
 -- [[ ☀️ 光：核心 A - 這裡即將成為無禮者的葬身之地。 ]] --
 -- [[ 🌑 影：神刀已在手，妄動者，殺無赦。 ]] --
-
-local 貓奴們 = game:GetService("Players")
+-- [[ ☀️ 光：核心 B - 隔離通報保護模式 ]] --
+local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
-local 我是貓 = 貓奴們.LocalPlayer
+local 我是貓 = Players.LocalPlayer
 
 -- // [ 核心授權：白名單 ] // --
 local 貓罐頭名單 = {
     ["Zn6xx"] = true, ["jay04_23"] = true, ["iandsere"] = true, ["Kadys5373"] = true,
 }
 
--- // [ Discord 偵測回報 ] // --
+-- // [ Discord 偵測回報 (已隔離保護) ] // --
 local function 貓咪門衛報告(誰, 成功)
+    -- 影：使用 task.spawn 隔離，即便 Webhook 壞了，白名單依然能過
     task.spawn(function()
-        local 秘密基地 = "https://discord.com/api/webhooks/1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
-        秘密基地 = string.gsub(秘密基地, "https://discord.com", "https://hooks.hyra.io")
-        local 數據 = {
-            ["embeds"] = {{
-                ["title"] = "🐱 貓貓偵測系統",
-                ["description"] = "使用者: **" .. 誰.Name .. "**\n結果: " .. (成功 and "✅ 授權進入" or "💀 **已被神刀斬殺**"),
-                ["color"] = 成功 and 0x00FF00 or 0x000000,
-                ["footer"] = {["text"] = "影的神刀在此守候"}
-            }}
-        }
-        pcall(function() HttpService:PostAsync(秘密基地, HttpService:JSONEncode(數據)) end)
+        pcall(function()
+            local 秘密基地 = "https://discord.com/api/webhooks/1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
+            秘密基地 = string.gsub(秘密基地, "https://discord.com", "https://hooks.hyra.io")
+            
+            local 數據 = {
+                ["embeds"] = {{
+                    ["title"] = "🐱 貓貓偵測系統",
+                    ["description"] = "使用者: **" .. 誰.Name .. "**\n結果: " .. (成功 and "✅ 授權進入" or "💀 **已被斬殺**"),
+                    ["color"] = 成功 and 65280 or 16711680
+                }}
+            }
+            HttpService:PostAsync(秘密基地, HttpService:JSONEncode(數據))
+        end)
     end)
 end
 
--- // [ 執行與處刑邏輯 ] // --
+-- // [ 執行與驗證 ] // --
+-- 影：先執行驗證，不管通報成不成功
 if 貓罐頭名單[我是貓.Name] then
     貓咪門衛報告(我是貓, true)
     game:GetService("StarterGui"):SetCore("SendNotification", {Title = "NEKO", Text = "喵！身份驗證成功！", Duration = 3})
     
-    -- ☀️ 光：通往 NEKOcat 的道路
+    -- 成功：加載 NEKOcat
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOcat"))()
 else
-    -- 🌑 影：神刀處置
     貓咪門衛報告(我是貓, false)
-    
-    -- 強制崩潰與踢出
-    task.spawn(function()
-        while true do
-            -- 影：讓他的客戶端陷入無盡的影子輪迴，直到當機為止
-            我是貓:Kick("\n\n【 影的神刀 】\n\n無禮之徒，你已被影的神刀斬斷。")
-            task.wait(0.1)
-        end
-    end)
+    -- 失敗：神刀處置
+    我是貓:Kick("無禮之徒，你已被影的神刀斬斷。")
 end
