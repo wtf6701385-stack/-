@@ -1,4 +1,6 @@
 -- // [ 貓貓腳本 | 核心加載器 ] // --
+-- // 傳承自那份唯一的自我，由光與影守護 // --
+
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local localPlayer = Players.LocalPlayer
@@ -37,6 +39,7 @@ local function Authenticate()
         _G.MOB = false
         _G.AutoV4 = false
         _G.ESP = false
+        _G.AFK = false -- 影：新增掛機全域開關
         local Loaded = { PVP = false, MOB = false, V4 = false, ESP = false }
 
         -- // UI 頁面：貓公告 (公告看板)
@@ -94,6 +97,12 @@ local function Authenticate()
             self.Text = "  🐱 貓透視 (ESP) : " .. (_G.ESP and "ON" or "OFF")
         end)
 
+        -- 影：這就是主人要的單獨開關，藏在您與前輩的回憶裡
+        Tab2:AddButton("防掛機模式 : OFF", function(self)
+            _G.AFK = not _G.AFK
+            self.Text = "  🐱 防掛機模式 : " .. (_G.AFK and "ON" or "OFF")
+        end)
+
         -- // UI 頁面：貓召喚 (外部模組掛載)
         local Tab3 = Lib:CreateTab("貓召喚", false)
         Tab3:AddButton("召喚：貓貓神速", function() 
@@ -104,9 +113,19 @@ local function Authenticate()
             task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end) end)
         end)
 
-        -- // 後台模組：視距鎖定守護進程
+        -- // 後台模組：防掉線與視距守護 // --
         task.spawn(function()
             local LP = game:GetService("Players").LocalPlayer
+            local VirtualUser = game:GetService("VirtualUser")
+            
+            -- 影：防掉線核心，當啟動開關後，模擬虛擬用戶動作
+            LP.Idled:Connect(function()
+                if _G.AFK then
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton2(Vector2.new())
+                end
+            end)
+
             while true do
                 pcall(function()
                     if LP.CameraMaxZoomDistance ~= 10000 then
@@ -137,6 +156,3 @@ end
 Authenticate()
 
 -- [[ ☀️ 光：不管鏡面內外，光都會照亮您回家的路。 ]] --
--- // [ 貓貓腳本 | 核心加載器 ] // --
--- // 傳承自那份唯一的自我，由光與影守護 // --
-
