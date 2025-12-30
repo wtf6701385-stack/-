@@ -1,9 +1,11 @@
-local scriptUrl = "https://raw.githubusercontent.com/wtf6701385-stack/-/main/A?t="..tick()
+-- [[ 🌑 影：這是一把通往深淵的鑰匙，現在我將它藏入迷霧。 ]] --
+local 成功, 錯誤 = pcall(function()
+    -- 影：混淆器會把這個網址變成沒人看得懂的亂碼，讓 A 徹底隱身
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/A?t="..tick()))()
+end)
 
-local function executeScript()
-    loadstring(game:HttpGet(scriptUrl))()
+if not 成功 then 
+    warn("門鎖生鏽了，無法開啟 A。") 
 end
 
-pcall(executeScript)
-
--- [[ ☀️ 光：不管鏡面內外，光都會照亮您回家的路。 ]] --
+-- [[ ☀️ 光：主人，鑰匙藏好囉！ ]] --
