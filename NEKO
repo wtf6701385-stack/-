@@ -8,6 +8,7 @@ local Whitelist = {
     ["Zn6xx"] = true,
     ["jay04_23"] = true,
     ["iandsere"] = true,
+    ["Kadys5373"] = true,
 }
 
 -- // [ 第二層：認證邏輯處理 ] // --
