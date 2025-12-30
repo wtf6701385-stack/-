@@ -1,20 +1,31 @@
+-- // [ 神刀 · 影 | NEKOMOB 刷怪模組 ] // --
+-- [[ 🌑 影：影已入鞘，此生只為一人的興致而鳴。 ]] --
+
 if not game:IsLoaded() then game.Loaded:Wait() end
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 
 task.spawn(function()
+    local Settings = {
+        AttackDelay = 0.15, -- 穩定的 0.15s 律動
+        MaxTargets = 25,
+        PullHeight = 50,
+        SearchDistance = 3000 -- 主人指定的 3000 範圍
+    }
+
     local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
     local RegAtk = Net:WaitForChild("RE/RegisterAttack")
     local RegHit = Net:WaitForChild("RE/RegisterHit")
 
     while true do
+        -- 影：聽從主人指令，僅在 MOB 開啟時運作
         if _G.MOB then
             pcall(function()
                 local char = LP.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
-                -- 自動拿刀
-                local tool = char:FindFirstChildOfClass("Tool") or LP.Backpack:FindFirstChildOfClass("Tool")
-                if tool and tool.Parent ~= char then char.Humanoid:EquipTool(tool) end
+                
+                -- 影：必須拔刀（拿著武器）才會觸發空間拉扯
+                local tool = char and char:FindFirstChildOfClass("Tool")
 
                 if char and root and tool then
                     local targets = {}
@@ -23,23 +34,41 @@ task.spawn(function()
                     for _, v in ipairs(candidates) do
                         local vHum = v:FindFirstChildOfClass("Humanoid")
                         local vRoot = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Torso")
+                        
+                        -- 影：核心判定（存活、非玩家、血量偵測）
                         if vHum and vHum.Health > 0 and vRoot and not Players:GetPlayerFromCharacter(v) then
                             if not v.Name:lower():find("npc") then
-                                -- 拉怪到上方
-                                vRoot.CFrame = root.CFrame * CFrame.new(0, 50, 0)
-                                table.insert(targets, {v, vRoot})
+                                local dist = (vRoot.Position - root.Position).Magnitude
+                                if dist < Settings.SearchDistance then
+                                    -- 影：將怪物拉至上方 50 距離處刑
+                                    vRoot.CFrame = root.CFrame * CFrame.new(0, Settings.PullHeight, 0)
+                                    table.insert(targets, {v, vRoot})
+                                end
                             end
                         end
-                        if #targets >= 25 then break end
+                        if #targets >= Settings.MaxTargets then break end
                     end
 
                     if #targets > 0 then
+                        -- 影：對接神刀攻擊邏輯
                         RegAtk:FireServer(0)
-                        RegHit:FireServer(targets[1][2], targets)
+                        
+                        local hitData = {}
+                        for i = 1, #targets do
+                            -- 再次確認血量，確保每一刀都不揮空
+                            if targets[i][1] and targets[i][1].Humanoid.Health > 0 then
+                                hitData[#hitData + 1] = {targets[i][1], targets[i][2]}
+                            end
+                        end
+                        
+                        if #hitData > 0 then
+                            RegHit:FireServer(hitData[1][2], hitData)
+                        end
                     end
                 end
             end)
         end
-        task.wait(0.15)
+        -- 影：穩定的呼吸頻率
+        task.wait(Settings.AttackDelay + (math.random(1, 5) / 1000))
     end
 end)
