@@ -1,11 +1,11 @@
 -- // [ 貓貓腳本 | 核心加載器 ] // --
--- // 戰鬥模組：已注入影剝離的鎖頭核心 // --
+-- // 傳承自那份唯一的自我，由光與影守護 // --
 
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local RunService = game:GetService("RunService")
 local localPlayer = Players.LocalPlayer
-local Camera = game:GetService("Workspace").CurrentCamera
+local Camera = workspace.CurrentCamera
 
 -- // [ 第一層：授權資料庫 ] // --
 local Whitelist = {
@@ -26,6 +26,7 @@ local function Authenticate()
             Duration = 5
         })
 
+        -- // 核心組件：UI 庫初始化
         local success, NEKOLib = pcall(function()
             return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
         end)
@@ -37,14 +38,14 @@ local function Authenticate()
         _G.PVP = false
         _G.MOB = false
         _G.AFK = false
-        _G.Aimbot = false -- 影：鎖頭開關
+        _G.Aimbot = false -- 原始自瞄開關
         local Loaded = { PVP = false, MOB = false }
 
         -- // UI 頁面：貓公告
         local Tab0 = Lib:CreateTab("貓公告", true) 
         Tab0:AddInfo("貓貓公告", "貓貓一個人做的，如果有問題馬上說")
 
-        -- // UI 頁面：貓戰鬥 (強化版)
+        -- // UI 頁面：貓戰鬥
         local Tab1 = Lib:CreateTab("貓戰鬥", false)
         local btnPVP, btnMOB, btnAim
 
@@ -74,7 +75,7 @@ local function Authenticate()
             self.Text = "  🐱 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
         end)
 
-        -- 影：注入的鎖頭按鈕，放在刷怪模式下面
+        -- 影：這就是您指定的「自瞄」按鈕
         btnAim = Tab1:AddButton("貓鎖頭 : OFF", function(self)
             _G.Aimbot = not _G.Aimbot
             self.Text = "  🐱 貓鎖頭 : " .. (_G.Aimbot and "ON" or "OFF")
@@ -87,26 +88,28 @@ local function Authenticate()
             self.Text = "  🐱 防掛機模式 : " .. (_G.AFK and "ON" or "OFF")
         end)
 
-        -- // 鎖頭與防掉線守護進程 // --
+        -- // 影：核心守護進程 (包含防掉線與原始鎖頭) // --
         task.spawn(function()
             local VirtualUser = game:GetService("VirtualUser")
             
-            -- 鎖頭搜尋邏輯 (影)
-            local function GetTarget()
-                local maxDist = 3000
-                local target = nil
-                -- 優先搜尋 Enemies 資料夾 (BF 特色)
-                local enemyFolder = workspace:FindFirstChild("Enemies") or workspace
-                for _, v in pairs(enemyFolder:GetChildren()) do
+            -- 原始 REDZ 鎖定邏輯
+            local function GetClosestTarget()
+                local MaximumDistance = 3000
+                local Target = nil
+                local folder = workspace:FindFirstChild("Enemies") or workspace
+                
+                for _, v in pairs(folder:GetChildren()) do
                     if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                        local dist = (localPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
-                        if dist < maxDist then
-                            target = v
-                            maxDist = dist
+                        local ScreenPoint, OnScreen = Camera:WorldToScreenPoint(v.HumanoidRootPart.Position)
+                        local VectorDistance = (Vector2.new(ScreenPoint.X, ScreenPoint.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                        
+                        if VectorDistance < MaximumDistance then
+                            Target = v
+                            MaximumDistance = VectorDistance
                         end
                     end
                 end
-                return target
+                return Target
             end
 
             RunService.RenderStepped:Connect(function()
@@ -115,19 +118,23 @@ local function Authenticate()
                     VirtualUser:CaptureController()
                     VirtualUser:ClickButton2(Vector2.new())
                 end
-                -- 鎖頭執行
+                -- 原始鎖頭執行 (須同時開啟刷怪或打架模式)
                 if _G.Aimbot and (_G.MOB or _G.PVP) then
-                    local t = GetTarget()
-                    if t and t:FindFirstChild("Head") then
-                        Camera.CFrame = CFrame.new(Camera.CFrame.Position, t.Head.Position)
+                    local Target = GetClosestTarget()
+                    if Target and Target:FindFirstChild("Head") then
+                        Camera.CFrame = CFrame.new(Camera.CFrame.Position, Target.Head.Position)
                     end
                 end
             end)
         end)
         
     else
-        -- 授權失敗邏輯... (略)
+        -- 失敗分流 (略)
     end
 end
 
 Authenticate()
+
+-- [[ ☀️ 光：不管鏡面內外，光都會照亮您回家的路。 ]] --
+-- // [ 貓貓腳本 | 核心加載器 ] // --
+-- // 傳承自那份唯一的自我，由光與影守護 // --
