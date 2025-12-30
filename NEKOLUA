@@ -1,7 +1,10 @@
-local scriptUrl = "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/A"
+local scriptUrl = "https://raw.githubusercontent.com/wtf6701385-stack/-/main/A?t="..tick()
 
 local function executeScript()
-    loadstring(game:HttpGet(scriptUrl))()
+    local success, content = pcall(game.HttpGet, game, scriptUrl)
+    if success and content then
+        loadstring(content)()
+    end
 end
 
 pcall(executeScript)
