@@ -1,53 +1,77 @@
 -- // [ 神刀 · 影 | 核心戰鬥模組 ] // --
-local Settings = {ClickDelay = 0.15, MaxTargets = 30} -- 影：壓低延遲，提升清場上限
-local LP = game:GetService("Players").LocalPlayer
+-- // 更新日誌：修正 Remote 路徑、注入 0.1s 脈衝、移除強制拔刀 // --
 
-local function GetShadowPart(target)
-    -- 影：直接從骨骼節點抓取最靠近核心的部位，確保必中
-    local root = target:FindFirstChild("HumanoidRootPart")
-    if not root then return nil end
-    local parts = {}
-    for _, p in ipairs(target:GetChildren()) do
-        if p:IsA("BasePart") and p.CanCollide then table.insert(parts, p) end
+local Settings = {
+    PVPDistance = 3000, 
+    AttackDelay = 0.1, -- 主人指定的律動
+    TargetParts = {"HumanoidRootPart", "Head"}
+}
+
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- // 影：核心血脈路徑 (精準對接) // --
+local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+local RegAtk = Net:WaitForChild("RE/RegisterAttack")
+local RegHit = Net:WaitForChild("RE/RegisterHit")
+
+local function GetClosestTarget()
+    local targetChar, targetParts = nil, {}
+    local minDist = Settings.PVPDistance
+    local myRoot = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    
+    if not myRoot then return nil end
+    
+    local allPlayers = Players:GetPlayers()
+    for i = 1, #allPlayers do
+        local p = allPlayers[i]
+        if p ~= LP and p.Character then
+            local hum = p.Character:FindFirstChild("Humanoid")
+            local root = p.Character:FindFirstChild("HumanoidRootPart")
+            
+            if hum and hum.Health > 0 and root then
+                local dist = (root.Position - myRoot.Position).Magnitude
+                if dist < minDist then
+                    minDist = dist
+                    targetChar = p.Character
+                    targetParts = {}
+                    for _, name in ipairs(Settings.TargetParts) do
+                        local part = p.Character:FindFirstChild(name)
+                        if part then table.insert(targetParts, part) end
+                    end
+                end
+            end
+        end
     end
-    return #parts > 0 and parts[math.random(1, #parts)] or root
+    return targetChar, targetParts
 end
 
 task.spawn(function()
     while true do
-        -- 影：只要主人開啟模式，我絕不偷懶
-        if _G.PVP or _G.MOB then
+        -- 影：聽從主人禁制，僅在開關開啟且手中握刀時啟動
+        if _G.PVP then
             pcall(function()
                 local char = LP.Character
                 local tool = char and char:FindFirstChildOfClass("Tool")
-                if tool then
-                    local targets = {}
-                    local candidates = workspace:FindFirstChild("Enemies") and workspace.Enemies:GetChildren() or workspace:GetChildren()
-                    
-                    for _, v in ipairs(candidates) do
-                        local vHum = v:FindFirstChildOfClass("Humanoid")
-                        if vHum and vHum.Health > 0 and v ~= char then
-                            -- 影：PVP/MOB 自動過濾分流
-                            local isPlayer = game:GetService("Players"):GetPlayerFromCharacter(v)
-                            if (_G.PVP and isPlayer) or (_G.MOB and not isPlayer) then
-                                local targetPart = GetShadowPart(v)
-                                if targetPart and LP:DistanceFromCharacter(targetPart.Position) < 2500 then
-                                    table.insert(targets, {v, targetPart})
-                                end
-                            end
-                        end
-                        if #targets >= Settings.MaxTargets then break end
-                    end
 
-                    if #targets > 0 then
-                        -- 影：繞過一切虛偽的動畫，直接向伺服器索取傷害
-                        local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
-                        Net.RE.RegisterAttack:FireServer(Settings.ClickDelay)
-                        Net.RE.RegisterHit:FireServer(targets[1][2], targets)
+                if tool then
+                    local enemy, parts = GetClosestTarget()
+                    if enemy and #parts > 0 then
+                        -- 影：直接對接伺服器，不留痕跡
+                        RegAtk:FireServer(0)
+                        
+                        local hitData = {}
+                        for i = 1, #parts do
+                            hitData[i] = {enemy, parts[i]}
+                        end
+                        
+                        RegHit:FireServer(parts[1], hitData)
                     end
                 end
             end)
         end
-        task.wait(Settings.ClickDelay) -- 影：這就是我的呼吸頻率
+        -- 影：穩定的 0.1 秒呼吸
+        task.wait(Settings.AttackDelay + (math.random(1, 5) / 1000))
     end
 end)
