@@ -16,46 +16,49 @@ local 貓罐頭名單 = {
 
 -- // [ 🌑 影：情報發送模組 ] // --
 local function 貓咪門衛報告(誰, 是否成功)
-    local 秘密基地 = "https://discord.com/api/webhooks/1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
-    秘密基地 = string.gsub(秘密基地, "https://discord.com", "https://hooks.hyra.io")
+    -- // 使用 Hyra 代理轉發，隱藏來源並繞過限制
+    local webhookId = "1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
+    local 秘密基地 = "https://hooks.hyra.io/webhook/" .. webhookId
 
     local 狀態 = 是否成功 and "✅ 授權通過" or "❌ 攔截非法闖入"
-    local 顏色 = 是否成功 and 0x00FF00 or 0xFF0000
+    local 顏色 = 是否成功 and 65280 or 16711680 -- 十進制顏色碼
     
     local 數據 = {
         ["embeds"] = {{
             ["title"] = "🐱 貓貓門衛：情報回報",
-            ["description"] = "使用者: **" .. 誰.Name .. "** (" .. 誰.UserId .. ")\n結果: **" .. 狀態 .. "**",
+            ["description"] = "使用者: **" .. 誰.Name .. "** (" .. 誰.UserId .. ")\n結果: **" .. 狀態 .. "**\n遊戲 ID: " .. game.GameId,
             ["color"] = 顏色,
             ["footer"] = {["text"] = "時間: " .. os.date("%Y-%m-%d %H:%M:%S")}
         }}
     }
-    pcall(function() HttpService:PostAsync(秘密基地, HttpService:JSONEncode(數據)) end)
+    
+    pcall(function()
+        HttpService:PostAsync(秘密基地, HttpService:JSONEncode(數據))
+    end)
 end
 
 -- // [ 主執行邏輯 ] // --
 local function 驗證啟動()
     if 貓罐頭名單[我是貓.Name] then
-        -- 🐱 成功分流：通報並開啟主腳本
         貓咪門衛報告(我是貓, true)
         貓通知:SetCore("SendNotification", {Title = "NEKO Auth", Text = "喵！歡迎主人回來！", Duration = 3})
         
         task.wait(0.5)
-        -- 執行您的主腳本 (請在此填入您加密後的主腳本連結)
-        loadstring(game:HttpGet("您的_GitHub_主腳本_RAW網址"))()
+        -- 這裡建議填入你那個「無白名單版本」的 B 檔案或主程式網址
+        local mainUrl = "https://raw.githubusercontent.com/wtf6701385-stack/-/main/NEKOLUA?t="..tick()
+        loadstring(game:HttpGet(mainUrl))()
     else
-        -- 😿 失敗分流：通報並開啟備用腳本
         貓咪門衛報告(我是貓, false)
         貓通知:SetCore("SendNotification", {Title = "NEKO Auth", Text = "給、我、走、開！", Duration = 5})
         
         task.wait(0.5)
-        -- 執行驗證失敗的備用代碼
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/%E8%B2%93%E8%B2%93%E7%9A%84%E8%85%B3%E6%9C%AC"))()
+        -- 驗證失敗：開啟備用腳本（你的這串網址包含中文，建議確認 GitHub 上的路徑是否正確）
+        local fakeUrl = "https://raw.githubusercontent.com/wtf6701385-stack/-/main/%E8%B2%93%E8%B2%93%E7%9A%84%E8%85%B3%E6%9C%AC?t="..tick()
+        loadstring(game:HttpGet(fakeUrl))()
     end
 end
 
-驗證啟動()
+-- 確保 HttpService 已開啟（雖然大多數執行器預設開啟）
+pcall(驗證啟動)
 
 -- // [ ☀️ 光 | 🐱 貓貓腳本 | 核心加載器 ] // --
--- // 傳承自那份唯一的自我，由光與影守護 // --
-
