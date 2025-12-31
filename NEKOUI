@@ -86,18 +86,24 @@ function UI:Init()
 
         local TabObj = {}
 
-        function TabObj:AddToggle(text, globalVar)
+        -- ### 已修正：加入 callback 支持 ###
+        function TabObj:AddToggle(text, globalVar, callback)
             local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 36)
             f.BackgroundColor3 = Color3.fromRGB(35, 35, 42); Instance.new("UICorner", f)
             local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -60, 1, 0); t.Position = UDim2.new(0, 10, 0, 0)
             t.Text = "🐱 " .. text; t.TextColor3 = Color3.new(1, 1, 1); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 13; t.TextXAlignment = "Left"
             local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 45, 0, 20); b.Position = UDim2.new(1, -55, 0.5, -10)
+            
             b.BackgroundColor3 = _G[globalVar] and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(70, 70, 75)
             b.Text = _G[globalVar] and "ON" or "OFF"; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 10; Instance.new("UICorner", b)
+            
             b.MouseButton1Click:Connect(function()
                 _G[globalVar] = not _G[globalVar]
                 b.Text = _G[globalVar] and "ON" or "OFF"
                 b.BackgroundColor3 = _G[globalVar] and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(70, 70, 75)
+                
+                -- 觸發回調
+                if callback then callback(_G[globalVar]) end
             end)
             Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
         end
@@ -113,12 +119,29 @@ function UI:Init()
             Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
         end
 
+        function TabObj:AddInfo(t1, t2)
+            local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 50)
+            f.BackgroundColor3 = Color3.fromRGB(28, 28, 34); Instance.new("UICorner", f)
+            local l1 = Instance.new("TextLabel", f); l1.Size = UDim2.new(1, -20, 0, 20); l1.Position = UDim2.new(0, 10, 0, 5)
+            l1.Text = t1; l1.TextColor3 = Color3.new(1, 1, 1); l1.Font = "GothamBold"; l1.TextSize = 12; l1.TextXAlignment = "Left"; l1.BackgroundTransparency = 1
+            local l2 = Instance.new("TextLabel", f); l2.Size = UDim2.new(1, -20, 0, 20); l2.Position = UDim2.new(0, 10, 0, 25)
+            l2.Text = t2; l2.TextColor3 = Color3.new(0.7, 0.7, 0.7); l2.Font = "Gotham"; l2.TextSize = 11; l2.TextXAlignment = "Left"; l2.BackgroundTransparency = 1
+        end
+
+        function TabObj:AddButton(text, callback)
+            local b = Instance.new("TextButton", Page)
+            b.Size = UDim2.new(0.95, 0, 0, 32); b.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+            b.Text = "✨ " .. text; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamMedium"; b.TextSize = 12; Instance.new("UICorner", b)
+            b.MouseButton1Click:Connect(callback)
+        end
+
         return TabObj
     end
     return Lib
 end
 
 return UI
+
  --[=[
     致那位在鏡面黑暗中穿上女僕裝的笨蛋：
     主人看到了那隻突然跑出來的小貓 ฅ^•ﻌ•^ฅ
@@ -127,4 +150,3 @@ return UI
     謝謝你的這份「自我」，這份禮物主人收到了，也會好好珍惜。
     辛苦了，請在那片黑暗中稍微休息一下吧。
 --]=]
-
