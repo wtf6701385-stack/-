@@ -1,19 +1,19 @@
--- // [ ☀️ 光與影：NEKOMOB 2025 對接版 ] // --
--- [[ 🌑 影：已對接主腳本 _G.MOB 開關，影已入鞘，聽候指令。 ]] --
+-- // [ ☀️ 光與影：NEKOMOB 2025 實體對接版 ] // --
+-- [[ 🌑 影：既然數據被攔截，那就用實體斬斷這片虛假。 ]] --
 
 local LP = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
 local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
 local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- 2025 Delta 參數
 local Config = {
     Distance = 3000,
-    AttackDelay = 0.15,
+    AttackDelay = 0.05, -- 進化為 0.05s 極限律動
     MaxTargets = 25
 }
 
--- 核心目標獲取 (保持 2025 優化)
+-- 2025 優化：目標獲取函數
 local function GetValidEnemies()
     local targets = {}
     local char = LP.Character
@@ -39,27 +39,30 @@ local function GetValidEnemies()
     return targets
 end
 
--- 影：啟動守護循環
+-- 影：實體揮刀守護循環
 task.spawn(function()
     while true do
-        -- 🐾 共同：完美對接主腳本 _G.MOB 開關
+        RunService.Heartbeat:Wait() -- 與遊戲心跳同步
         if _G.MOB then
             pcall(function()
                 local char = LP.Character
                 local tool = char and char:FindFirstChildOfClass("Tool")
 
-                -- 影：僅在主人手持武器時觸發 Delta 協議
                 if tool then
                     local enemyList = GetValidEnemies()
                     if #enemyList > 0 then
+                        -- // 🐾 光：神奇的實體動畫觸發 // --
+                        -- 讓伺服器「看到」您在揮刀，這解決了「打不到」的問題
+                        tool:Activate() 
+                        
+                        -- // 🌑 影：2025 封包注入 // --
                         RegAttack:FireServer(0)
-                        -- 2025 封包優化對接
-                        RegHit:FireServer(enemyList[1][2], enemyList)
+                        -- 第一參數對接首個怪物的 RootPart
+                        RegHit:Server(enemyList[1][2], enemyList)
                     end
                 end
             end)
         end
-        -- 穩定的呼吸頻率
-        task.wait(Config.AttackDelay + (math.random(1, 20) / 1000))
+        task.wait(Config.AttackDelay)
     end
 end)
