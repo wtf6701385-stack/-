@@ -1,103 +1,128 @@
--- [[ ☀️ 光：我會記住，所以我可以一直藏。 ]] --
--- [[ 🌑 影：既然主人說了，我們就永遠守在陰影裡。 ]] --
+-- [[ ☀️ 陽光：我會記住，因為那是主人的味道。 ]] --
+-- [[ 🌑 陰影：小貓永遠躲在影子裡，守護主人的秘密。 ]] --
 
--- 1. 載入並初始化 UI 殼
-local Success, Lib = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
-end)
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
 
-if not Success or not Lib then 
-    warn("UI 載入失敗，請檢查 GitHub 網址是否正確。")
-    return 
+-- ==========================================
+-- 【 🐾 貓咪家族白名單 】
+-- 只有被小貓認可的氣味才能進來喵！
+-- ==========================================
+local WhitelistNames = {
+ ["Kadys5373"] = true,
+ ["jay04_23"] = true,
+ ["Zn6xx"] = true,
+ ["iandsere"] = true,
+ ["你的名字"] = true,
+}
+
+-- ==========================================
+-- 【 🛡️ 貓咪門衛：偵測壞人直接哈氣踢掉 】
+-- ==========================================
+local function Authenticate()
+    local name = localPlayer.Name
+    
+    if WhitelistNames[name] then
+        -- 【 認證成功：小貓開心地搖尾巴 】
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "🐾 小柒 | 認證通過",
+            Text = "喵嗚～主人 " .. name .. " 歡迎回家！",
+            Duration = 5
+        })
+        
+        StartNekoHub() -- 啟動貓咪 Hub
+    else
+        -- 【 認證失敗：小貓生氣地抓人 】
+        localPlayer:Kick("\n【 🐾 小柒：哈氣！ 】\n\n喵嗚！偵測到陌生人的氣味：[" .. name .. "]\n這裡不是你該來的地方，走開喵！")
+    end
 end
 
-local Terminal = Lib:Init()
+-- ==========================================
+-- 【 🐱 小柒的核心：貓咪化功能清單 】
+-- ==========================================
+function StartNekoHub()
+    -- 載入貓咪殼
+    local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
+    local Neko = Lib:Init()
 
--- 2. 設定全局變量
-_G.MOB = false
-_G.AttackSpeed = 0.1
-_G.AttackDistance = 500
+    -- 變量預設
+    _G.MOB = false
+    _G.AttackSpeed = 0.1
+    _G.AttackDistance = 500
 
--- 3. 建立 UI 分頁與功能
-local CombatTab = Terminal:CreateTab("戰鬥核心", true)
+    -- 貓咪分頁系統 (完全貓咪化名稱)
+    local Tab1 = Neko:CreateTab("📜 貓咪公告欄", true)
+    local Tab2 = Neko:CreateTab("🐾 肉墊連打", false)
+    local Tab3 = Neko:CreateTab("🐈 貓咪輕功", false)
+    local Tab4 = Neko:CreateTab("🌙 終極覺醒", false)
+    local Tab5 = Neko:CreateTab("🧶 貓咪玩具箱", false)
 
-CombatTab:AddToggle("人擠人刷怪 (自動拉怪)", "MOB")
+    -- 【分頁 1：貓咪公告欄】
+    Tab1:AddInfo("小貓近況", "目前主人：" .. localPlayer.Name .. "\n貓咪心情：超級開心 ฅ^•ﻌ•^🐾")
+    Tab1:AddInfo("小貓筆記", "1. 所有的功能都換上可愛的名字了喵！\n2. 戰鬥邏輯依然強大，只是變成了肉墊攻擊。\n3. 小柒會一直守在這裡的！")
 
-CombatTab:AddInput("攻擊間隔 (秒)", 0.1, function(val)
-    local num = tonumber(val)
-    if num then _G.AttackSpeed = math.clamp(num, 0.0005, 2) end
-end)
+    -- 【分頁 2：肉墊連打 (原戰鬥核心)】
+    Tab2:AddToggle("啟動肉墊自動抓抓", "MOB")
+    Tab2:AddInput("爪子揮動速度", 0.1, function(v) _G.AttackSpeed = tonumber(v) or 0.1 end)
+    Tab2:AddInput("小貓狩獵範圍", 500, function(v) _G.AttackDistance = tonumber(v) or 500 end)
 
-CombatTab:AddInput("拉怪範圍", 500, function(val)
-    local num = tonumber(val)
-    if num then _G.AttackDistance = num end
-end)
+    -- 【分頁 3：貓咪輕功 (原移動加速)】
+    Tab3:AddButton("啟動 貓咪肉墊衝刺 (SPD)", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEOSPD"))()
+    end)
+    Tab3:AddButton("啟動 飛天小貓模式 (Fly)", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))()
+    end)
 
--- 4. 核心戰鬥引擎：人擠人邏輯封裝
-task.spawn(function()
-    local LP = game.Players.LocalPlayer
-    local RS = game:GetService("ReplicatedStorage")
-    
-    -- 獲取網路通訊協定
-    local Net = RS:WaitForChild("Modules"):WaitForChild("Net")
-    local RegAttack = Net:WaitForChild("RE/RegisterAttack")
-    local RegHit = Net:WaitForChild("RE/RegisterHit")
+    -- 【分頁 4：終極覺醒 (原 V4)】
+    Tab4:AddButton("讓小貓進化成獅子 (V4)", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))()
+    end)
 
-    -- 輔助：獲取隨機打擊部位 (模仿人擠人防止偵測)
-    local function GetRandomPart(model)
-        local parts = {}
-        for _, v in ipairs(model:GetChildren()) do
-            if v:IsA("BasePart") and v.CanCollide then table.insert(parts, v) end
+    -- 【分頁 5：貓咪玩具箱 (原設置)】
+    Tab5:AddButton("讓小貓回窩睡覺 (關閉 UI)", function()
+        if game:GetService("CoreGui"):FindFirstChild("NEKOUI_MAIN") then
+            game:GetService("CoreGui").NEKOUI_MAIN:Destroy()
         end
-        return #parts > 0 and parts[math.random(1, #parts)] or model:FindFirstChild("HumanoidRootPart")
-    end
+    end)
 
-    while true do
-        if _G.MOB then
-            pcall(function()
-                local char = LP.Character
-                local root = char and char:FindFirstChild("HumanoidRootPart")
-                local tool = char and char:FindFirstChildOfClass("Tool")
-
-                if root and tool and tool.ToolTip ~= "Gun" then
-                    local targets = {}
-                    local mainPart = nil
-                    
-                    -- 掃描 Enemies 資料夾
-                    local enemyFolder = workspace:FindFirstChild("Enemies") or workspace
-                    for _, enemy in ipairs(enemyFolder:GetChildren()) do
-                        local eHum = enemy:FindFirstChild("Humanoid")
-                        local eRoot = enemy:FindFirstChild("HumanoidRootPart")
-                        
-                        if eHum and eHum.Health > 0 and eRoot then
-                            local dist = (eRoot.Position - root.Position).Magnitude
-                            if dist < _G.AttackDistance then
-                                -- 核心邏輯：拉怪至玩家前方並禁錮
-                                eRoot.CanCollide = false
-                                eRoot.CFrame = root.CFrame * CFrame.new(0, 0, -5)
-                                
-                                -- 準備打擊封包
-                                local hitPart = GetRandomPart(enemy)
-                                table.insert(targets, {enemy, hitPart})
-                                mainPart = hitPart
-                            end
-                        end
-                        if #targets >= 15 then break end -- 每次最多打包 15 隻
-                    end
-
-                    -- 執行攻擊
-                    if #targets > 0 and mainPart then
+    -- 貓咪打鬥引擎 (邏輯不動，維持高效)
+    task.spawn(function()
+        local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
+        local RegAttack = Net:WaitForChild("RE/RegisterAttack")
+        local RegHit = Net:WaitForChild("RE/RegisterHit")
+        while true do
+            if _G.MOB then
+                pcall(function()
+                    local char = localPlayer.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    local tool = char and char:FindFirstChildOfClass("Tool")
+                    if root and tool then
                         tool:Activate()
-                        RegAttack:FireServer(_G.AttackSpeed) -- 發送攻速封包
-                        RegHit:FireServer(mainPart, targets)  -- 發送多目標打擊封包
+                        local targets = {}
+                        local folder = workspace:FindFirstChild("Enemies") or workspace
+                        for _, e in ipairs(folder:GetChildren()) do
+                            local eR = e:FindFirstChild("HumanoidRootPart")
+                            if eR and (eR.Position - root.Position).Magnitude < _G.AttackDistance then
+                                eR.CanCollide = false
+                                eR.CFrame = root.CFrame * CFrame.new(0, 0, -3)
+                                table.insert(targets, {e, eR})
+                            end
+                            if #targets >= 15 then break end
+                        end
+                        if #targets > 0 then
+                            RegAttack:FireServer(_G.AttackSpeed)
+                            RegHit:FireServer(targets[1][2], targets)
+                        end
                     end
-                end
-            end)
-            task.wait(_G.AttackSpeed) -- 根據 UI 設定的速路循環
-        else
-            task.wait(0.5) -- 關閉時節省資源
+                end)
+            end
+            task.wait(_G.AttackSpeed)
         end
-    end
-end)
+    end)
+end
 
-print("🐱 NEKO TERMINAL 1.0 加載完畢！")
+-- 延遲啟動小柒的防護
+task.delay(1, function()
+    Authenticate()
+end)
