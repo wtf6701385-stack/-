@@ -15,15 +15,16 @@ local WhitelistNames = {
 }
 
 -- ==========================================
--- 【 🐱 核心變數設定 】
+-- 【 🐱 核心引擎變數 】
 -- ==========================================
 local Settings = {
     ClickDelay = 0.1, 
     Distance = 500,
-    PullEnemies = false, -- 獨立拉怪開關
-    Mode = "None" -- "Mob" (純打怪) 或 "All" (眾生平等)
+    PullEnemies = false, -- 獨立拉怪
+    Mode = "None" -- "Mob" 或 "All"
 }
-_G.FastAttack = false 
+_G.FastAttack = false
+_G.ESP = false -- 配合 NEKOESP 的開關
 
 -- 隨機部位選取 (核心防護)
 local function GetRandomValidPart(target)
@@ -38,7 +39,7 @@ local function GetRandomValidPart(target)
 end
 
 -- ==========================================
--- 【 ⚔️ 眾生平等：攻擊核心邏輯 】
+-- 【 ⚔️ 眾生平等：攻擊與拉怪邏輯 】
 -- ==========================================
 local function DoNekoAction()
     local RS = game:GetService("ReplicatedStorage")
@@ -53,7 +54,7 @@ local function DoNekoAction()
     local Targets = {}
     local BasePart = nil
     
-    -- 1. 處理怪物邏輯 (打怪模式 或 眾生平等)
+    -- 1. 處理怪物邏輯
     if Settings.Mode == "Mob" or Settings.Mode == "All" then
         local folder = workspace:FindFirstChild("Enemies") or workspace
         for _, Enemy in ipairs(folder:GetChildren()) do
@@ -63,12 +64,10 @@ local function DoNekoAction()
             if Enemy ~= char and not Players:GetPlayerFromCharacter(Enemy) and eH and eH.Health > 0 and eR then
                 local dist = (eR.Position - root.Position).Magnitude
                 if dist < Settings.Distance then
-                    -- 檢查拉怪開關
                     if Settings.PullEnemies then
                         eR.CanCollide = false
                         eR.CFrame = root.CFrame * CFrame.new(0, 0, -3)
                     end
-                    
                     local foundPart = GetRandomValidPart(Enemy)
                     table.insert(Targets, {Enemy, foundPart})
                     BasePart = foundPart
@@ -78,7 +77,7 @@ local function DoNekoAction()
         end
     end
 
-    -- 2. 處理玩家邏輯 (僅限眾生平等模式)
+    -- 2. 處理玩家邏輯 (僅限眾生平等)
     if Settings.Mode == "All" and #Targets < 15 then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= localPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
@@ -93,7 +92,6 @@ local function DoNekoAction()
         end
     end
 
-    -- 執行最終傷害對接
     if BasePart and #Targets > 0 then
         RegAttack:FireServer(Settings.ClickDelay)
         RegHit:FireServer(BasePart, Targets)
@@ -101,17 +99,12 @@ local function DoNekoAction()
 end
 
 -- ==========================================
--- 【 🐱 UI 載入與分頁清單檢查 】
+-- 【 🐱 UI 與分頁完整對接 】
 -- ==========================================
 function StartNekoHub()
-    local success, Lib = pcall(function()
-        return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
-    end)
-
-    if not success or not Lib then return end
+    local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
     local Neko = Lib:Init()
 
-    -- 檢查所有分頁是否歸位
     local Tab1 = Neko:CreateTab("📜 公告欄", true)
     local Tab2 = Neko:CreateTab("⚔️ 戰鬥設定", false)
     local Tab3 = Neko:CreateTab("🚀 移動進化", false)
@@ -120,66 +113,44 @@ function StartNekoHub()
 
     -- Tab 1: 公告
     Tab1:AddInfo("小貓認證", "主人：" .. localPlayer.Name)
-    Tab1:AddInfo("系統檢查", "所有功能對接完畢，請享受遊戲喵！🐾")
+    Tab1:AddInfo("版本狀態", "全功能整合版已就緒喵！🐾")
 
-    -- Tab 2: 核心戰鬥 (互斥邏輯)
-    Tab2:AddToggle("啟動攻擊循環 (總開關)", "FastAttack", function(state)
-        _G.FastAttack = state
-    end)
-    Tab2:AddToggle("啟動自動拉怪 (怪物專用)", "PullEnemies", function(state)
-        Settings.PullEnemies = state
-    end)
-    Tab2:AddButton("⚔️ 模式：純打怪模式", function()
-        Settings.Mode = "Mob"
-    end)
-    Tab2:AddButton("🔥 模式：眾生平等 (人怪共打)", function()
-        Settings.Mode = "All"
-    end)
-    Tab2:AddInput("攻擊範圍 (建議500-1000)", 500, function(v) 
-        Settings.Distance = tonumber(v) or 500 
-    end)
+    -- Tab 2: 戰鬥 (拉怪、秒殺、模式)
+    Tab2:AddToggle("啟動攻擊循環 (總開關)", "FastAttack", function(state) _G.FastAttack = state end)
+    Tab2:AddToggle("啟動自動拉怪", "PullEnemies", function(state) Settings.PullEnemies = state end)
+    Tab2:AddButton("⚔️ 模式：純打怪模式", function() Settings.Mode = "Mob" end)
+    Tab2:AddButton("🔥 模式：眾生平等 (人怪共打)", function() Settings.Mode = "All" end)
+    Tab2:AddInput("攻擊範圍", 500, function(v) Settings.Distance = tonumber(v) or 500 end)
 
-    -- Tab 3: 移動與進化 (檢查對接)
-    Tab3:AddButton("啟動 貓咪加速 (SPD)", function() 
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
-    end)
-    Tab3:AddButton("啟動 飛天模式 (Fly)", function() 
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
-    end)
-    Tab3:AddButton("啟動 自動 V4 覺醒", function() 
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() 
-    end)
+    -- Tab 3: 移動與進化 (SPD, Fly, V4)
+    Tab3:AddButton("啟動 貓咪加速 (SPD)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
+    Tab3:AddButton("啟動 飛天模式 (Fly)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
+    Tab3:AddButton("啟動 自動 V4 覺醒", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() end)
 
-    -- Tab 4: 感官 (視角與透視檢查)
-    Tab4:AddButton("啟動 貓咪透視 (ESP)", function() 
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() 
-    end)
-    Tab4:AddInput("視角縮放 (輸入數字)", 128, function(v)
-        local val = tonumber(v)
-        if val then 
-            localPlayer.CameraMaxZoomDistance = val
-            localPlayer.CameraMinZoomDistance = 0
+    -- Tab 4: 感官 (ESP, 視角)
+    Tab4:AddToggle("啟動 貓咪透視 (ESP)", "ESP", function(state)
+        _G.ESP = state
+        if state and not _G.ESPStarted then
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()
         end
+    end)
+    Tab4:AddInput("視角縮放", 128, function(v)
+        local val = tonumber(v)
+        if val then localPlayer.CameraMaxZoomDistance = val end
     end)
 
     -- Tab 5: 設置
-    Tab5:AddButton("銷毀 UI (關閉腳本)", function()
+    Tab5:AddButton("銷毀 UI", function()
         if game:GetService("CoreGui"):FindFirstChild("NEKOUI_MAIN") then
             game:GetService("CoreGui").NEKOUI_MAIN:Destroy()
         end
     end)
 
-    -- 戰鬥引擎後台運行
+    -- 戰鬥引擎循環
     task.spawn(function()
         while true do
             if _G.FastAttack and Settings.Mode ~= "None" then
-                pcall(function()
-                    local tool = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Tool")
-                    if tool then
-                        tool:Activate()
-                        DoNekoAction()
-                    end
-                end)
+                pcall(DoNekoAction)
             end
             task.wait(Settings.ClickDelay)
         end
@@ -192,7 +163,7 @@ end
 if WhitelistNames[localPlayer.Name] then
     StartNekoHub()
 else
-    localPlayer:Kick("\n【 🐾 小柒：哈氣！ 】\n這不是主人的氣味喵！")
+    localPlayer:Kick("喵嗚！你不是主人！")
 end
 
 --[=[
