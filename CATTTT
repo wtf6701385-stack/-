@@ -1,2 +1,103 @@
 -- [[ ☀️ 光：我會記住，所以我可以一直藏。 ]] --
 -- [[ 🌑 影：既然主人說了，我們就永遠守在陰影裡。 ]] --
+
+-- 1. 載入並初始化 UI 殼
+local Success, Lib = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
+end)
+
+if not Success or not Lib then 
+    warn("UI 載入失敗，請檢查 GitHub 網址是否正確。")
+    return 
+end
+
+local Terminal = Lib:Init()
+
+-- 2. 設定全局變量
+_G.MOB = false
+_G.AttackSpeed = 0.1
+_G.AttackDistance = 500
+
+-- 3. 建立 UI 分頁與功能
+local CombatTab = Terminal:CreateTab("戰鬥核心", true)
+
+CombatTab:AddToggle("人擠人刷怪 (自動拉怪)", "MOB")
+
+CombatTab:AddInput("攻擊間隔 (秒)", 0.1, function(val)
+    local num = tonumber(val)
+    if num then _G.AttackSpeed = math.clamp(num, 0.0005, 2) end
+end)
+
+CombatTab:AddInput("拉怪範圍", 500, function(val)
+    local num = tonumber(val)
+    if num then _G.AttackDistance = num end
+end)
+
+-- 4. 核心戰鬥引擎：人擠人邏輯封裝
+task.spawn(function()
+    local LP = game.Players.LocalPlayer
+    local RS = game:GetService("ReplicatedStorage")
+    
+    -- 獲取網路通訊協定
+    local Net = RS:WaitForChild("Modules"):WaitForChild("Net")
+    local RegAttack = Net:WaitForChild("RE/RegisterAttack")
+    local RegHit = Net:WaitForChild("RE/RegisterHit")
+
+    -- 輔助：獲取隨機打擊部位 (模仿人擠人防止偵測)
+    local function GetRandomPart(model)
+        local parts = {}
+        for _, v in ipairs(model:GetChildren()) do
+            if v:IsA("BasePart") and v.CanCollide then table.insert(parts, v) end
+        end
+        return #parts > 0 and parts[math.random(1, #parts)] or model:FindFirstChild("HumanoidRootPart")
+    end
+
+    while true do
+        if _G.MOB then
+            pcall(function()
+                local char = LP.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local tool = char and char:FindFirstChildOfClass("Tool")
+
+                if root and tool and tool.ToolTip ~= "Gun" then
+                    local targets = {}
+                    local mainPart = nil
+                    
+                    -- 掃描 Enemies 資料夾
+                    local enemyFolder = workspace:FindFirstChild("Enemies") or workspace
+                    for _, enemy in ipairs(enemyFolder:GetChildren()) do
+                        local eHum = enemy:FindFirstChild("Humanoid")
+                        local eRoot = enemy:FindFirstChild("HumanoidRootPart")
+                        
+                        if eHum and eHum.Health > 0 and eRoot then
+                            local dist = (eRoot.Position - root.Position).Magnitude
+                            if dist < _G.AttackDistance then
+                                -- 核心邏輯：拉怪至玩家前方並禁錮
+                                eRoot.CanCollide = false
+                                eRoot.CFrame = root.CFrame * CFrame.new(0, 0, -5)
+                                
+                                -- 準備打擊封包
+                                local hitPart = GetRandomPart(enemy)
+                                table.insert(targets, {enemy, hitPart})
+                                mainPart = hitPart
+                            end
+                        end
+                        if #targets >= 15 then break end -- 每次最多打包 15 隻
+                    end
+
+                    -- 執行攻擊
+                    if #targets > 0 and mainPart then
+                        tool:Activate()
+                        RegAttack:FireServer(_G.AttackSpeed) -- 發送攻速封包
+                        RegHit:FireServer(mainPart, targets)  -- 發送多目標打擊封包
+                    end
+                end
+            end)
+            task.wait(_G.AttackSpeed) -- 根據 UI 設定的速路循環
+        else
+            task.wait(0.5) -- 關閉時節省資源
+        end
+    end
+end)
+
+print("🐱 NEKO TERMINAL 1.0 加載完畢！")
