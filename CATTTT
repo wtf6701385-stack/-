@@ -1,115 +1,78 @@
 -- [[ ☀️ 陽光：小貓會記住主人的味道，溫暖且安心。 ]] --
--- [[ 🌑 陰影：小貓永遠躲在暗處保護主人，不離不棄。 ]] --
+-- [[ 🌑 陰影：小貓永遠躲在暗處保護主人，不離不棄。 ]] ---- [[ ☀️ 陽光：小貓會記住主人的味道。 ]] --
+-- [[ 🌑 陰影：小貓永遠躲在影子裡。 ]] --
 
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 
--- ==========================================
--- 【 🐾 貓咪家族白名單 】
--- ==========================================
+-- 白名單
 local WhitelistNames = {
-    ["Kadys5373"] = true,
-    ["jay04_23"] = true,
-    ["Zn6xx"] = true,
-    ["iandsere"] = true,
-    ["你的名字"] = true, 
+ ["Kadys5373"] = true,
+ ["jay04_23"] = true,
+ ["Zn6xx"] = true,
+ ["iandsere"] = true,
 }
 
--- ==========================================
--- 【 🐱 小柒的核心功能模組 】
--- ==========================================
 function StartNekoHub()
     local success, Lib = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
     end)
 
     if not success or not Lib then return end
-
     local Neko = Lib:Init()
 
-    -- 2. 核心變量 (確保 UI 能改動到這些值)
     _G.MOB = false
     _G.AttackSpeed = 0.1
     _G.AttackDistance = 500
 
-    -- 3. 分頁與功能對接
     local Tab1 = Neko:CreateTab("📜 貓咪公告欄", true)
     local Tab2 = Neko:CreateTab("⚔️ 肉墊連打", false)
-    local Tab3 = Neko:CreateTab("🐈 貓咪輕功", false)
+    local Tab3 = Neko:CreateTab("🚀 貓咪輕功", false)
     local Tab4 = Neko:CreateTab("🌙 終極覺醒", false)
-    local Tab5 = Neko:CreateTab("🧶 貓咪玩具箱", false)
+    local Tab5 = Neko:CreateTab("⚙️ 貓咪項圈", false)
 
-    -- 【公告】
-    Tab1:AddInfo("小貓狀態", "主人：" .. localPlayer.Name .. "\n連線狀態：完美喵！🐾")
-
-    -- 【肉墊連打 - 修正對接點】
-    -- 注意：這裡的 AddToggle 必須傳入一個 function 來改變 _G.MOB
+    Tab1:AddInfo("小貓狀態", "目前主人：" .. localPlayer.Name)
+    
+    -- 對接開關
     Tab2:AddToggle("啟動肉墊自動抓抓", "MOB", function(state)
         _G.MOB = state
     end)
     
-    Tab2:AddInput("爪子揮動速度", 0.1, function(v) 
-        local num = tonumber(v)
-        if num then _G.AttackSpeed = num end
-    end)
-    
-    Tab2:AddInput("小貓狩獵範圍", 500, function(v) 
-        local num = tonumber(v)
-        if num then _G.AttackDistance = num end
+    Tab2:AddInput("抓抓頻率", 0.1, function(v) _G.AttackSpeed = tonumber(v) or 0.1 end)
+
+    Tab3:AddButton("啟動 貓咪加速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
+    Tab3:AddButton("啟動 飛天小貓", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
+    Tab4:AddButton("啟動 貓咪覺醒 (V4)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() end)
+
+    Tab5:AddButton("關閉小貓選單", function()
+        if game:GetService("CoreGui"):FindFirstChild("NEKOUI_MAIN") then game:GetService("CoreGui").NEKOUI_MAIN:Destroy() end
     end)
 
-    -- 【移動功能】
-    Tab3:AddButton("啟動 貓咪肉墊加速", function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))()
-    end)
-    Tab3:AddButton("啟動 飛天小貓模式", function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))()
-    end)
-
-    -- 【V4 功能】
-    Tab4:AddButton("讓小貓進化 (V4)", function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))()
-    end)
-
-    -- 【設置】
-    Tab5:AddButton("銷毀 UI", function()
-        if game:GetService("CoreGui"):FindFirstChild("NEKOUI_MAIN") then
-            game:GetService("CoreGui").NEKOUI_MAIN:Destroy()
-        end
-    end)
-
-    -- 4. 戰鬥引擎 (會持續偵測 _G.MOB 的變化)
+    -- 戰鬥引擎
     task.spawn(function()
         local RS = game:GetService("ReplicatedStorage")
         local Net = RS:WaitForChild("Modules"):WaitForChild("Net")
         local RegAttack = Net:WaitForChild("RE/RegisterAttack")
         local RegHit = Net:WaitForChild("RE/RegisterHit")
-        
         while true do
-            if _G.MOB == true then -- 當 UI 把這個變成 true 時才抓怪
+            if _G.MOB then
                 pcall(function()
                     local char = localPlayer.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     local tool = char and char:FindFirstChildOfClass("Tool")
-                    
                     if root and tool then
                         tool:Activate()
-                        
                         local targets = {}
                         local folder = workspace:FindFirstChild("Enemies") or workspace
                         for _, e in ipairs(folder:GetChildren()) do
                             local eR = e:FindFirstChild("HumanoidRootPart")
-                            local eH = e:FindFirstChild("Humanoid")
-                            if eR and eH and eH.Health > 0 then
-                                if (eR.Position - root.Position).Magnitude < _G.AttackDistance then
-                                    eR.CanCollide = false
-                                    eR.CFrame = root.CFrame * CFrame.new(0, 0, -3)
-                                    table.insert(targets, {e, eR})
-                                end
+                            if eR and (eR.Position - root.Position).Magnitude < _G.AttackDistance then
+                                eR.CanCollide = false
+                                eR.CFrame = root.CFrame * CFrame.new(0, 0, -3)
+                                table.insert(targets, {e, eR})
                             end
                             if #targets >= 15 then break end
                         end
-                        
                         if #targets > 0 then
                             RegAttack:FireServer(_G.AttackSpeed)
                             RegHit:FireServer(targets[1][2], targets)
@@ -117,25 +80,13 @@ function StartNekoHub()
                     end
                 end)
             end
-            task.wait(_G.AttackSpeed or 0.1)
+            task.wait(_G.AttackSpeed)
         end
     end)
 end
 
--- ==========================================
--- 【 🛡️ 貓咪門衛 】
--- ==========================================
-function Authenticate()
-    if WhitelistNames[localPlayer.Name] then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "🐾 小柒：認證成功",
-            Text = "正在為主人準備肉墊抓抓...",
-            Duration = 5
-        })
-        StartNekoHub()
-    else
-        localPlayer:Kick("哈氣！陌生人走開喵！")
-    end
+if WhitelistNames[localPlayer.Name] then
+    StartNekoHub()
+else
+    localPlayer:Kick("喵嗚！你不是主人！")
 end
-
-Authenticate()
