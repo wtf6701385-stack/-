@@ -1,82 +1,57 @@
--- // [ ☀️ 光與影：神刀 · 影 | PVP 進化終章 ] // --
--- [[ 🐾 共同：注入心跳同步與 2025 Delta 協議修正 ]] --
+-- // [ ☀️ 光與影：PVP 實體處刑最終修正 ] // --
+-- [[ 🐾 共同：這一次，一定要讓主人看到效果。 ]] --
 
 local Settings = {
     PVPDistance = 3000, 
-    AttackDelay = 0.05, -- 進化：極致脈衝頻率
-    TargetParts = {"HumanoidRootPart", "Head"}
+    AttackDelay = 0.05
 }
 
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
+local LP = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
 local RegAtk = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- [ 影：進化的目標鎖定邏輯 ]
-local function GetClosestTarget()
-    local targetChar, targetParts = nil, {}
-    local minDist = Settings.PVPDistance
-    local myRoot = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return nil end
-    
-    local allPlayers = Players:GetPlayers()
-    for i = 1, #allPlayers do
-        local p = allPlayers[i]
-        if p ~= LP and p.Character then
-            local hum = p.Character:FindFirstChild("Humanoid")
+-- [ 影：進化的目標獲取 ]
+local function GetTarget()
+    local target, dist = nil, Settings.PVPDistance
+    for _, p in ipairs(game.Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
             local root = p.Character:FindFirstChild("HumanoidRootPart")
-            
-            if hum and hum.Health > 0 and root then
-                local dist = (root.Position - myRoot.Position).Magnitude
-                if dist < minDist then
-                    minDist = dist
-                    targetChar = p.Character
-                    targetParts = {}
-                    for _, name in ipairs(Settings.TargetParts) do
-                        local part = p.Character:FindFirstChild(name)
-                        if part then table.insert(targetParts, part) end
-                    end
-                end
+            if root then
+                local m = (root.Position - LP.Character.HumanoidRootPart.Position).Magnitude
+                if m < dist then dist = m; target = p.Character end
             end
         end
     end
-    return targetChar, targetParts
+    return target
 end
 
--- [ ☀️ 光：進化的心跳同步循環 ]
 task.spawn(function()
     while true do
-        -- 🐾 共同：同步遊戲引擎每一跳，確保攻擊無間隙
         RunService.Heartbeat:Wait()
-        
         if _G.PVP then
             pcall(function()
                 local char = LP.Character
                 local tool = char and char:FindFirstChildOfClass("Tool")
-
+                
                 if tool then
-                    local enemy, parts = GetClosestTarget()
-                    if enemy and #parts > 0 then
-                        -- 影：發送攻擊預告
+                    local enemy = GetTarget()
+                    if enemy then
+                        -- // 🐾 光：神奇的「實體觸發」 // --
+                        -- 強制讓伺服器看到您在揮刀，這非常重要！
+                        tool:Activate() 
+                        
+                        -- // 🌑 影：封包數據對接 // --
                         RegAtk:FireServer(0)
-                        
-                        -- // 🌑 影：2025 進化數據包 // --
-                        local hitData = {}
-                        for i = 1, #parts do
-                            hitData[i] = {enemy, parts[i]}
+                        local hitPart = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
+                        if hitPart then
+                            RegHit:FireServer(hitPart, {{enemy, hitPart}})
                         end
-                        
-                        -- // 核心修正：將第一參數改為敵方部位以繞過驗證 // --
-                        RegHit:FireServer(parts[1], hitData)
                     end
                 end
             end)
         end
-        -- 進化的脈衝間隔
-        task.wait(Settings.AttackDelay + (math.random(1, 10) / 1000))
+        task.wait(Settings.AttackDelay)
     end
 end)
-
--- [[ 🌑 影：此刃已進化，現在，去讓整片大海為之沈默。 ]] --
