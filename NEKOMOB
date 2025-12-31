@@ -1,9 +1,9 @@
--- // [ ☀️ 光與影：Blox Fruits 專用必中模組 ] // --
--- [[ 🌑 影：已對接 BF 遠端事件，準備收割。 ]] --
+-- // [ ☀️ 光與影：BF 必中 + 血量鎖定版 ] // --
+-- [[ 🌑 影：不砍無魂之軀，不揮無效之刃。 ]] --
 
 local Settings = {
-    AttackDelay = 0.1, -- BF 需要更快的律動
-    PullDistance = 3, -- 就在眼前
+    AttackDelay = 0.1, 
+    PullDistance = 3,
     SearchDistance = 3000
 }
 
@@ -18,21 +18,24 @@ task.spawn(function()
                 local root = char and char:FindFirstChild("HumanoidRootPart")
                 local tool = char and char:FindFirstChildOfClass("Tool")
 
-                if char and root and tool and tool:FindFirstChild("Attack") then
+                if char and root and tool then
                     local enemies = workspace.Enemies:GetChildren()
                     for _, v in ipairs(enemies) do
                         local vHum = v:FindFirstChildOfClass("Humanoid")
                         local vRoot = v:FindFirstChild("HumanoidRootPart")
                         
-                        if vHum and vHum.Health > 0 and vRoot then
+                        -- // 🌑 影：精確血量與存活確認 // --
+                        if vHum and vHum.Health > 0 and vHum.MaxHealth > 10 and vRoot then
                             local dist = (vRoot.Position - root.Position).Magnitude
                             if dist < Settings.SearchDistance then
-                                -- // 影：BF 專屬——空間重疊 // --
+                                -- 空間重疊
                                 vRoot.CFrame = root.CFrame * CFrame.new(0, 0, -Settings.PullDistance)
-                                vRoot.CanCollide = false -- 防止碰撞把主人彈開
+                                vRoot.CanCollide = false
                                 
-                                -- // 影：發送 BF 攻擊協議 // --
-                                CombatRemote:FireServer(math.huge) -- 繞過部分驗證
+                                -- // 🐾 共同：確保怪物沒死才送出攻擊包 // --
+                                if vHum.Health > 0 then
+                                    CombatRemote:FireServer(math.huge)
+                                end
                             end
                         end
                     end
