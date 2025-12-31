@@ -15,7 +15,57 @@ local WhitelistNames = {
 }
 
 -- ==========================================
--- 【 🐱 小柒的核心功能 】
+-- 【 🐱 小柒的秘密武器區 】
+-- ==========================================
+local Settings = {
+    ClickDelay = 0.1, 
+    Distance = 10000
+}
+_G.FastAttack = false -- 秒殺開關
+
+-- 隨機部位選取 (防偵測)
+local function GetRandomValidPart(target)
+    local allParts = target:GetDescendants()
+    local validParts = {}
+    for _, part in ipairs(allParts) do
+        if part:IsA("BasePart") and part.CanCollide then
+            table.insert(validParts, part)
+        end
+    end
+    return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
+end
+
+-- 核心秒殺函數
+local function DoFastAttack()
+    local RS = game:GetService("ReplicatedStorage")
+    local Net = RS:WaitForChild("Modules"):WaitForChild("Net")
+    local RegAttack = Net:WaitForChild("RE/RegisterAttack")
+    local RegHit = Net:WaitForChild("RE/RegisterHit")
+    
+    local OthersEnemies = {}
+    local BasePart = nil
+    
+    local folder = workspace:FindFirstChild("Enemies") or workspace
+    for _, Enemy in ipairs(folder:GetChildren()) do
+        local humanoid = Enemy:FindFirstChildOfClass("Humanoid")
+        if Enemy ~= localPlayer.Character and humanoid and humanoid.Health > 0 then
+            local foundPart = GetRandomValidPart(Enemy)
+            if foundPart and localPlayer:DistanceFromCharacter(foundPart.Position) < Settings.Distance then
+                table.insert(OthersEnemies, {Enemy, foundPart})
+                BasePart = foundPart
+            end
+        end
+        if #OthersEnemies >= 15 then break end -- 同時攻擊 15 個目標
+    end
+
+    if BasePart and #OthersEnemies > 0 then
+        RegAttack:FireServer(Settings.ClickDelay)
+        RegHit:FireServer(BasePart, OthersEnemies)
+    end
+end
+
+-- ==========================================
+-- 【 🐱 UI 介面載入 】
 -- ==========================================
 function StartNekoHub()
     local success, Lib = pcall(function()
@@ -25,97 +75,55 @@ function StartNekoHub()
     if not success or not Lib then return end
     local Neko = Lib:Init()
 
-    -- 核心變量
-    _G.MOB = false
-    _G.AttackSpeed = 0.1
-    _G.AttackDistance = 500
-
-    -- 建立 5 個分頁
     local Tab1 = Neko:CreateTab("📜 公告欄", true)
-    local Tab2 = Neko:CreateTab("⚔️ 肉墊連打", false)
+    local Tab2 = Neko:CreateTab("⚔️ 核心秒殺", false)
     local Tab3 = Neko:CreateTab("🚀 貓咪輕功", false)
     local Tab4 = Neko:CreateTab("🌟 終極進化", false)
     local Tab5 = Neko:CreateTab("🧶 貓咪玩具", false)
 
-    -- 分頁功能對接
-    Tab1:AddInfo("小貓狀態", "主人：" .. localPlayer.Name .. "\n認證成功喵！🐾")
-    Tab1:AddInfo("版本紀錄", "v1.0.6 - 功能對接完成版")
+    Tab1:AddInfo("小貓狀態", "主人：" .. localPlayer.Name .. "\n目前心情：想抓壞人喵！🐾")
 
-    -- 戰鬥開關 (對接 _G.MOB)
-    Tab2:AddToggle("啟動肉墊自動抓抓", "MOB", function(state)
-        _G.MOB = state
+    -- 秒殺功能開關
+    Tab2:AddToggle("啟動小柒秒殺 (FastAttack)", "FastAttack", function(state)
+        _G.FastAttack = state
     end)
-    Tab2:AddInput("抓抓頻率", 0.1, function(v) _G.AttackSpeed = tonumber(v) or 0.1 end)
-    Tab2:AddInput("狩獵範圍", 500, function(v) _G.AttackDistance = tonumber(v) or 500 end)
+    Tab2:AddInput("秒殺範圍", 10000, function(v) Settings.Distance = tonumber(v) or 10000 end)
+    Tab2:AddInput("抓抓頻率 (秒)", 0.1, function(v) Settings.ClickDelay = tonumber(v) or 0.1 end)
 
-    -- 移動功能 (對接外部 loadstring)
-    Tab3:AddButton("啟動 貓咪肉墊加速 (SPD)", function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))()
-    end)
-    Tab3:AddButton("啟動 飛天小貓模式 (Fly)", function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))()
-    end)
+    -- 移動與 V4
+    Tab3:AddButton("啟動 貓咪加速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
+    Tab3:AddButton("啟動 飛天模式", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
+    Tab4:AddButton("讓小貓進化 (V4)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() end)
 
-    -- 進化功能 (對接 V4)
-    Tab4:AddButton("讓小貓進化 (V4)", function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))()
-    end)
-
-    -- 設置功能
-    Tab5:AddButton("讓小貓休息 (銷毀 UI)", function()
+    -- 銷毀
+    Tab5:AddButton("讓小貓回窩休息", function()
         if game:GetService("CoreGui"):FindFirstChild("NEKOUI_MAIN") then
             game:GetService("CoreGui").NEKOUI_MAIN:Destroy()
         end
     end)
 
-    -- 核心戰鬥引擎
+    -- 戰鬥引擎循環
     task.spawn(function()
-        local RS = game:GetService("ReplicatedStorage")
-        local Net = RS:WaitForChild("Modules"):WaitForChild("Net")
-        local RegAttack = Net:WaitForChild("RE/RegisterAttack")
-        local RegHit = Net:WaitForChild("RE/RegisterHit")
-        
         while true do
-            if _G.MOB then
+            if _G.FastAttack then
                 pcall(function()
-                    local char = localPlayer.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    local tool = char and char:FindFirstChildOfClass("Tool")
-                    if root and tool then
+                    local tool = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Tool")
+                    if tool then
                         tool:Activate()
-                        local targets = {}
-                        local folder = workspace:FindFirstChild("Enemies") or workspace
-                        for _, e in ipairs(folder:GetChildren()) do
-                            local eR = e:FindFirstChild("HumanoidRootPart")
-                            local eH = e:FindFirstChild("Humanoid")
-                            if eR and eH and eH.Health > 0 then
-                                if (eR.Position - root.Position).Magnitude < _G.AttackDistance then
-                                    eR.CanCollide = false
-                                    eR.CFrame = root.CFrame * CFrame.new(0, 0, -3)
-                                    table.insert(targets, {e, eR})
-                                end
-                            end
-                            if #targets >= 15 then break end
-                        end
-                        if #targets > 0 then
-                            RegAttack:FireServer(_G.AttackSpeed)
-                            RegHit:FireServer(targets[1][2], targets)
-                        end
+                        DoFastAttack()
                     end
                 end)
             end
-            task.wait(_G.AttackSpeed)
+            task.wait(Settings.ClickDelay)
         end
     end)
 end
 
--- ==========================================
--- 【 🛡️ 貓咪門衛 】
--- ==========================================
+-- 驗證啟動
 if WhitelistNames[localPlayer.Name] then
     StartNekoHub()
 else
-    localPlayer:Kick("\n【 🐾 小柒：哈氣！ 】\n\n喵！偵測到陌生人的氣味：[" .. localPlayer.Name .. "]\n這裡不是你該來的地方喵！")
+    localPlayer:Kick("\n喵嗚！你不是主人！")
 end
 
 --[=[
