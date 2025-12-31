@@ -1,68 +1,31 @@
--- // [ ☀️ 光與影：NEKOMOB 2025 實體對接版 ] // --
--- [[ 🌑 影：既然數據被攔截，那就用實體斬斷這片虛假。 ]] --
-
-local LP = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
+-- [[ 🌑 影：實體斬斷版 ]] --
 local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
-local RegAttack = Net:WaitForChild("RE/RegisterAttack")
-local RegHit = Net:WaitForChild("RE/RegisterHit")
+local RegAttack, RegHit = Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
 
-local Config = {
-    Distance = 3000,
-    AttackDelay = 0.05, -- 進化為 0.05s 極限律動
-    MaxTargets = 25
-}
-
--- 2025 優化：目標獲取函數
-local function GetValidEnemies()
-    local targets = {}
-    local char = LP.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return targets end
-    
-    local myPos = char.HumanoidRootPart.Position
-    local count = 0
-    local enemiesFolder = workspace:FindFirstChild("Enemies")
-    local candidates = enemiesFolder and enemiesFolder:GetChildren() or workspace:GetChildren()
-    
-    for _, v in ipairs(candidates) do
-        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-            local root = v:FindFirstChild("HumanoidRootPart")
-            if root and not game.Players:GetPlayerFromCharacter(v) then
-                if (root.Position - myPos).Magnitude <= Config.Distance then
-                    count = count + 1
-                    targets[count] = {v, root}
-                end
-            end
-        end
-        if count >= Config.MaxTargets then break end
-    end
-    return targets
-end
-
--- 影：實體揮刀守護循環
 task.spawn(function()
     while true do
-        RunService.Heartbeat:Wait() -- 與遊戲心跳同步
         if _G.MOB then
             pcall(function()
-                local char = LP.Character
+                local char = game.Players.LocalPlayer.Character
                 local tool = char and char:FindFirstChildOfClass("Tool")
-
                 if tool then
-                    local enemyList = GetValidEnemies()
-                    if #enemyList > 0 then
-                        -- // 🐾 光：神奇的實體動畫觸發 // --
-                        -- 讓伺服器「看到」您在揮刀，這解決了「打不到」的問題
-                        tool:Activate() 
-                        
-                        -- // 🌑 影：2025 封包注入 // --
+                    local targets = {}
+                    for _, v in ipairs(workspace:GetChildren()) do -- 這裡可根據遊戲微調路徑
+                        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                            if (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude < 300 and not game.Players:GetPlayerFromCharacter(v) then
+                                table.insert(targets, {v, v.HumanoidRootPart})
+                                if #targets >= 15 then break end
+                            end
+                        end
+                    end
+                    if #targets > 0 then
+                        tool:Activate()
                         RegAttack:FireServer(0)
-                        -- 第一參數對接首個怪物的 RootPart
-                        RegHit:Server(enemyList[1][2], enemyList)
+                        RegHit:FireServer(targets[1][2], targets) -- 修正：正確的 FireServer
                     end
                 end
             end)
         end
-        task.wait(Config.AttackDelay)
+        task.wait(0.1)
     end
 end)
