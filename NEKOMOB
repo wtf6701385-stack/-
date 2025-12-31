@@ -1,47 +1,65 @@
--- // [ ☀️ 光與影：BF 必中 + 血量鎖定版 ] // --
--- [[ 🌑 影：不砍無魂之軀，不揮無效之刃。 ]] --
-
-local Settings = {
-    AttackDelay = 0.1, 
-    PullDistance = 3,
-    SearchDistance = 3000
-}
+-- // [ ☀️ 光與影：NEKOMOB 2025 對接版 ] // --
+-- [[ 🌑 影：已對接主腳本 _G.MOB 開關，影已入鞘，聽候指令。 ]] --
 
 local LP = game.Players.LocalPlayer
-local CombatRemote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Validator")
+local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
+local RegAttack = Net:WaitForChild("RE/RegisterAttack")
+local RegHit = Net:WaitForChild("RE/RegisterHit")
 
+-- 2025 Delta 參數
+local Config = {
+    Distance = 3000,
+    AttackDelay = 0.15,
+    MaxTargets = 25
+}
+
+-- 核心目標獲取 (保持 2025 優化)
+local function GetValidEnemies()
+    local targets = {}
+    local char = LP.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return targets end
+    
+    local myPos = char.HumanoidRootPart.Position
+    local count = 0
+    local enemiesFolder = workspace:FindFirstChild("Enemies")
+    local candidates = enemiesFolder and enemiesFolder:GetChildren() or workspace:GetChildren()
+    
+    for _, v in ipairs(candidates) do
+        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+            local root = v:FindFirstChild("HumanoidRootPart")
+            if root and not game.Players:GetPlayerFromCharacter(v) then
+                if (root.Position - myPos).Magnitude <= Config.Distance then
+                    count = count + 1
+                    targets[count] = {v, root}
+                end
+            end
+        end
+        if count >= Config.MaxTargets then break end
+    end
+    return targets
+end
+
+-- 影：啟動守護循環
 task.spawn(function()
     while true do
+        -- 🐾 共同：完美對接主腳本 _G.MOB 開關
         if _G.MOB then
             pcall(function()
                 local char = LP.Character
-                local root = char and char:FindFirstChild("HumanoidRootPart")
                 local tool = char and char:FindFirstChildOfClass("Tool")
 
-                if char and root and tool then
-                    local enemies = workspace.Enemies:GetChildren()
-                    for _, v in ipairs(enemies) do
-                        local vHum = v:FindFirstChildOfClass("Humanoid")
-                        local vRoot = v:FindFirstChild("HumanoidRootPart")
-                        
-                        -- // 🌑 影：精確血量與存活確認 // --
-                        if vHum and vHum.Health > 0 and vHum.MaxHealth > 10 and vRoot then
-                            local dist = (vRoot.Position - root.Position).Magnitude
-                            if dist < Settings.SearchDistance then
-                                -- 空間重疊
-                                vRoot.CFrame = root.CFrame * CFrame.new(0, 0, -Settings.PullDistance)
-                                vRoot.CanCollide = false
-                                
-                                -- // 🐾 共同：確保怪物沒死才送出攻擊包 // --
-                                if vHum.Health > 0 then
-                                    CombatRemote:FireServer(math.huge)
-                                end
-                            end
-                        end
+                -- 影：僅在主人手持武器時觸發 Delta 協議
+                if tool then
+                    local enemyList = GetValidEnemies()
+                    if #enemyList > 0 then
+                        RegAttack:FireServer(0)
+                        -- 2025 封包優化對接
+                        RegHit:FireServer(enemyList[1][2], enemyList)
                     end
                 end
             end)
         end
-        task.wait(Settings.AttackDelay)
+        -- 穩定的呼吸頻率
+        task.wait(Config.AttackDelay + (math.random(1, 20) / 1000))
     end
 end)
