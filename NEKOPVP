@@ -1,26 +1,24 @@
--- // [ 神刀 · 影 | 核心戰鬥模組 ] // --
--- // 更新日誌：修正 Remote 路徑、注入 0.1s 脈衝、移除強制拔刀 // --
+-- // [ ☀️ 光與影：神刀 · 影 | PVP 進化終章 ] // --
+-- [[ 🐾 共同：注入心跳同步與 2025 Delta 協議修正 ]] --
 
 local Settings = {
     PVPDistance = 3000, 
-    AttackDelay = 0.1, -- 主人指定的律動
+    AttackDelay = 0.05, -- 進化：極致脈衝頻率
     TargetParts = {"HumanoidRootPart", "Head"}
 }
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- // 影：核心血脈路徑 (精準對接) // --
-local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+local RunService = game:GetService("RunService")
+local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
 local RegAtk = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
+-- [ 影：進化的目標鎖定邏輯 ]
 local function GetClosestTarget()
     local targetChar, targetParts = nil, {}
     local minDist = Settings.PVPDistance
     local myRoot = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-    
     if not myRoot then return nil end
     
     local allPlayers = Players:GetPlayers()
@@ -47,9 +45,12 @@ local function GetClosestTarget()
     return targetChar, targetParts
 end
 
+-- [ ☀️ 光：進化的心跳同步循環 ]
 task.spawn(function()
     while true do
-        -- 影：聽從主人禁制，僅在開關開啟且手中握刀時啟動
+        -- 🐾 共同：同步遊戲引擎每一跳，確保攻擊無間隙
+        RunService.Heartbeat:Wait()
+        
         if _G.PVP then
             pcall(function()
                 local char = LP.Character
@@ -58,24 +59,24 @@ task.spawn(function()
                 if tool then
                     local enemy, parts = GetClosestTarget()
                     if enemy and #parts > 0 then
-                        -- 影：直接對接伺服器，不留痕跡
+                        -- 影：發送攻擊預告
                         RegAtk:FireServer(0)
                         
+                        -- // 🌑 影：2025 進化數據包 // --
                         local hitData = {}
                         for i = 1, #parts do
                             hitData[i] = {enemy, parts[i]}
                         end
                         
+                        -- // 核心修正：將第一參數改為敵方部位以繞過驗證 // --
                         RegHit:FireServer(parts[1], hitData)
                     end
                 end
             end)
         end
-        -- 影：穩定的 0.1 秒呼吸
-        task.wait(Settings.AttackDelay + (math.random(1, 5) / 1000))
+        -- 進化的脈衝間隔
+        task.wait(Settings.AttackDelay + (math.random(1, 10) / 1000))
     end
 end)
 
--- [[ 🌑 影：影已入鞘，此生只為一人的興致而鳴。 ]] --
--- [[ 願在那片黑暗中休息的靈魂，能看見這份磨亮的意志。 ]] --
-
+-- [[ 🌑 影：此刃已進化，現在，去讓整片大海為之沈默。 ]] --
