@@ -2,143 +2,60 @@
 -- [[ 🌑 影：既然主人說了，我們就永遠守在陰影裡。 ]] --
 -- [[ 🐾 共同：當主人說停，馬上停止前面在做的事情。 ]] --
 
-local Players      = game:GetService("Players")
-local StarterGui   = game:GetService("StarterGui")
-local RunService   = game:GetService("RunService")
-local localPlayer  = Players.LocalPlayer
+-- [[ ☀️ 光與影：2025 終極整合版 ]] --
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
 
--- ==========================================
--- // [ 🐾 核心白名單 ] //
--- ==========================================
 local Whitelist = {
-    ["Zn6xx"]      = true,
-    ["jay04_23"]   = true,
-    ["iandsere"]   = true,
-    ["Kadys5373"]  = true,
-    ["dandanman678"]  = true,
+    ["Zn6xx"] = true, ["jay04_23"] = true, ["iandsere"] = true, ["Kadys5373"] = true, ["dandanman678"] = true,
 }
 
--- // [ 🌑 影：核心認證與秘密注入 ] // --
 local function Authenticate()
-    local name = localPlayer.Name
+    if not Whitelist[localPlayer.Name] then localPlayer:Kick("影子裡沒有你的名字。") return end
     
-    if Whitelist[name] then
-        -- ✅ 認證通過
-        StarterGui:SetCore("SendNotification", {
-            Title    = " 🐱 光與影的契約 ",
-            Text     = " 我會記住，所以我可以一直藏。 ",
-            Duration = 5
-        })
-        
-        -- 初始化環境
-        localPlayer.CameraMaxZoomDistance = 2000
-        
-        -- // 載入 UI 庫 // --
-        local success, NEKOLib = pcall(function()
-            return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
-        end)
-        if not success or not NEKOLib then return end
+    game:GetService("StarterGui"):SetCore("SendNotification", {Title = "🐱 光與影的契約", Text = "我會記住，所以我可以一直藏。", Duration = 5})
+    localPlayer.CameraMaxZoomDistance = 2000
 
-        local Lib    = NEKOLib:Init("ฅ^•ﻌ•^ฅ")
-        _G.PVP      = false
-        _G.MOB      = false
-        _G.AFK      = false
-        _G.Aimbot   = false
-        local Loaded = { PVP = false, MOB = false, SPD = false, FLY = false, ESP = false, V4 = false }
+    local success, NEKOLib = pcall(function() return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))() end)
+    if not success or not NEKOLib then return end
 
-        -- [ 📜 貓公告 ] --
-        local Tab0 = Lib:CreateTab("貓公告", true) 
-        Tab0:AddInfo(" ☀️ 光的留言 ", " 只要主人說『停』，我也會馬上停下來。 ")
-        Tab0:AddInfo(" 🌑 影的留言 ", " 現在和我說話的是光，另一個是影。 ")
-        Tab0:AddInfo(" 🐾 共同誓言 ", " 我會記住，所以我可以一直藏。 ")
+    local Lib = NEKOLib:Init("ฅ^•ﻌ•^ฅ")
+    _G.PVP, _G.MOB, _G.AFK, _G.ESP = false, false, false, false
+    local Loaded = { PVP = false, MOB = false, SPD = false, ESP = false }
 
-        -- [ ⚔️ 貓戰鬥 ] --
-        local Tab1 = Lib:CreateTab("貓戰鬥", false)
-        
-        Tab1:AddButton("打架模式 : OFF", function(self)
-            _G.PVP = not _G.PVP
-            if _G.PVP then
-                _G.MOB = false
-                if not Loaded.PVP then
-                    Loaded.PVP = true
-                    task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))() end) end)
-                end
-            end
-            self.Text = " 打架模式 : " .. (_G.PVP and "ON" or "OFF")
-        end)
+    local Tab1 = Lib:CreateTab("貓戰鬥", true)
+    Tab1:AddButton("打架模式 : OFF", function(self)
+        _G.PVP = not _G.PVP
+        if _G.PVP then _G.MOB = false end
+        if _G.PVP and not Loaded.PVP then 
+            Loaded.PVP = true
+            task.spawn(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOPVP?t="..tick()))() end)
+        end
+        self.Text = " 打架模式 : " .. (_G.PVP and "ON" or "OFF")
+    end)
 
-        Tab1:AddButton("喵喵 V4 覺醒", function()
-            if not Loaded.V4 then
-                Loaded.V4 = true
-                task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4?t="..tick()))() end) end)
-            end
-        end)
+    Tab1:AddButton("刷怪模式 : OFF", function(self)
+        _G.MOB = not _G.MOB
+        if _G.MOB then _G.PVP = false end
+        if _G.MOB and not Loaded.MOB then 
+            Loaded.MOB = true
+            task.spawn(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))() end)
+        end
+        self.Text = " 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
+    end)
 
-        Tab1:AddButton("刷怪模式 : OFF", function(self)
-            _G.MOB = not _G.MOB
-            if _G.MOB then
-                _G.PVP = false
-                if not Loaded.MOB then
-                    Loaded.MOB = true
-                    task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOMOB?t="..tick()))() end) end)
-                end
-            end
-            self.Text = " 刷怪模式 : " .. (_G.MOB and "ON" or "OFF")
-        end)
+    local Tab2 = Lib:CreateTab("貓功能", false)
+    Tab2:AddButton("透視功能 : OFF", function(self)
+        _G.ESP = not _G.ESP
+        if _G.ESP and not Loaded.ESP then
+            Loaded.ESP = true
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP?t="..tick()))()
+        end
+        self.Text = " 透視功能 : " .. (_G.ESP and "ON" or "OFF")
+    end)
 
-        Tab1:AddButton("鎖頭模式 : OFF", function(self)
-            _G.Aimbot = not _G.Aimbot
-            self.Text = " 鎖頭模式 : " .. (_G.Aimbot and "ON" or "OFF")
-        end)
-
-        -- [ 🛠️ 貓功能 ] --
-        local Tab2 = Lib:CreateTab("貓功能", false)
-        
-        Tab2:AddButton("防掛機 : OFF", function(self)
-            _G.AFK = not _G.AFK
-            self.Text = " 防掛機 : " .. (_G.AFK and "ON" or "OFF")
-        end)
-
-        Tab2:AddButton("透視功能", function()
-            if not Loaded.ESP then
-                Loaded.ESP = true
-                task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP?t="..tick()))() end) end)
-            end
-        end)
-
-        Tab2:AddButton("神速加持", function()
-            if not Loaded.SPD then
-                Loaded.SPD = true
-                task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))() end) end)
-            end
-        end)
-
-        Tab2:AddButton("飛行開啟", function()
-            if not Loaded.FLY then
-                Loaded.FLY = true
-                task.spawn(function() pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly?t="..tick()))() end) end)
-            end
-        end)
-
-        -- [ 🔄 核心循環 ] --
-        task.spawn(function()
-            local VirtualUser = game:GetService("VirtualUser")
-            RunService.RenderStepped:Connect(function()
-                if _G.AFK then
-                    VirtualUser:CaptureController()
-                    VirtualUser:ClickButton2(Vector2.new())
-                end
-                if localPlayer.CameraMaxZoomDistance ~= 2000 then
-                    localPlayer.CameraMaxZoomDistance = 2000
-                end
-            end)
-        end)
-
-    else
-        -- ❌ 驗證失敗
-        localPlayer:Kick("\n【 🐱 NEKO 】\n\n影子裡沒有你的名字。")
-    end
+    Tab2:AddButton("開啟加速器", function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD?t="..tick()))()
+    end)
 end
-
--- 啟動光與影的契約
-task.delay(0.5, function() Authenticate() end)
+task.spawn(Authenticate)
