@@ -15,6 +15,7 @@ local Whitelist = {
     ["jay04_23"]   = true,
     ["iandsere"]   = true,
     ["Kadys5373"]  = true,
+    ["dandanman678"]  = true,
 }
 
 -- // [ 🌑 影：核心認證與秘密注入 ] // --
