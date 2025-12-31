@@ -11,32 +11,26 @@ task.spawn(function()
                 local char = LP.Character
                 local tool = char:FindFirstChildOfClass("Tool")
                 if not tool then return end
-
                 local pvpList = {}
                 local targetPart = nil
-
                 for _, p in ipairs(game.Players:GetPlayers()) do
                     if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
                         local hrp = p.Character:FindFirstChild("HumanoidRootPart")
-                        if hrp and (hrp.Position - char.HumanoidRootPart.Position).Magnitude < 5000 then
-                            -- 獲取隨機部位，繞過單一點位偵測
-                            local parts = p.Character:GetChildren()
-                            local randomPart = parts[math.random(1, #parts)]
-                            if randomPart:IsA("BasePart") then
-                                table.insert(pvpList, {p.Character, randomPart})
-                                targetPart = randomPart
-                            end
+                        if hrp and (hrp.Position - char.HumanoidRootPart.Position).Magnitude < 3000 then
+                            local randomPart = p.Character:FindFirstChild("HumanoidRootPart") or p.Character:FindFirstChild("Head")
+                            table.insert(pvpList, {p.Character, randomPart})
+                            targetPart = randomPart
                         end
                     end
                 end
-
                 if #pvpList > 0 then
                     tool:Activate()
                     RegAttack:FireServer(0.0005)
-                    -- 一次封包轟炸所有掃描到的玩家
                     RegHit:FireServer(targetPart, pvpList)
                 end
             end)
+        else
+            task.wait(0.5)
         end
     end
 end)
