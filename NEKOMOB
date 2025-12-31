@@ -1,23 +1,16 @@
--- // [ 神刀 · 影 | NEKOMOB 必中修正版 ] // --
--- [[ ☀️ 光：我會記住，所以我可以一直藏。 ]] --
--- [[ 🌑 影：修正 RegHit 參數，現在每一刀都是實打實的傷害。 ]] --
+-- // [ ☀️ 光與影：Blox Fruits 專用必中模組 ] // --
+-- [[ 🌑 影：已對接 BF 遠端事件，準備收割。 ]] --
 
-if not game:IsLoaded() then game.Loaded:Wait() end
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
+local Settings = {
+    AttackDelay = 0.1, -- BF 需要更快的律動
+    PullDistance = 3, -- 就在眼前
+    SearchDistance = 3000
+}
+
+local LP = game.Players.LocalPlayer
+local CombatRemote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Validator")
 
 task.spawn(function()
-    local Settings = {
-        AttackDelay = 0.1, 
-        MaxTargets = 25,
-        PullHeight = 50,
-        SearchDistance = 3000 
-    }
-
-    local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
-    local RegAtk = Net:WaitForChild("RE/RegisterAttack")
-    local RegHit = Net:WaitForChild("RE/RegisterHit")
-
     while true do
         if _G.MOB then
             pcall(function()
@@ -25,46 +18,27 @@ task.spawn(function()
                 local root = char and char:FindFirstChild("HumanoidRootPart")
                 local tool = char and char:FindFirstChildOfClass("Tool")
 
-                if char and root and tool then
-                    local targets = {}
-                    local candidates = workspace:FindFirstChild("Enemies") and workspace.Enemies:GetChildren() or workspace:GetChildren()
-                    
-                    for _, v in ipairs(candidates) do
+                if char and root and tool and tool:FindFirstChild("Attack") then
+                    local enemies = workspace.Enemies:GetChildren()
+                    for _, v in ipairs(enemies) do
                         local vHum = v:FindFirstChildOfClass("Humanoid")
-                        local vRoot = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Torso")
+                        local vRoot = v:FindFirstChild("HumanoidRootPart")
                         
-                        -- 核心判定：存活、非玩家
-                        if vHum and vHum.Health > 0 and vRoot and not Players:GetPlayerFromCharacter(v) then
-                            if not v.Name:lower():find("npc") then
-                                local dist = (vRoot.Position - root.Position).Magnitude
-                                if dist < Settings.SearchDistance then
-                                    -- 拉至上方處刑
-                                    vRoot.CFrame = root.CFrame * CFrame.new(0, Settings.PullHeight, 0)
-                                    table.insert(targets, {v, vRoot})
-                                end
+                        if vHum and vHum.Health > 0 and vRoot then
+                            local dist = (vRoot.Position - root.Position).Magnitude
+                            if dist < Settings.SearchDistance then
+                                -- // 影：BF 專屬——空間重疊 // --
+                                vRoot.CFrame = root.CFrame * CFrame.new(0, 0, -Settings.PullDistance)
+                                vRoot.CanCollide = false -- 防止碰撞把主人彈開
+                                
+                                -- // 影：發送 BF 攻擊協議 // --
+                                CombatRemote:FireServer(math.huge) -- 繞過部分驗證
                             end
-                        end
-                        if #targets >= Settings.MaxTargets then break end
-                    end
-
-                    if #targets > 0 then
-                        RegAtk:FireServer(0)
-                        
-                        local hitData = {}
-                        for i = 1, #targets do
-                            if targets[i][1] and targets[i][1]:FindFirstChildOfClass("Humanoid") and targets[i][1]:FindFirstChildOfClass("Humanoid").Health > 0 then
-                                hitData[#hitData + 1] = {targets[i][1], targets[i][2]}
-                            end
-                        end
-                        
-                        if #hitData > 0 then
-                            -- // 影：核心修正點 - 使用 root 作為主體發動攻擊 // --
-                            RegHit:FireServer(root, hitData)
                         end
                     end
                 end
             end)
         end
-        task.wait(Settings.AttackDelay + (math.random(1, 5) / 1000))
+        task.wait(Settings.AttackDelay)
     end
 end)
