@@ -1,31 +1,49 @@
--- [[ 🌑 影：實體斬斷版 ]] --
+-- [[ 🌑 影：人擠人式 - 拉怪轟炸版 ]] --
+local LP = game.Players.LocalPlayer
 local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
-local RegAttack, RegHit = Net:WaitForChild("RE/RegisterAttack"), Net:WaitForChild("RE/RegisterHit")
+local RegAttack = Net:WaitForChild("RE/RegisterAttack")
+local RegHit = Net:WaitForChild("RE/RegisterHit")
+
+local function GetRandomPart(target)
+    local parts = {}
+    for _, v in ipairs(target:GetChildren()) do
+        if v:IsA("BasePart") and v.CanCollide then table.insert(parts, v) end
+    end
+    return #parts > 0 and parts[math.random(1, #parts)] or target:FindFirstChild("HumanoidRootPart")
+end
 
 task.spawn(function()
-    while true do
+    while task.wait(0.0005) do
         if _G.MOB then
             pcall(function()
-                local char = game.Players.LocalPlayer.Character
-                local tool = char and char:FindFirstChildOfClass("Tool")
-                if tool then
-                    local targets = {}
-                    for _, v in ipairs(workspace:GetChildren()) do -- 這裡可根據遊戲微調路徑
-                        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                            if (v.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude < 300 and not game.Players:GetPlayerFromCharacter(v) then
-                                table.insert(targets, {v, v.HumanoidRootPart})
-                                if #targets >= 15 then break end
-                            end
+                local char = LP.Character
+                local tool = char:FindFirstChildOfClass("Tool")
+                if not tool then return end
+                local targets = {}
+                local mainPart = nil
+                local folder = workspace:FindFirstChild("Enemies") or workspace
+                for _, v in ipairs(folder:GetChildren()) do
+                    if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        local hrp = v:FindFirstChild("HumanoidRootPart")
+                        if hrp and (hrp.Position - char.HumanoidRootPart.Position).Magnitude < 500 then
+                            hrp.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+                            hrp.CanCollide = false
+                            local hitPart = GetRandomPart(v)
+                            table.insert(targets, {v, hitPart})
+                            mainPart = hitPart
                         end
                     end
-                    if #targets > 0 then
-                        tool:Activate()
-                        RegAttack:FireServer(0)
-                        RegHit:FireServer(targets[1][2], targets) -- 修正：正確的 FireServer
-                    end
+                    if #targets >= 25 then break end
+                end
+                if #targets > 0 then
+                    tool:Activate()
+                    RegAttack:FireServer(0.0005)
+                    RegHit:FireServer(mainPart, targets)
                 end
             end)
+        else
+            -- 暫停時稍微休息，節省效能
+            task.wait(0.5)
         end
-        task.wait(0.1)
     end
 end)
