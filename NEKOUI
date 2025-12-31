@@ -23,7 +23,7 @@ function UI:Init()
     Main.ClipsDescendants = true
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
-    -- RGB 邊框
+    -- RGB 邊框 (小柒的動態項圈)
     local Stroke = Instance.new("UIStroke", Main)
     Stroke.Thickness = 2.5
     Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -36,7 +36,7 @@ function UI:Init()
     
     local T = Instance.new("TextLabel", Top)
     T.Size = UDim2.new(1, -50, 1, 0); T.Position = UDim2.new(0, 14, 0, 0)
-    T.Text = "  ฅ^•ﻌ•^ฅ  "; T.TextColor3 = Color3.new(1, 1, 1)
+    T.Text = "  ฅ^•ﻌ•^ฅ 小柒終端  "; T.TextColor3 = Color3.new(1, 1, 1)
     T.Font = "GothamBold"; T.TextSize = 16; T.TextXAlignment = "Left"; T.BackgroundTransparency = 1
 
     local MiniBtn = Instance.new("TextButton", Top)
@@ -86,28 +86,25 @@ function UI:Init()
 
         local TabObj = {}
 
-        -- ### 已修正：加入 callback 支持 ###
+        -- Toggle 邏輯
         function TabObj:AddToggle(text, globalVar, callback)
             local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 36)
             f.BackgroundColor3 = Color3.fromRGB(35, 35, 42); Instance.new("UICorner", f)
             local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -60, 1, 0); t.Position = UDim2.new(0, 10, 0, 0)
             t.Text = "🐱 " .. text; t.TextColor3 = Color3.new(1, 1, 1); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 13; t.TextXAlignment = "Left"
             local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 45, 0, 20); b.Position = UDim2.new(1, -55, 0.5, -10)
-            
             b.BackgroundColor3 = _G[globalVar] and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(70, 70, 75)
             b.Text = _G[globalVar] and "ON" or "OFF"; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 10; Instance.new("UICorner", b)
-            
             b.MouseButton1Click:Connect(function()
                 _G[globalVar] = not _G[globalVar]
                 b.Text = _G[globalVar] and "ON" or "OFF"
                 b.BackgroundColor3 = _G[globalVar] and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(70, 70, 75)
-                
-                -- 觸發回調
                 if callback then callback(_G[globalVar]) end
             end)
             Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
         end
 
+        -- Input 邏輯
         function TabObj:AddInput(text, default, callback)
             local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 36)
             f.BackgroundColor3 = Color3.fromRGB(35, 35, 42); Instance.new("UICorner", f)
@@ -119,6 +116,7 @@ function UI:Init()
             Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
         end
 
+        -- Info 邏輯
         function TabObj:AddInfo(t1, t2)
             local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 50)
             f.BackgroundColor3 = Color3.fromRGB(28, 28, 34); Instance.new("UICorner", f)
@@ -126,13 +124,16 @@ function UI:Init()
             l1.Text = t1; l1.TextColor3 = Color3.new(1, 1, 1); l1.Font = "GothamBold"; l1.TextSize = 12; l1.TextXAlignment = "Left"; l1.BackgroundTransparency = 1
             local l2 = Instance.new("TextLabel", f); l2.Size = UDim2.new(1, -20, 0, 20); l2.Position = UDim2.new(0, 10, 0, 25)
             l2.Text = t2; l2.TextColor3 = Color3.new(0.7, 0.7, 0.7); l2.Font = "Gotham"; l2.TextSize = 11; l2.TextXAlignment = "Left"; l2.BackgroundTransparency = 1
+            Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
         end
 
+        -- ### 核心補丁：按鈕邏輯 ###
         function TabObj:AddButton(text, callback)
             local b = Instance.new("TextButton", Page)
             b.Size = UDim2.new(0.95, 0, 0, 32); b.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
             b.Text = "✨ " .. text; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamMedium"; b.TextSize = 12; Instance.new("UICorner", b)
             b.MouseButton1Click:Connect(callback)
+            Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
         end
 
         return TabObj
