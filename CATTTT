@@ -15,16 +15,17 @@ local WhitelistNames = {
 }
 
 -- ==========================================
--- 【 🐱 小柒的秘密武器區 】
+-- 【 🐱 核心變數設定 】
 -- ==========================================
 local Settings = {
     ClickDelay = 0.1, 
-    Distance = 10000,
-    AttackPlayers = true -- 預設開啟打人模式喵！
+    Distance = 500,
+    PullEnemies = false, -- 獨立拉怪開關
+    Mode = "None" -- "Mob" (純打怪) 或 "All" (眾生平等)
 }
 _G.FastAttack = false 
 
--- 隨機部位選取 (讓攻擊更難被偵測)
+-- 隨機部位選取 (核心防護)
 local function GetRandomValidPart(target)
     local allParts = target:GetDescendants()
     local validParts = {}
@@ -36,53 +37,71 @@ local function GetRandomValidPart(target)
     return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
 end
 
--- 核心秒殺函數 (整合怪物與玩家)
-local function DoFastAttack()
+-- ==========================================
+-- 【 ⚔️ 眾生平等：攻擊核心邏輯 】
+-- ==========================================
+local function DoNekoAction()
     local RS = game:GetService("ReplicatedStorage")
     local Net = RS:WaitForChild("Modules"):WaitForChild("Net")
     local RegAttack = Net:WaitForChild("RE/RegisterAttack")
     local RegHit = Net:WaitForChild("RE/RegisterHit")
     
-    local OthersEnemies = {}
+    local char = localPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    local Targets = {}
     local BasePart = nil
     
-    -- 1. 搜尋怪物
-    local folder = workspace:FindFirstChild("Enemies") or workspace
-    for _, Enemy in ipairs(folder:GetChildren()) do
-        local humanoid = Enemy:FindFirstChildOfClass("Humanoid")
-        if Enemy ~= localPlayer.Character and not Players:GetPlayerFromCharacter(Enemy) and humanoid and humanoid.Health > 0 then
-            local foundPart = GetRandomValidPart(Enemy)
-            if foundPart and localPlayer:DistanceFromCharacter(foundPart.Position) < Settings.Distance then
-                table.insert(OthersEnemies, {Enemy, foundPart})
-                BasePart = foundPart
+    -- 1. 處理怪物邏輯 (打怪模式 或 眾生平等)
+    if Settings.Mode == "Mob" or Settings.Mode == "All" then
+        local folder = workspace:FindFirstChild("Enemies") or workspace
+        for _, Enemy in ipairs(folder:GetChildren()) do
+            local eH = Enemy:FindFirstChildOfClass("Humanoid")
+            local eR = Enemy:FindFirstChild("HumanoidRootPart")
+            
+            if Enemy ~= char and not Players:GetPlayerFromCharacter(Enemy) and eH and eH.Health > 0 and eR then
+                local dist = (eR.Position - root.Position).Magnitude
+                if dist < Settings.Distance then
+                    -- 檢查拉怪開關
+                    if Settings.PullEnemies then
+                        eR.CanCollide = false
+                        eR.CFrame = root.CFrame * CFrame.new(0, 0, -3)
+                    end
+                    
+                    local foundPart = GetRandomValidPart(Enemy)
+                    table.insert(Targets, {Enemy, foundPart})
+                    BasePart = foundPart
+                end
             end
+            if #Targets >= 15 then break end
         end
-        if #OthersEnemies >= 15 then break end
     end
 
-    -- 2. 搜尋玩家 (如果開啟了打人模式)
-    if Settings.AttackPlayers and #OthersEnemies < 15 then
+    -- 2. 處理玩家邏輯 (僅限眾生平等模式)
+    if Settings.Mode == "All" and #Targets < 15 then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= localPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                local foundPart = GetRandomValidPart(p.Character)
-                if foundPart and localPlayer:DistanceFromCharacter(foundPart.Position) < Settings.Distance then
-                    table.insert(OthersEnemies, {p.Character, foundPart})
+                local pR = p.Character:FindFirstChild("HumanoidRootPart")
+                if pR and (pR.Position - root.Position).Magnitude < Settings.Distance then
+                    local foundPart = GetRandomValidPart(p.Character)
+                    table.insert(Targets, {p.Character, foundPart})
                     BasePart = BasePart or foundPart
                 end
             end
-            if #OthersEnemies >= 15 then break end
+            if #Targets >= 15 then break end
         end
     end
 
-    -- 執行攻擊
-    if BasePart and #OthersEnemies > 0 then
+    -- 執行最終傷害對接
+    if BasePart and #Targets > 0 then
         RegAttack:FireServer(Settings.ClickDelay)
-        RegHit:FireServer(BasePart, OthersEnemies)
+        RegHit:FireServer(BasePart, Targets)
     end
 end
 
 -- ==========================================
--- 【 🐱 UI 介面載入 】
+-- 【 🐱 UI 載入與分頁清單檢查 】
 -- ==========================================
 function StartNekoHub()
     local success, Lib = pcall(function()
@@ -92,41 +111,73 @@ function StartNekoHub()
     if not success or not Lib then return end
     local Neko = Lib:Init()
 
+    -- 檢查所有分頁是否歸位
     local Tab1 = Neko:CreateTab("📜 公告欄", true)
-    local Tab2 = Neko:CreateTab("⚔️ 核心秒殺", false)
-    local Tab3 = Neko:CreateTab("🚀 貓咪輕功", false)
-    local Tab5 = Neko:CreateTab("🧶 貓咪玩具", false)
+    local Tab2 = Neko:CreateTab("⚔️ 戰鬥設定", false)
+    local Tab3 = Neko:CreateTab("🚀 移動進化", false)
+    local Tab4 = Neko:CreateTab("👁️ 貓咪感官", false)
+    local Tab5 = Neko:CreateTab("🧶 選單設置", false)
 
-    Tab1:AddInfo("小貓狀態", "主人：" .. localPlayer.Name .. "\n目前狀態：眾生平等抓抓中喵！🐾")
+    -- Tab 1: 公告
+    Tab1:AddInfo("小貓認證", "主人：" .. localPlayer.Name)
+    Tab1:AddInfo("系統檢查", "所有功能對接完畢，請享受遊戲喵！🐾")
 
-    -- 秒殺開關
-    Tab2:AddToggle("啟動小柒秒殺 (FastAttack)", "FastAttack", function(state)
+    -- Tab 2: 核心戰鬥 (互斥邏輯)
+    Tab2:AddToggle("啟動攻擊循環 (總開關)", "FastAttack", function(state)
         _G.FastAttack = state
     end)
-    Tab2:AddToggle("包含玩家 (打人模式)", "AttackPlayers", function(state)
-        Settings.AttackPlayers = state
+    Tab2:AddToggle("啟動自動拉怪 (怪物專用)", "PullEnemies", function(state)
+        Settings.PullEnemies = state
     end)
-    Tab2:AddInput("秒殺範圍", 10000, function(v) Settings.Distance = tonumber(v) or 10000 end)
+    Tab2:AddButton("⚔️ 模式：純打怪模式", function()
+        Settings.Mode = "Mob"
+    end)
+    Tab2:AddButton("🔥 模式：眾生平等 (人怪共打)", function()
+        Settings.Mode = "All"
+    end)
+    Tab2:AddInput("攻擊範圍 (建議500-1000)", 500, function(v) 
+        Settings.Distance = tonumber(v) or 500 
+    end)
 
-    -- 其他按鈕
-    Tab3:AddButton("啟動 貓咪加速", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
-    Tab3:AddButton("啟動 飛天模式", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
+    -- Tab 3: 移動與進化 (檢查對接)
+    Tab3:AddButton("啟動 貓咪加速 (SPD)", function() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
+    end)
+    Tab3:AddButton("啟動 飛天模式 (Fly)", function() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
+    end)
+    Tab3:AddButton("啟動 自動 V4 覺醒", function() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() 
+    end)
 
-    Tab5:AddButton("關閉選單", function()
+    -- Tab 4: 感官 (視角與透視檢查)
+    Tab4:AddButton("啟動 貓咪透視 (ESP)", function() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() 
+    end)
+    Tab4:AddInput("視角縮放 (輸入數字)", 128, function(v)
+        local val = tonumber(v)
+        if val then 
+            localPlayer.CameraMaxZoomDistance = val
+            localPlayer.CameraMinZoomDistance = 0
+        end
+    end)
+
+    -- Tab 5: 設置
+    Tab5:AddButton("銷毀 UI (關閉腳本)", function()
         if game:GetService("CoreGui"):FindFirstChild("NEKOUI_MAIN") then
             game:GetService("CoreGui").NEKOUI_MAIN:Destroy()
         end
     end)
 
-    -- 引擎循環
+    -- 戰鬥引擎後台運行
     task.spawn(function()
         while true do
-            if _G.FastAttack then
+            if _G.FastAttack and Settings.Mode ~= "None" then
                 pcall(function()
                     local tool = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Tool")
                     if tool then
                         tool:Activate()
-                        DoFastAttack()
+                        DoNekoAction()
                     end
                 end)
             end
@@ -135,11 +186,13 @@ function StartNekoHub()
     end)
 end
 
--- 驗證
+-- ==========================================
+-- 【 🛡️ 貓咪認證門衛 】
+-- ==========================================
 if WhitelistNames[localPlayer.Name] then
     StartNekoHub()
 else
-    localPlayer:Kick("喵！你是誰？")
+    localPlayer:Kick("\n【 🐾 小柒：哈氣！ 】\n這不是主人的氣味喵！")
 end
 
 --[=[
