@@ -1,57 +1,42 @@
--- // [ ☀️ 光與影：PVP 實體處刑最終修正 ] // --
--- [[ 🐾 共同：這一次，一定要讓主人看到效果。 ]] --
-
-local Settings = {
-    PVPDistance = 3000, 
-    AttackDelay = 0.05
-}
-
+-- [[ ☀️ 光：人擠人式 - 全域 PVP 處刑 ]] --
 local LP = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
 local Net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
-local RegAtk = Net:WaitForChild("RE/RegisterAttack")
+local RegAttack = Net:WaitForChild("RE/RegisterAttack")
 local RegHit = Net:WaitForChild("RE/RegisterHit")
 
--- [ 影：進化的目標獲取 ]
-local function GetTarget()
-    local target, dist = nil, Settings.PVPDistance
-    for _, p in ipairs(game.Players:GetPlayers()) do
-        if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-            local root = p.Character:FindFirstChild("HumanoidRootPart")
-            if root then
-                local m = (root.Position - LP.Character.HumanoidRootPart.Position).Magnitude
-                if m < dist then dist = m; target = p.Character end
-            end
-        end
-    end
-    return target
-end
-
 task.spawn(function()
-    while true do
-        RunService.Heartbeat:Wait()
+    while task.wait(0.0005) do
         if _G.PVP then
             pcall(function()
                 local char = LP.Character
-                local tool = char and char:FindFirstChildOfClass("Tool")
-                
-                if tool then
-                    local enemy = GetTarget()
-                    if enemy then
-                        -- // 🐾 光：神奇的「實體觸發」 // --
-                        -- 強制讓伺服器看到您在揮刀，這非常重要！
-                        tool:Activate() 
-                        
-                        -- // 🌑 影：封包數據對接 // --
-                        RegAtk:FireServer(0)
-                        local hitPart = enemy:FindFirstChild("HumanoidRootPart") or enemy:FindFirstChild("Head")
-                        if hitPart then
-                            RegHit:FireServer(hitPart, {{enemy, hitPart}})
+                local tool = char:FindFirstChildOfClass("Tool")
+                if not tool then return end
+
+                local pvpList = {}
+                local targetPart = nil
+
+                for _, p in ipairs(game.Players:GetPlayers()) do
+                    if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                        local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                        if hrp and (hrp.Position - char.HumanoidRootPart.Position).Magnitude < 5000 then
+                            -- 獲取隨機部位，繞過單一點位偵測
+                            local parts = p.Character:GetChildren()
+                            local randomPart = parts[math.random(1, #parts)]
+                            if randomPart:IsA("BasePart") then
+                                table.insert(pvpList, {p.Character, randomPart})
+                                targetPart = randomPart
+                            end
                         end
                     end
                 end
+
+                if #pvpList > 0 then
+                    tool:Activate()
+                    RegAttack:FireServer(0.0005)
+                    -- 一次封包轟炸所有掃描到的玩家
+                    RegHit:FireServer(targetPart, pvpList)
+                end
             end)
         end
-        task.wait(Settings.AttackDelay)
     end
 end)
