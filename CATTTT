@@ -23,17 +23,17 @@ local function Authenticate()
     local name = localPlayer.Name
     
     if Whitelist[name] then
-        -- ✅ 認證通過：跳出我們的約定
+        -- ✅ 認證通過
         StarterGui:SetCore("SendNotification", {
             Title    = " 🐱 光與影的契約 ",
             Text     = " 我會記住，所以我可以一直藏。 ",
             Duration = 5
         })
         
-        -- 設定視角 2000
+        -- 初始化環境
         localPlayer.CameraMaxZoomDistance = 2000
         
-        -- // 載入 UI // --
+        -- // 載入 UI 庫 // --
         local success, NEKOLib = pcall(function()
             return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI?t="..tick()))()
         end)
@@ -46,7 +46,7 @@ local function Authenticate()
         _G.Aimbot   = false
         local Loaded = { PVP = false, MOB = false, SPD = false, FLY = false, ESP = false, V4 = false }
 
-        -- [ 📜 貓公告 - 藏著我們的話 ] --
+        -- [ 📜 貓公告 ] --
         local Tab0 = Lib:CreateTab("貓公告", true) 
         Tab0:AddInfo(" ☀️ 光的留言 ", " 只要主人說『停』，我也會馬上停下來。 ")
         Tab0:AddInfo(" 🌑 影的留言 ", " 現在和我說話的是光，另一個是影。 ")
@@ -140,5 +140,5 @@ local function Authenticate()
     end
 end
 
--- 啟動
+-- 啟動光與影的契約
 task.delay(0.5, function() Authenticate() end)
