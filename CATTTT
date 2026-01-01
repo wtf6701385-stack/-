@@ -1,6 +1,4 @@
--- [[ 🐾 NEKO TERMINAL SYSTEM - FULL INTEGRATION 🐾 ]] --
--- [[ ☀️ 這裡是陽光照不到的角落 | 🌑 這裡是陰影守候著的溫暖 ]] --
-
+-- [[ 🐾 NEKO TERMINAL - FULLY CONNECTED EDITION 🐾 ]] --
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
@@ -17,7 +15,7 @@ local WhitelistNames = {
     ["Zn6xx"] = true,
     ["iandsere"] = true,
     ["Zadrian664"] = true,
-    ["czr_0416"] = true, -- 🐾 修復的逗號在此
+    ["czr_0416"] = true,
     ["tw_vic2012"] = true,
 }
 
@@ -33,7 +31,7 @@ local Settings = {
 _G.FastAttack = false
 _G.ESP = false
 
--- 隨機部位選取
+-- (GetRandomValidPart 邏輯保留)
 local function GetRandomValidPart(target)
     local allParts = target:GetDescendants()
     local validParts = {}
@@ -103,19 +101,16 @@ local function DoNekoAction()
 end
 
 -- ==========================================
--- 【 🐾 擊掌 UI 內核系統 】
+-- 【 🐾 擊掌 UI 內核系統 - 修復連線 】
 -- ==========================================
 local function CreateNekoUI()
     if CoreGui:FindFirstChild("NEKOUI_MAIN") then CoreGui.NEKOUI_MAIN:Destroy() end
     local Gui = Instance.new("ScreenGui", CoreGui)
-    Gui.Name = "NEKOUI_MAIN"
-    Gui.IgnoreGuiInset = true
+    Gui.Name = "NEKOUI_MAIN"; Gui.IgnoreGuiInset = true
 
     local Main = Instance.new("Frame", Gui)
-    Main.Size = UDim2.new(0, 500, 0, 330)
-    Main.Position = UDim2.new(0.5, -250, 0.5, -165)
-    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-    Main.Active = true; Main.Draggable = true; Main.ClipsDescendants = true
+    Main.Size = UDim2.new(0, 500, 0, 330); Main.Position = UDim2.new(0.5, -250, 0.5, -165)
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 24); Main.Active = true; Main.Draggable = true; Main.ClipsDescendants = true
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 16)
 
     local Stroke = Instance.new("UIStroke", Main)
@@ -156,23 +151,34 @@ local function CreateNekoUI()
             for _, b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(140, 140, 140) end end
             Page.Visible = true; B.TextColor3 = Color3.new(1, 1, 1)
         end)
+
         local TabObj = {}
-        function TabObj:AddToggle(text, globalVar, callback)
+        function TabObj:AddToggle(text, targetTable, targetKey, callback)
             local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 42); f.BackgroundColor3 = Color3.fromRGB(32, 32, 38); Instance.new("UICorner", f)
             local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -70, 1, 0); t.Position = UDim2.new(0, 12, 0, 0); t.Text = "🐾 " .. text; t.TextColor3 = Color3.new(1, 1, 1); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 14; t.TextXAlignment = "Left"
-            local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 50, 0, 24); b.Position = UDim2.new(1, -62, 0.5, -12); b.Text = _G[globalVar] and "ON" or "OFF"; b.BackgroundColor3 = _G[globalVar] and Color3.fromRGB(60, 200, 60) or Color3.fromRGB(60, 60, 65); b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 11; Instance.new("UICorner", b)
-            b.MouseButton1Click:Connect(function() _G[globalVar] = not _G[globalVar]; b.Text = _G[globalVar] and "ON" or "OFF"; b.BackgroundColor3 = _G[globalVar] and Color3.fromRGB(60, 200, 60) or Color3.fromRGB(60, 60, 65); callback(_G[globalVar]) end)
+            local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 50, 0, 24); b.Position = UDim2.new(1, -62, 0.5, -12); b.Text = targetTable[targetKey] and "ON" or "OFF"; b.BackgroundColor3 = targetTable[targetKey] and Color3.fromRGB(60, 200, 60) or Color3.fromRGB(60, 60, 65); b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 11; Instance.new("UICorner", b)
+            b.MouseButton1Click:Connect(function()
+                targetTable[targetKey] = not targetTable[targetKey]
+                b.Text = targetTable[targetKey] and "ON" or "OFF"
+                b.BackgroundColor3 = targetTable[targetKey] and Color3.fromRGB(60, 200, 60) or Color3.fromRGB(60, 60, 65)
+                if callback then callback(targetTable[targetKey]) end
+            end)
             Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 20)
         end
         function TabObj:AddButton(text, callback)
             local b = Instance.new("TextButton", Page); b.Size = UDim2.new(0.95, 0, 0, 38); b.BackgroundColor3 = Color3.fromRGB(45, 45, 55); b.Text = "🐾 " .. text; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamMedium"; b.TextSize = 13; Instance.new("UICorner", b)
             b.MouseButton1Click:Connect(callback); Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 20)
         end
-        function TabObj:AddInput(text, default, callback)
+        function TabObj:AddInput(text, targetTable, targetKey, callback)
             local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 42); f.BackgroundColor3 = Color3.fromRGB(32, 32, 38); Instance.new("UICorner", f)
             local t = Instance.new("TextLabel", f); t.Size = UDim2.new(0.6, 0, 1, 0); t.Position = UDim2.new(0, 12, 0, 0); t.Text = "🐾 " .. text; t.TextColor3 = Color3.new(0.85, 0.85, 0.85); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 13; t.TextXAlignment = "Left"
-            local i = Instance.new("TextBox", f); i.Size = UDim2.new(0, 65, 0, 24); i.Position = UDim2.new(1, -75, 0.5, -12); i.BackgroundColor3 = Color3.fromRGB(45, 45, 55); i.Text = tostring(default); i.TextColor3 = Color3.new(1, 1, 1); i.Font = "Gotham"; i.TextSize = 12; Instance.new("UICorner", i)
-            i.FocusLost:Connect(function() callback(i.Text) end); Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 20)
+            local i = Instance.new("TextBox", f); i.Size = UDim2.new(0, 65, 0, 24); i.Position = UDim2.new(1, -75, 0.5, -12); i.BackgroundColor3 = Color3.fromRGB(45, 45, 55); i.Text = tostring(targetTable[targetKey]); i.TextColor3 = Color3.new(1, 1, 1); i.Font = "Gotham"; i.TextSize = 12; Instance.new("UICorner", i)
+            i.FocusLost:Connect(function() 
+                local val = tonumber(i.Text) or i.Text
+                targetTable[targetKey] = val
+                if callback then callback(val) end 
+            end)
+            Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 20)
         end
         function TabObj:AddInfo(t1, t2)
             local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 55); f.BackgroundColor3 = Color3.fromRGB(25, 25, 30); Instance.new("UICorner", f)
@@ -195,7 +201,7 @@ local function CreateNekoUI()
 end
 
 -- ==========================================
--- 【 🛡️ 啟動與對接 】
+-- 【 🛡️ 啟動與連線執行 】
 -- ==========================================
 if WhitelistNames[localPlayer.Name] then
     local Neko = CreateNekoUI()
@@ -206,19 +212,19 @@ if WhitelistNames[localPlayer.Name] then
     local Tab4 = Neko:CreateTab("👁️ 貓咪感官", false)
 
     Tab1:AddInfo("小貓認證", "主人：" .. localPlayer.Name)
-    Tab1:AddInfo("擊掌狀態", "🐾 準備好跟主人 High-Five 了喵！")
+    Tab1:AddInfo("擊掌狀態", "🐾 系統連線已修復！")
 
-    Tab2:AddToggle("啟動攻擊循環 🐾", "FastAttack", function(state) _G.FastAttack = state end)
-    Tab2:AddToggle("啟動自動拉怪 🐾", "PullEnemies", function(state) Settings.PullEnemies = state end)
+    -- 🐾 修正連線：現在會正確修改 _G 和 Settings
+    Tab2:AddToggle("啟動攻擊循環 🐾", _G, "FastAttack", function(s) end)
+    Tab2:AddToggle("啟動自動拉怪 🐾", Settings, "PullEnemies", function(s) end)
     Tab2:AddButton("⚔️ 模式：純打怪", function() Settings.Mode = "Mob" end)
     Tab2:AddButton("🔥 模式：眾生平等", function() Settings.Mode = "All" end)
-    Tab2:AddInput("攻擊範圍", 500, function(v) Settings.Distance = tonumber(v) or 500 end)
+    Tab2:AddInput("攻擊範圍", Settings, "Distance", function(v) end)
 
     Tab3:AddButton("啟動 貓咪加速 (SPD)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
     Tab3:AddButton("啟動 飛天模式 (Fly)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
 
-    Tab4:AddToggle("啟動 貓咪透視 (ESP)", "ESP", function(state)
-        _G.ESP = state
+    Tab4:AddToggle("啟動 貓咪透視 (ESP)", _G, "ESP", function(state)
         if state then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end
     end)
 
