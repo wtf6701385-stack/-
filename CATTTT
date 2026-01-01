@@ -166,28 +166,40 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 【 📢 5. 背景 Discord 通報 】
+-- 【 📢 5. 背景 Discord 通報 (@主人版) 】
 -- ==========================================
 task.spawn(function()
     task.wait(10)
     if not _G.NekoRunning then return end
+    
     local WebhookURL = "https://discord.com/api/webhooks/1456304374694412400/f5v3zsWGD-rWA5gS3c0epqk_XnXjWzDur7eqcHgD8Vn59dbYCXL-eXghWpFb964wJGY_"
+    local MyID = "1423615877030481952" -- 主人的專屬 ID 🐾
+    
     local data = {
+        ["content"] = "<@" .. MyID .. "> 報告主人！腳本已成功部署喵！🌸", -- 這裡是標記主人的地方
         ["embeds"] = {{
             ["title"] = "🐾 貓貓保衛系統報告",
             ["description"] = "全新重生系統已成功注入喵！",
             ["color"] = 16742584,
             ["fields"] = {
-                {["name"] = "玩家", ["value"] = localPlayer.Name, ["inline"] = true},
-                {["name"] = "狀態", ["value"] = "成功開啟貓貓腳本！！", ["inline"] = true}
+                {["name"] = "玩家名稱", ["value"] = localPlayer.Name, ["inline"] = true},
+                {["name"] = "系統狀態", ["value"] = "✅ 運行中 (靈魂綁定)", ["inline"] = true}
             },
-            ["footer"] = {["text"] = "小柒保衛系統"},
+            ["footer"] = {["text"] = "小柒保衛系統 | 專屬主人 NEKO"},
             ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }}
     }
+    
     pcall(function()
         local req = syn and syn.request or http_request or request or (HttpService and HttpService.request)
-        if req then req({ Url = WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(data) }) end
+        if req then 
+            req({ 
+                Url = WebhookURL, 
+                Method = "POST", 
+                Headers = {["Content-Type"] = "application/json"}, 
+                Body = HttpService:JSONEncode(data) 
+            }) 
+        end
     end)
 end)
 
