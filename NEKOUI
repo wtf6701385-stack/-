@@ -54,7 +54,7 @@ function UI:Init()
     
     local T = Instance.new("TextLabel", Top)
     T.Size = UDim2.new(1, -50, 1, 0); T.Position = UDim2.new(0, 18, 0, 0)
-    T.Text = " 🐾 🐾 🐾 "; T.TextColor3 = Color3.new(1, 1, 1)
+    T.Text = " ฅ^•ﻌ•^ฅ "; T.TextColor3 = Color3.new(1, 1, 1)
     T.Font = "GothamBold"; T.TextSize = 18; T.TextXAlignment = "Left"; T.BackgroundTransparency = 1
 
     local MiniBtn = Instance.new("TextButton", Top)
