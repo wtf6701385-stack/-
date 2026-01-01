@@ -14,6 +14,7 @@ local WhitelistNames = {
     ["iandsere"] = true,
     ["Zadrian664"] = true,
     ["czr_0416"] = true
+    ["tw_vic2012"] = true
 }
 
 -- ==========================================
