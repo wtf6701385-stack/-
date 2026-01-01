@@ -1,105 +1,80 @@
--- [[ 🐾 小柒終端：修復版 🐾 ]] --
-local UI = {}
+-- [[ 🎀 NEKO CLOUD UI LIBRARY 🎀 ]] --
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
-function UI:Init()
-    local CoreGui = game:GetService("CoreGui")
-    local RunService = game:GetService("RunService")
-    local UserInputService = game:GetService("UserInputService")
-    local TweenService = game:GetService("TweenService")
-    
+local NekoUI = {}
+
+function NekoUI:CreateLib()
     if CoreGui:FindFirstChild("NEKOUI_MAIN") then CoreGui.NEKOUI_MAIN:Destroy() end
-
-    local Gui = Instance.new("ScreenGui", CoreGui)
-    Gui.Name = "NEKOUI_MAIN"
-    Gui.ResetOnSpawn = false
-    Gui.IgnoreGuiInset = true
-
-    -- 主框架 (500x330)
-    local Main = Instance.new("Frame", Gui)
-    Main.Size = UDim2.new(0, 500, 0, 330)
-    Main.Position = UDim2.new(0.5, -250, 0.5, -165)
-    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-    Main.BorderSizePixel = 0
-    Main.Active = true
-    Main.Draggable = true
-    Main.ClipsDescendants = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 16)
-
-    local Stroke = Instance.new("UIStroke", Main)
-    Stroke.Thickness = 2.8
-    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    RunService.RenderStepped:Connect(function() 
-        Stroke.Color = Color3.fromHSV((tick() * 0.4) % 1, 0.6, 1) 
-    end)
-
-    -- 開機圖層
-    local BootLayer = Instance.new("Frame", Main)
-    BootLayer.Size = UDim2.new(1, 0, 1, 0)
-    BootLayer.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-    BootLayer.ZIndex = 100
-
-    local BootText = Instance.new("TextLabel", BootLayer)
-    BootText.Size = UDim2.new(1, 0, 1, 0)
-    BootText.BackgroundTransparency = 1
-    BootText.Text = "🐾 🐾 🐾\nNEKO TERMINAL\nLOADING...\n🐾 🐾 🐾"
-    BootText.TextColor3 = Color3.new(1, 1, 1)
-    BootText.Font = "GothamBold"
-    BootText.TextSize = 28
-    BootText.TextTransparency = 1
-
-    -- 標題列 (這裡是擊掌的地方喵！🐾)
-    local Top = Instance.new("Frame", Main)
-    Top.Size = UDim2.new(1, 0, 0, 45)
-    Top.BackgroundTransparency = 1
+    local Gui = Instance.new("ScreenGui", CoreGui); Gui.Name = "NEKOUI_MAIN"
     
-    local T = Instance.new("TextLabel", Top)
-    T.Size = UDim2.new(1, -50, 1, 0); T.Position = UDim2.new(0, 18, 0, 0)
-    T.Text = " 🐾 🐾 🐾  NEKO Master "; -- 加上肉墊標題喵！
-    T.TextColor3 = Color3.new(1, 1, 1)
-    T.Font = "GothamBold"; T.TextSize = 18; T.TextXAlignment = "Left"; T.BackgroundTransparency = 1
+    local Main = Instance.new("Frame", Gui); Main.Size = UDim2.new(0, 450, 0, 280); Main.Position = UDim2.new(0.5, -225, 0.5, -140)
+    Main.BackgroundColor3 = Color3.fromRGB(18, 18, 22); Main.Active = true; Main.Draggable = true; Main.ClipsDescendants = true
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+    local Stroke = Instance.new("UIStroke", Main); Stroke.Thickness = 2.5; RunService.RenderStepped:Connect(function() Stroke.Color = Color3.fromHSV((tick() * 0.4) % 1, 0.6, 1) end)
 
-    local MiniBtn = Instance.new("TextButton", Top)
-    MiniBtn.Size = UDim2.new(0, 40, 0, 40); MiniBtn.Position = UDim2.new(1, -45, 0.5, -20)
-    MiniBtn.Text = "—"; MiniBtn.TextColor3 = Color3.new(1, 1, 1); MiniBtn.BackgroundTransparency = 1; MiniBtn.TextSize = 25
+    local TitleBar = Instance.new("Frame", Main); TitleBar.Size = UDim2.new(1, 0, 0, 35); TitleBar.BackgroundTransparency = 1
+    local Title = Instance.new("TextLabel", TitleBar); Title.Size = UDim2.new(1, -50, 1, 0); Title.Position = UDim2.new(0, 15, 0, 0); Title.Text = "🐾 NEKO MASTER CLOUD"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = "GothamBold"; Title.TextSize = 14; Title.TextXAlignment = "Left"; Title.BackgroundTransparency = 1
 
-    local Content = Instance.new("Frame", Main)
-    Content.Size = UDim2.new(1, 0, 1, -45); Content.Position = UDim2.new(0, 0, 0, 45)
-    Content.BackgroundTransparency = 1
+    local MiniBtn = Instance.new("TextButton", TitleBar); MiniBtn.Size = UDim2.new(0, 30, 0, 30); MiniBtn.Position = UDim2.new(1, -35, 0, 2.5); MiniBtn.Text = "🐾"; MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180); MiniBtn.BackgroundTransparency = 1; MiniBtn.TextSize = 18; MiniBtn.Font = "GothamBold"
 
-    task.spawn(function()
-        Content.Visible = false
-        Top.Visible = false
-        TweenService:Create(BootText, TweenInfo.new(1), {TextTransparency = 0}):Play()
-        task.wait(1.5)
-        TweenService:Create(BootText, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-        task.wait(0.5)
-        Top.Visible = true
-        Content.Visible = true
-        TweenService:Create(BootLayer, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-        task.wait(0.5)
-        BootLayer:Destroy()
-    end)
+    local Content = Instance.new("Frame", Main); Content.Size = UDim2.new(1, 0, 1, -40); Content.Position = UDim2.new(0, 0, 0, 40); Content.BackgroundTransparency = 1
+    local TabBar = Instance.new("Frame", Content); TabBar.Size = UDim2.new(0, 110, 1, -10); TabBar.Position = UDim2.new(0, 10, 0, 5); TabBar.BackgroundTransparency = 1; Instance.new("UIListLayout", TabBar).Padding = UDim.new(0, 6)
+    local Pages = Instance.new("Frame", Content); Pages.Size = UDim2.new(1, -140, 1, -10); Pages.Position = UDim2.new(0, 130, 0, 5); Pages.BackgroundTransparency = 1
 
-    local opened = true
+    local IsOpened = true
     MiniBtn.MouseButton1Click:Connect(function()
-        opened = not opened
-        local targetSize = opened and UDim2.new(0, 500, 0, 330) or UDim2.new(0, 200, 0, 45)
-        local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-        TweenService:Create(Main, tweenInfo, {Size = targetSize}):Play()
-        Content.Visible = opened
-        MiniBtn.Text = opened and "—" or "+"
+        IsOpened = not IsOpened
+        TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = IsOpened and UDim2.new(0, 450, 0, 280) or UDim2.new(0, 450, 0, 35)}):Play()
+        Content.Visible = IsOpened; MiniBtn.Text = IsOpened and "🐾" or "⚙️"
     end)
 
-    UserInputService.InputBegan:Connect(function(i, p) 
-        if not p and i.KeyCode == Enum.KeyCode.Insert then Gui.Enabled = not Gui.Enabled end 
-    end)
-
-    -- 分欄與 Lib 定義 (保留主人原本的邏輯)
-    -- ... [此處略過 Lib 定義，但功能完全保留] ...
-    
-    return {} -- 返回 Lib
+    local Lib = {}
+    function Lib:NewTab(name, default)
+        local Page = Instance.new("ScrollingFrame", Pages); Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundTransparency = 1; Page.Visible = default; Page.ScrollBarThickness = 2; Page.BorderSizePixel = 0
+        local L = Instance.new("UIListLayout", Page); L.Padding = UDim.new(0, 6)
+        local B = Instance.new("TextButton", TabBar); B.Size = UDim2.new(1, 0, 0, 32); B.Text = name; B.BackgroundColor3 = Color3.fromRGB(28, 28, 34); B.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(130,130,130); B.Font = "GothamMedium"; B.TextSize = 12; Instance.new("UICorner", B)
+        B.MouseButton1Click:Connect(function()
+            for _, p in pairs(Pages:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible = false end end
+            for _, b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(130,130,130) end end
+            Page.Visible = true; B.TextColor3 = Color3.new(1, 1, 1)
+        end)
+        
+        local Obj = {}
+        function Obj:AddToggle(text, targetTable, targetKey, callback)
+            local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
+            local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -60, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = "🐾 " .. text; t.TextColor3 = Color3.new(1, 1, 1); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 12; t.TextXAlignment = "Left"
+            local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 42, 0, 20); b.Position = UDim2.new(1, -50, 0.5, -10); b.Text = targetTable[targetKey] and "ON" or "OFF"; b.BackgroundColor3 = targetTable[targetKey] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55); b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 9; Instance.new("UICorner", b)
+            b.MouseButton1Click:Connect(function() 
+                targetTable[targetKey] = not targetTable[targetKey]
+                b.Text = targetTable[targetKey] and "ON" or "OFF"
+                b.BackgroundColor3 = targetTable[targetKey] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55)
+                if callback then callback(targetTable[targetKey]) end 
+            end)
+            Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
+        end
+        function Obj:AddInput(text, targetTable, targetKey, callback)
+            local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
+            local t = Instance.new("TextLabel", f); t.Size = UDim2.new(0.6, 0, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = "🐾 " .. text; t.TextColor3 = Color3.new(0.8, 0.8, 0.8); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 12; t.TextXAlignment = "Left"
+            local i = Instance.new("TextBox", f); i.Size = UDim2.new(0, 55, 0, 20); i.Position = UDim2.new(1, -65, 0.5, -10); i.BackgroundColor3 = Color3.fromRGB(40, 40, 45); i.Text = tostring(targetTable[targetKey]); i.TextColor3 = Color3.new(1, 1, 1); i.Font = "Gotham"; i.TextSize = 11; Instance.new("UICorner", i)
+            i.FocusLost:Connect(function() 
+                local val = tonumber(i.Text) or i.Text
+                targetTable[targetKey] = val
+                if callback then callback(val) end 
+            end)
+            Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
+        end
+        function Obj:AddButton(text, callback)
+            local b = Instance.new("TextButton", Page); b.Size = UDim2.new(0.95, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(40, 40, 50); b.Text = "🐾 " .. text; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamMedium"; b.TextSize = 12; Instance.new("UICorner", b)
+            b.MouseButton1Click:Connect(callback)
+            Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
+        end
+        return Obj
+    end
+    UserInputService.InputBegan:Connect(function(i,p) if not p and i.KeyCode == Enum.KeyCode.Insert then Gui.Enabled = not Gui.Enabled end end)
+    return Lib
 end
 
--- 🐾 重點：呼叫 Init 讓 UI 跳出來喵！
-local Neko = UI:Init()
-print("🐾 小柒終端已成功啟動，快來擊掌喵！")
+return NekoUI -- 這是關鍵喵！必須回傳物件才能被外部讀取
