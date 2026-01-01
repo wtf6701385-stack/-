@@ -1,9 +1,12 @@
--- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 終極穩定對接版 🐾 ]] --
+-- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 核心對接版 🐾 ]] --
 -- 核心編碼：貓貓製作
 -- UI 框架：調用自 GitHub (NEKOUI)
 
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
 
 -- ==========================================
 -- 【 ❤️ 原始白名單檢測 】
@@ -24,11 +27,6 @@ end
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("貓貓腳本")
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
-
--- 這裡確保所有 UI 設定都能直接被邏輯抓取
 local Settings = { 
     ClickDelay = 0.1,
     Distance = 1500,
@@ -36,12 +34,12 @@ local Settings = {
     Mode = "None",
     FOV = 70,
     ZoomDist = 128,
-    CatSpeedValue = 50, -- 預設速度
-    SpeedEnabled = false -- 預設關閉
+    CatSpeedValue = 50,
+    SpeedEnabled = false
 }
 
 _G.NekoAttack = false
-_G.NekoV4 = false
+_G.AutoV4 = false
 _G.NekoRunning = true
 
 -- ==========================================
@@ -57,15 +55,13 @@ myUI:AddDrag(MiniBtn)
 MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
 
 -- ==========================================
--- 【 🚀 2. 絲滑移動邏輯 (Heartbeat) 】
+-- 【 🚀 2. 核心移動代碼 (Heartbeat 絲滑加速) 】
 -- ==========================================
 RunService.Heartbeat:Connect(function()
     if Settings.SpeedEnabled then
         local char = localPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
-
         if char and hum and hum.MoveDirection.Magnitude > 0 then
-            -- 直接抓取 Settings 內的即時數值
             char:TranslateBy(hum.MoveDirection * (Settings.CatSpeedValue / 10))
         end
     end
@@ -80,7 +76,7 @@ local Tab1 = myUI:Tab("戰鬥系統")
 local Sec1 = Tab1:Section("貓貓神刀")
 Sec1:Toggle("神刀連擊", function(s) _G.NekoAttack = s end)
 Sec1:Toggle("貓抓拉怪", function(s) Settings.PullEnemies = s end)
-Sec1:Toggle("自動覺醒", function(s) _G.NekoV4 = s end)
+Sec1:Toggle("自動覺醒 (V4)", function(s) _G.AutoV4 = s end) -- 更新為主人要求的開關
 Sec1:Textbox("抓捕範圍", "1500", function(v) Settings.Distance = tonumber(v) or 1500 end)
 Sec1:Button("模式：小怪", function() Settings.Mode = "Mob" end)
 Sec1:Button("模式：全場", function() Settings.Mode = "All" end)
@@ -89,24 +85,26 @@ Sec1:Button("收爪休息", function() Settings.Mode = "None" end)
 -- [ 視覺分頁 ]
 local Tab2 = myUI:Tab("貓眼視覺")
 local Sec2 = Tab2:Section("環境調整")
+Sec2:Toggle("貓貓透視 (ESP)", function(s) 
+    if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end 
+end) -- 視覺分頁加入開關 ESP
 Sec2:Textbox("視野角度(1-120)", "70", function(v) Settings.FOV = tonumber(v) or 70 end)
 Sec2:Textbox("最大視距", "128", function(v) Settings.ZoomDist = tonumber(v) or 128 end)
 
 -- [ 移動分頁 ]
 local Tab3 = myUI:Tab("貓貓移動")
 local Sec3 = Tab3:Section("位移控制")
--- 關鍵：這裡直接改 Settings 裡的值
 Sec3:Toggle("絲滑加速啟動", function(s) Settings.SpeedEnabled = s end)
-Sec3:Textbox("加速倍率 (預設50)", "50", function(v) 
-    local n = tonumber(v)
-    if n then Settings.CatSpeedValue = n end
-end)
+Sec3:Textbox("加速倍率 (預設50)", "50", function(v) Settings.CatSpeedValue = tonumber(v) or 50 end)
+Sec3:Button("召喚貓貓飛行", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
+end) -- 移動分頁加入召喚飛行
 Sec3:Button("傳送：第一海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelMain") end)
 Sec3:Button("傳送：第二海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelDressrosa") end)
 Sec3:Button("傳送：第三海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelZou") end)
 
 -- ==========================================
--- 【 🚀 4. 秒殺邏輯循環 】
+-- 【 🚀 4. 戰鬥與自動覺醒循環 】
 -- ==========================================
 local function GetNekoValidPart(target)
     local allParts = target:GetDescendants()
@@ -121,6 +119,16 @@ end
 
 task.spawn(function()
     while _G.NekoRunning do
+        -- [ 自動覺醒邏輯 ]
+        if _G.AutoV4 then
+            pcall(function()
+                local char = localPlayer.Character
+                local awake = char:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
+                if awake then awake.RemoteFunction:InvokeServer(true) end
+            end)
+        end
+
+        -- [ 戰鬥攻擊邏輯 ]
         pcall(function()
             if _G.NekoAttack and Settings.Mode ~= "None" then
                 local char = localPlayer.Character
@@ -154,6 +162,8 @@ task.spawn(function()
                     end
                 end
             end
+            
+            -- FOV 與視距同步
             Camera.FieldOfView = math.clamp(Settings.FOV, 1, 120)
             localPlayer.CameraMaxZoomDistance = Settings.ZoomDist
         end)
@@ -161,7 +171,7 @@ task.spawn(function()
     end
 end)
 
--- 防掛機 (主人必備)
+-- 防掛機
 localPlayer.Idled:Connect(function()
     game:GetService("VirtualUser"):CaptureController()
     game:GetService("VirtualUser"):ClickButton2(Vector2.new(0,0))
@@ -169,6 +179,6 @@ end)
 
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "🐾 貓貓腳本",
-    Text = "載入成功！等主人的摸摸頭喵~",
+    Text = "飛行、透視、自動覺醒已全部對接！喵~",
     Duration = 5
 })
