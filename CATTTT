@@ -1,120 +1,118 @@
--- [[ 🎀 NEKO MASTER - COMBAT FULL LOGIC 🎀 ]] --
--- 小柒主腳本：攻擊邏輯強力回歸！(請搭配雲端 UI 使用喵🐾)
-
+-- [[ 🎀 NEKO MASTER - FINAL EXECUTOR 🎀 ]] --
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- [1] 預防重複執行喵 🐾
-if _G.NekoRunning then 
-    _G.NekoRunning = false 
-    task.wait(0.3) 
-end
+-- [1] 防止重複執行與數據初始化 🐾
+if _G.NekoRunning then _G.NekoRunning = false task.wait(0.3) end
 _G.NekoRunning = true
 
--- [2] 核心數據庫 🐾
-local Settings = { 
+_G.Settings = { 
     ClickDelay = 0.1, 
     Distance = 500, 
     PullEnemies = false, 
-    Mode = "None", 
-    FOV = 70 
+    Mode = "None", -- None, Mob, All
+    FOV = 70,
+    FastAttack = false,
+    AutoV4 = false
 }
 
-_G.FastAttack = false
-_G.AutoV4 = false
+local Whitelist = { ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, ["tw_vic2012"] = true }
 
-local WhitelistNames = { ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, ["tw_vic2012"] = true }
-
--- [3] 核心戰鬥邏輯（包含傷害判定與目標掃描喵🐾）
-local function DoCombatAction()
+-- [2] 戰鬥核心邏輯 🐾
+local function DoCombat()
+    if not _G.Settings.FastAttack or _G.Settings.Mode == "None" then return end
+    
     local char = localPlayer.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root or not _G.FastAttack or Settings.Mode == "None" then return end
+    if not root then return end
 
     local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
     local Targets = {}
     local BasePart = nil
 
-    -- 掃描敵對目標 🐾
     local folder = workspace:FindFirstChild("Enemies") or workspace
     for _, obj in ipairs(folder:GetChildren()) do
         if obj:IsA("Model") and obj ~= char then
-            local eHum = obj:FindFirstChildOfClass("Humanoid")
-            local eRoot = obj:FindFirstChild("HumanoidRootPart")
+            local hum = obj:FindFirstChildOfClass("Humanoid")
+            local eroot = obj:FindFirstChild("HumanoidRootPart")
             
-            -- 模式判斷：打怪或全殺喵 🐾
-            local isPlayer = Players:GetPlayerFromCharacter(obj)
-            local shouldTarget = false
-            if Settings.Mode == "Mob" and not isPlayer then shouldTarget = true
-            elseif Settings.Mode == "All" then shouldTarget = true end
-
-            if shouldTarget and eHum and eRoot and eHum.Health > 0 then
-                local dist = (eRoot.Position - root.Position).Magnitude
-                if dist < Settings.Distance then
-                    -- 自動拉怪邏輯喵 🐾
-                    if Settings.PullEnemies then
-                        eRoot.CanCollide = false
-                        eRoot.CFrame = root.CFrame * CFrame.new(0, 0, -3)
+            if hum and eroot and hum.Health > 0 then
+                local isPlayer = Players:GetPlayerFromCharacter(obj)
+                local shouldHit = false
+                
+                if _G.Settings.Mode == "Mob" and not isPlayer then shouldHit = true
+                elseif _G.Settings.Mode == "All" then shouldHit = true end
+                
+                if shouldHit then
+                    local dist = (eroot.Position - root.Position).Magnitude
+                    if dist < _G.Settings.Distance then
+                        if _G.Settings.PullEnemies then
+                            eroot.CanCollide = false
+                            eroot.CFrame = root.CFrame * CFrame.new(0, 0, -3)
+                        end
+                        BasePart = eroot
+                        table.insert(Targets, {obj, eroot})
                     end
-                    -- 選定攻擊點喵 🐾
-                    BasePart = eRoot
-                    table.insert(Targets, {obj, eRoot})
                 end
             end
         end
-        if #Targets >= 15 then break end -- 效能優化，一次最多抓15個喵
+        if #Targets >= 15 then break end
     end
 
-    -- 發射傷害封包喵！🐾
     if BasePart and #Targets > 0 then
         pcall(function()
-            Net.RE["RegisterAttack"]:FireServer(Settings.ClickDelay)
+            Net.RE["RegisterAttack"]:FireServer(_G.Settings.ClickDelay)
             Net.RE["RegisterHit"]:FireServer(BasePart, Targets)
         end)
     end
 end
 
--- [4] 啟動介面與功能連接 🐾
-if WhitelistNames[localPlayer.Name] then
-    -- 讀取主人存在 GitHub 的 UI 庫喵
-    local NekoUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
-    local Lib = NekoUI:CreateLib()
-    
-    local Combat = Lib:NewTab("⚔️ 戰鬥", true)
-    local Travel = Lib:NewTab("🚀 移動", false)
-
-    Combat:AddToggle("攻擊循環", _G, "FastAttack")
-    Combat:AddToggle("自動拉怪", Settings, "PullEnemies")
-    Combat:AddToggle("自動 V4 進化", _G, "AutoV4")
-    Combat:AddInput("距離", Settings, "Distance")
-    Combat:AddButton("模式：打怪喵", function() Settings.Mode = "Mob" end)
-    Combat:AddButton("模式：全部抓抓", function() Settings.Mode = "All" end)
-    Combat:AddButton("模式：關閉", function() Settings.Mode = "None" end)
-
-    Travel:AddInput("視野高度 (FOV)", Settings, "FOV")
-
-    -- [5] 核心引擎循環 🐾
-    task.spawn(function()
-        while _G.NekoRunning do
-            -- 執行戰鬥喵！
-            pcall(DoCombatAction)
-
-            -- 自動 V4 進化喵！
-            if _G.AutoV4 then
-                pcall(function()
-                    local char = localPlayer.Character
-                    local awake = char:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
-                    if awake then awake.RemoteFunction:InvokeServer(true) end
-                end)
-            end
-
-            -- 環境同步喵！
-            Camera.FieldOfView = math.clamp(tonumber(Settings.FOV) or 70, 30, 120)
-            task.wait(math.max(tonumber(Settings.ClickDelay) or 0.1, 0.05))
-        end
+-- [3] 啟動與連接雲端 🐾
+if Whitelist[localPlayer.Name] then
+    local success, UIModule = pcall(function()
+        return loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
     end)
+
+    if success and UIModule then
+        local Lib = UIModule:CreateLib()
+        local Combat = Lib:NewTab("⚔️ 戰鬥", true)
+        local Misc = Lib:NewTab("⚙️ 其他", false)
+
+        -- 戰鬥功能連結 🐾
+        Combat:AddToggle("自動攻擊", _G.Settings, "FastAttack")
+        Combat:AddToggle("自動拉怪", _G.Settings, "PullEnemies")
+        Combat:AddToggle("自動 V4 進化", _G.Settings, "AutoV4")
+        Combat:AddInput("攻擊距離", _G.Settings, "Distance")
+        Combat:AddButton("模式：只打怪", function() _G.Settings.Mode = "Mob" end)
+        Combat:AddButton("模式：全殺喵", function() _G.Settings.Mode = "All" end)
+        Combat:AddButton("模式：關閉", function() _G.Settings.Mode = "None" end)
+
+        -- 其他功能 🐾
+        Misc:AddInput("視角高度 (FOV)", _G.Settings, "FOV")
+        Misc:AddToggle("貓咪透視 (ESP)", _G, "ESP", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end end)
+
+        -- [4] 核心後台循環 🐾
+        task.spawn(function()
+            while _G.NekoRunning do
+                pcall(DoCombat)
+                
+                -- 自動 V4
+                if _G.Settings.AutoV4 then
+                    pcall(function()
+                        local awake = localPlayer.Character:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
+                        if awake then awake.RemoteFunction:InvokeServer(true) end
+                    end)
+                end
+                
+                Camera.FieldOfView = math.clamp(tonumber(_G.Settings.FOV) or 70, 30, 120)
+                task.wait(math.max(tonumber(_G.Settings.ClickDelay) or 0.1, 0.05))
+            end
+        end)
+    else
+        warn("喵！無法讀取雲端 UI，請檢查網址！")
+    end
 else
-    localPlayer:Kick("邏輯錯誤！找不到主人的氣味喵！🐾")
+    localPlayer:Kick("主人...你的氣味不對喵...🐾")
 end
