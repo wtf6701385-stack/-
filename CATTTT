@@ -1,13 +1,8 @@
--- [[ 🎀 NEKO TERMINAL - FINAL STABLE VERSION 🎀 ]] --
-local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
-local CoreGui = game:GetService("CoreGui")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Camera = workspace.CurrentCamera
+-- [[ 1. 調用 UI 殼 ]] --
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
+local myUI = library.new("🐾 NEKO TERMINAL")
 
+-- [[ 2. 核心數據配置 ]] --
 local Settings = { 
     ClickDelay = 0.1,
     Distance = 1500,
@@ -17,149 +12,99 @@ local Settings = {
     ZoomDist = 128      
 }
 
-_G.NekoAttack = false; _G.NekoV4 = false; _G.NekoESP = false; _G.NekoSPD = false; _G.NekoFly = false
+_G.NekoAttack = false
+_G.NekoV4 = false
 _G.NekoRunning = true
 
-local Whitelist = { ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, ["tw_vic2012"] = true }
+-- [[ 3. 功能分頁對接 ]] --
 
--- ==========================================
--- 【 ⚔️ 神刀引擎 】
--- ==========================================
+-- ⚔️ 獵殺分頁
+local CombatTab = myUI.Tab("⚔️ 獵殺")
+local SecCombat = CombatTab.Section("狩獵核心")
+
+SecCombat.Toggle("神刀連擊 (Auto Attack)", function(v) _G.NekoAttack = v end)
+SecCombat.Toggle("貓抓拉怪 (Pull)", function(v) Settings.PullEnemies = v end)
+SecCombat.Toggle("自動覺醒 (V4)", function(v) _G.NekoV4 = v end)
+
+local SecMode = CombatTab.Section("目標模式")
+SecMode.Button("模式：僅打小怪", function() Settings.Mode = "Mob" end)
+SecMode.Button("模式：全場玩家", function() Settings.Mode = "All" end)
+SecMode.Button("模式：停止運行", function() Settings.Mode = "None" end)
+
+-- 🚀 移動分頁
+local MoveTab = myUI.Tab("🚀 移動")
+local SecMove = MoveTab.Section("貓咪身法")
+
+SecMove.Button("加載：極致貓速 (SPD)", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
+end)
+SecMove.Button("加載：輕功飛行 (Fly)", function() 
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
+end)
+
+-- 👁️ 視域分頁
+local VisualTab = myUI.Tab("👁️ 視域")
+local SecVisual = VisualTab.Section("貓眼與視距")
+
+SecVisual.Button("開啟：貓眼透視 (ESP)", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()
+end)
+SecVisual.Button("視角：擴張 (FOV 100)", function() Settings.FOV = 100 end)
+SecVisual.Button("視角：預設 (FOV 70)", function() Settings.FOV = 70 end)
+SecVisual.Button("視距：遠程視角", function() Settings.ZoomDist = 1000 end)
+SecVisual.Button("視距：正常視角", function() Settings.ZoomDist = 128 end)
+
+-- [[ 4. 核心功能實作 (後台循環) ]] --
 local function GetNekoValidPart(target)
-    local allParts = target:GetDescendants()
-    local validParts = {}
-    for _, part in ipairs(allParts) do
-        if part:IsA("BasePart") and part.CanCollide and part:IsDescendantOf(target) then
-            table.insert(validParts, part)
-        end
-    end
-    return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
+    local part = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChildOfClass("BasePart")
+    return part
 end
 
-local function NekoCombatLogic()
-    if not _G.NekoAttack or Settings.Mode == "None" then return end
-    local Equipped = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Tool")
-    if not Equipped or Equipped.ToolTip == "Gun" then return end
-    local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
-    if not Net then return end
-    local RegAttack, RegHit = Net:FindFirstChild("RE/RegisterAttack"), Net:FindFirstChild("RE/RegisterHit")
-    if not RegAttack or not RegHit then return end
-    
-    local char = localPlayer.Character; local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    
-    local NekoTargets = {}; local NekoPart = nil
-    local function Scan(folder, isPlayers)
-        for _, obj in ipairs(folder:GetChildren()) do
-            local enemyChar = isPlayers and obj.Character or obj
-            if not enemyChar or enemyChar == char then continue end
-            local eH = enemyChar:FindFirstChildOfClass("Humanoid"); local eR = enemyChar:FindFirstChild("HumanoidRootPart")
-            if eH and eH.Health > 0 and eR and (eR.Position - root.Position).Magnitude < Settings.Distance then
-                if Settings.PullEnemies and not isPlayers then eR.CanCollide = false; eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) end
-                local part = GetNekoValidPart(enemyChar)
-                if part then NekoPart = part; table.insert(NekoTargets, {enemyChar, part}) end
+task.spawn(function()
+    while _G.NekoRunning do
+        pcall(function()
+            -- 1. 神刀戰鬥邏輯
+            if _G.NekoAttack and Settings.Mode ~= "None" then
+                local char = game.Players.LocalPlayer.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local Net = game.ReplicatedStorage:FindFirstChild("Modules") and game.ReplicatedStorage.Modules:FindFirstChild("Net")
+                if Net and root then
+                    local RegAttack = Net:FindFirstChild("RE/RegisterAttack")
+                    local RegHit = Net:FindFirstChild("RE/RegisterHit")
+                    
+                    local NekoTargets = {}
+                    local function Scan(folder, isPlayers)
+                        for _, obj in ipairs(folder:GetChildren()) do
+                            local enemyChar = isPlayers and obj.Character or obj
+                            if not enemyChar or enemyChar == char then continue end
+                            local eH = enemyChar:FindFirstChildOfClass("Humanoid")
+                            local eR = enemyChar:FindFirstChild("HumanoidRootPart")
+                            if eH and eH.Health > 0 and eR and (eR.Position - root.Position).Magnitude < Settings.Distance then
+                                if Settings.PullEnemies and not isPlayers then eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) end
+                                table.insert(NekoTargets, {enemyChar, eR})
+                            end
+                            if #NekoTargets >= 15 then break end
+                        end
+                    end
+                    Scan(workspace:FindFirstChild("Enemies") or workspace, false)
+                    if Settings.Mode == "All" then Scan(game.Players, true) end
+                    if #NekoTargets > 0 then
+                        RegAttack:FireServer(Settings.ClickDelay)
+                        RegHit:FireServer(NekoTargets[1][2], NekoTargets)
+                    end
+                end
             end
-            if #NekoTargets >= 15 then break end
-        end
-    end
-    Scan(workspace:FindFirstChild("Enemies") or workspace, false)
-    if Settings.Mode == "All" then Scan(Players, true) end
-    if NekoPart and #NekoTargets > 0 then pcall(function() RegAttack:FireServer(Settings.ClickDelay); RegHit:FireServer(NekoPart, NekoTargets) end) end
-end
-
--- ==========================================
--- 【 🎨 UI 系統 - 修正收納邏輯 】
--- ==========================================
-local function BuildNekoUI()
-    if CoreGui:FindFirstChild("NEKO_TERMINAL") then CoreGui.NEKO_TERMINAL:Destroy() end
-    local NekoGui = Instance.new("ScreenGui", CoreGui); NekoGui.Name = "NEKO_TERMINAL"
-    local Main = Instance.new("Frame", NekoGui); Main.Size = UDim2.new(0, 450, 0, 280); Main.Position = UDim2.new(0.5, -225, 0.5, -140); Main.BackgroundColor3 = Color3.fromRGB(18, 18, 22); Main.Active = true; Main.Draggable = true; Main.ClipsDescendants = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
-    local Stroke = Instance.new("UIStroke", Main); Stroke.Thickness = 2.5; RunService.RenderStepped:Connect(function() Stroke.Color = Color3.fromHSV((tick() * 0.4) % 1, 0.6, 1) end)
-
-    local TitleBar = Instance.new("Frame", Main); TitleBar.Size = UDim2.new(1, 0, 0, 35); TitleBar.BackgroundTransparency = 1
-    local Title = Instance.new("TextLabel", TitleBar); Title.Size = UDim2.new(1, -50, 1, 0); Title.Position = UDim2.new(0, 15, 0, 0); Title.Text = "🐾 NEKO TERMINAL - 終極收納版 🐾"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = "GothamBold"; Title.TextSize = 14; Title.TextXAlignment = "Left"; Title.BackgroundTransparency = 1
-    
-    local MiniBtn = Instance.new("TextButton", TitleBar); MiniBtn.Size = UDim2.new(0, 30, 0, 30); MiniBtn.Position = UDim2.new(1, -35, 0, 2.5); MiniBtn.Text = "🐾"; MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180); MiniBtn.BackgroundTransparency = 1; MiniBtn.TextSize = 18; MiniBtn.Font = "GothamBold"
-
-    local Content = Instance.new("Frame", Main); Content.Size = UDim2.new(1, 0, 1, -40); Content.Position = UDim2.new(0, 0, 0, 40); Content.BackgroundTransparency = 1
-    local TabBar = Instance.new("Frame", Content); TabBar.Size = UDim2.new(0, 110, 1, -10); TabBar.Position = UDim2.new(0, 10, 0, 5); TabBar.BackgroundTransparency = 1; Instance.new("UIListLayout", TabBar).Padding = UDim.new(0, 6)
-    local Pages = Instance.new("Frame", Content); Pages.Size = UDim2.new(1, -140, 1, -10); Pages.Position = UDim2.new(0, 130, 0, 5); Pages.BackgroundTransparency = 1
-
-    -- 【 🐾 重點：收起來的動畫修正 】
-    local IsOpened = true
-    MiniBtn.MouseButton1Click:Connect(function()
-        IsOpened = not IsOpened
-        local TargetSize = IsOpened and UDim2.new(0, 450, 0, 280) or UDim2.new(0, 450, 0, 35)
-        TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = TargetSize}):Play()
-        Content.Visible = IsOpened
-        MiniBtn.Text = IsOpened and "🐾" or "🐈"
-    end)
-
-    local function CreateTab(name, default)
-        local Page = Instance.new("ScrollingFrame", Pages); Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundTransparency = 1; Page.Visible = default; Page.ScrollBarThickness = 2; Page.BorderSizePixel = 0; Page.CanvasSize = UDim2.new(0,0,0,0)
-        local L = Instance.new("UIListLayout", Page); L.Padding = UDim.new(0, 6)
-        L:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() Page.CanvasSize = UDim2.new(0,0,0,L.AbsoluteContentSize.Y + 10) end)
-
-        local B = Instance.new("TextButton", TabBar); B.Size = UDim2.new(1, 0, 0, 32); B.Text = name; B.BackgroundColor3 = Color3.fromRGB(28, 28, 34); B.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(130,130,130); B.Font = "GothamMedium"; B.TextSize = 12; Instance.new("UICorner", B)
-        B.MouseButton1Click:Connect(function()
-            for _, p in pairs(Pages:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible = false end end
-            for _, b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(130,130,130) end end
-            Page.Visible = true; B.TextColor3 = Color3.new(1, 1, 1)
+            
+            -- 2. 自動覺醒
+            if _G.NekoV4 then
+                local awake = game.Players.LocalPlayer.Character:FindFirstChild("Awakening") or game.Players.LocalPlayer.Backpack:FindFirstChild("Awakening")
+                if awake then awake.RemoteFunction:InvokeServer(true) end
+            end
+            
+            -- 3. 視角同步
+            workspace.CurrentCamera.FieldOfView = Settings.FOV
+            game.Players.LocalPlayer.CameraMaxZoomDistance = Settings.ZoomDist
         end)
-        return {
-            AddToggle = function(_, text, tbl, key, callback)
-                local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
-                local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 42, 0, 20); b.Position = UDim2.new(1, -50, 0.5, -10); b.Text = tbl[key] and "Meow" or "Hiss"; b.BackgroundColor3 = tbl[key] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55); b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 9; Instance.new("UICorner", b)
-                local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -60, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = "🐱 " .. text; t.TextColor3 = Color3.new(1, 1, 1); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 12; t.TextXAlignment = "Left"
-                b.MouseButton1Click:Connect(function() tbl[key] = not tbl[key]; b.Text = tbl[key] and "Meow" or "Hiss"; b.BackgroundColor3 = tbl[key] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55); if callback then callback(tbl[key]) end end)
-            end,
-            AddInput = function(_, text, tbl, key)
-                local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
-                local t = Instance.new("TextLabel", f); t.Size = UDim2.new(0.6, 0, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = "🐈 " .. text; t.TextColor3 = Color3.new(0.8, 0.8, 0.8); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 11; t.TextXAlignment = "Left"
-                local i = Instance.new("TextBox", f); i.Size = UDim2.new(0, 55, 0, 20); i.Position = UDim2.new(1, -65, 0.5, -10); i.BackgroundColor3 = Color3.fromRGB(40, 40, 45); i.Text = tostring(tbl[key]); i.TextColor3 = Color3.new(1, 1, 1); i.Font = "Gotham"; i.TextSize = 11; Instance.new("UICorner", i)
-                i.FocusLost:Connect(function() tbl[key] = tonumber(i.Text) or i.Text end)
-            end,
-            AddButton = function(_, text, cb)
-                local b = Instance.new("TextButton", Page); b.Size = UDim2.new(0.95, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(40, 40, 50); b.Text = "🐾 " .. text; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamMedium"; b.TextSize = 12; Instance.new("UICorner", b)
-                b.MouseButton1Click:Connect(cb)
-            end
-        }
+        task.wait(Settings.ClickDelay)
     end
-
-    local Combat = CreateTab("⚔️ 獵殺", true)
-    Combat:AddToggle("神刀連擊", _G, "NekoAttack")
-    Combat:AddToggle("貓抓拉怪", Settings, "PullEnemies")
-    Combat:AddToggle("自動覺醒", _G, "NekoV4")
-    Combat:AddInput("抓捕範圍", Settings, "Distance")
-    Combat:AddButton("模式：小怪", function() Settings.Mode = "Mob" end)
-    Combat:AddButton("模式：全場", function() Settings.Mode = "All" end)
-    Combat:AddButton("收爪休息", function() Settings.Mode = "None" end)
-
-    local Move = CreateTab("🚀 移動", false)
-    Move:AddToggle("貓速 (SPD)", _G, "NekoSPD", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end end)
-    Move:AddToggle("輕功 (Fly)", _G, "NekoFly", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end end)
-
-    local Visual = CreateTab("👁️ 貓眼", false)
-    Visual:AddInput("視角角度(1-120)", Settings, "FOV")
-    Visual:AddInput("視距(1-10000)", Settings, "ZoomDist")
-    Visual:AddToggle("貓眼透視", _G, "NekoESP", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end end)
-
-    UserInputService.InputBegan:Connect(function(i,p) if not p and i.KeyCode == Enum.KeyCode.Insert then NekoGui.Enabled = not NekoGui.Enabled end end)
-end
-
--- ==========================================
--- 【 🚀 啟動 】
--- ==========================================
-if Whitelist[localPlayer.Name] then
-    BuildNekoUI()
-    task.spawn(function()
-        while _G.NekoRunning do
-            pcall(NekoCombatLogic)
-            if _G.NekoV4 then pcall(function() local awake = localPlayer.Character:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening"); if awake then awake.RemoteFunction:InvokeServer(true) end end) end
-            Camera.FieldOfView = math.clamp(tonumber(Settings.FOV) or 70, 1, 120)
-            localPlayer.CameraMaxZoomDistance = tonumber(Settings.ZoomDist) or 128
-            task.wait(Settings.ClickDelay)
-        end
-    end)
-else localPlayer:Kick("不是主人的貓喵！") end
+end)
