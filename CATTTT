@@ -1,8 +1,8 @@
--- [[ 1. 調用 UI 殼 ]] --
+-- [[ 1. 加載 UI 殼庫 (連結由主人封存) ]] --
 local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI = library.new("🐾 NEKO TERMINAL")
 
--- [[ 2. 核心數據配置 ]] --
+-- [[ 2. 核心功能配置與數據中心 ]] --
 local Settings = { 
     ClickDelay = 0.1,
     Distance = 1500,
@@ -16,58 +16,64 @@ _G.NekoAttack = false
 _G.NekoV4 = false
 _G.NekoRunning = true
 
--- [[ 3. 功能分頁對接 ]] --
+-- [[ 3. 主腳本對接 UI 分頁 (Tab) 與區塊 (Section) ]] --
 
--- ⚔️ 獵殺分頁
-local CombatTab = myUI.Tab("⚔️ 獵殺")
-local SecCombat = CombatTab.Section("狩獵核心")
+-- --- ⚔️ 獵殺核心分頁 ---
+local CombatTab = myUI.Tab("⚔️ 獵殺核心")
+local CombatSec = CombatTab.Section("戰鬥系統")
 
-SecCombat.Toggle("神刀連擊 (Auto Attack)", function(v) _G.NekoAttack = v end)
-SecCombat.Toggle("貓抓拉怪 (Pull)", function(v) Settings.PullEnemies = v end)
-SecCombat.Toggle("自動覺醒 (V4)", function(v) _G.NekoV4 = v end)
+CombatSec.Toggle("自動神刀連擊", function(state)
+    _G.NekoAttack = state
+end)
 
-local SecMode = CombatTab.Section("目標模式")
-SecMode.Button("模式：僅打小怪", function() Settings.Mode = "Mob" end)
-SecMode.Button("模式：全場玩家", function() Settings.Mode = "All" end)
-SecMode.Button("模式：停止運行", function() Settings.Mode = "None" end)
+CombatSec.Toggle("自動貓抓拉怪", function(state)
+    Settings.PullEnemies = state
+end)
 
--- 🚀 移動分頁
-local MoveTab = myUI.Tab("🚀 移動")
-local SecMove = MoveTab.Section("貓咪身法")
+CombatSec.Toggle("自動覺醒 (V4)", function(state)
+    _G.NekoV4 = state
+end)
 
-SecMove.Button("加載：極致貓速 (SPD)", function() 
+local ModeSec = CombatTab.Section("目標模式切換")
+ModeSec.Button("模式：僅打小怪", function() Settings.Mode = "Mob" end)
+ModeSec.Button("模式：全場玩家", function() Settings.Mode = "All" end)
+ModeSec.Button("模式：停止運行", function() Settings.Mode = "None" end)
+
+-- --- 🚀 移動身法分頁 ---
+local MoveTab = myUI.Tab("🚀 移動身法")
+local MoveSec = MoveTab.Section("外掛模組")
+
+MoveSec.Button("加載：極致貓速 (SPD)", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() 
 end)
-SecMove.Button("加載：輕功飛行 (Fly)", function() 
+
+MoveSec.Button("加載：輕功飛行 (Fly)", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
 end)
 
--- 👁️ 視域分頁
-local VisualTab = myUI.Tab("👁️ 視域")
-local SecVisual = VisualTab.Section("貓眼與視距")
+-- --- 👁️ 視域調整分頁 ---
+local VisualTab = myUI.Tab("👁️ 視域調整")
+local VisualSec = VisualTab.Section("貓眼與相機")
 
-SecVisual.Button("開啟：貓眼透視 (ESP)", function()
+VisualSec.Button("開啟：貓眼透視 (ESP)", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()
 end)
-SecVisual.Button("視角：擴張 (FOV 100)", function() Settings.FOV = 100 end)
-SecVisual.Button("視角：預設 (FOV 70)", function() Settings.FOV = 70 end)
-SecVisual.Button("視距：遠程視角", function() Settings.ZoomDist = 1000 end)
-SecVisual.Button("視距：正常視角", function() Settings.ZoomDist = 128 end)
 
--- [[ 4. 核心功能實作 (後台循環) ]] --
-local function GetNekoValidPart(target)
-    local part = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChildOfClass("BasePart")
-    return part
-end
+VisualSec.Button("視角：擴張 (FOV 100)", function() Settings.FOV = 100 end)
+VisualSec.Button("視角：預設 (FOV 70)", function() Settings.FOV = 70 end)
+VisualSec.Button("視距：超遠距離", function() Settings.ZoomDist = 1000 end)
+VisualSec.Button("視距：恢復預設", function() Settings.ZoomDist = 128 end)
 
+-- [[ 4. 主腳本後台功能引擎 (不影響 UI 運行) ]] --
 task.spawn(function()
     while _G.NekoRunning do
         pcall(function()
-            -- 1. 神刀戰鬥邏輯
+            -- A. 神刀連擊邏輯
             if _G.NekoAttack and Settings.Mode ~= "None" then
                 local char = game.Players.LocalPlayer.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
                 local Net = game.ReplicatedStorage:FindFirstChild("Modules") and game.ReplicatedStorage.Modules:FindFirstChild("Net")
+                
                 if Net and root then
                     local RegAttack = Net:FindFirstChild("RE/RegisterAttack")
                     local RegHit = Net:FindFirstChild("RE/RegisterHit")
@@ -86,8 +92,10 @@ task.spawn(function()
                             if #NekoTargets >= 15 then break end
                         end
                     end
+                    
                     Scan(workspace:FindFirstChild("Enemies") or workspace, false)
                     if Settings.Mode == "All" then Scan(game.Players, true) end
+                    
                     if #NekoTargets > 0 then
                         RegAttack:FireServer(Settings.ClickDelay)
                         RegHit:FireServer(NekoTargets[1][2], NekoTargets)
@@ -95,13 +103,13 @@ task.spawn(function()
                 end
             end
             
-            -- 2. 自動覺醒
+            -- B. 自動覺醒 (V4)
             if _G.NekoV4 then
                 local awake = game.Players.LocalPlayer.Character:FindFirstChild("Awakening") or game.Players.LocalPlayer.Backpack:FindFirstChild("Awakening")
                 if awake then awake.RemoteFunction:InvokeServer(true) end
             end
             
-            -- 3. 視角同步
+            -- C. 相機數值同步
             workspace.CurrentCamera.FieldOfView = Settings.FOV
             game.Players.LocalPlayer.CameraMaxZoomDistance = Settings.ZoomDist
         end)
