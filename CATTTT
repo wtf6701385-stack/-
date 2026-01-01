@@ -1,4 +1,4 @@
--- [[ 🎀 NEKO TERMINAL - GOD SLAYER & CAT EYE 🎀 ]] --
+-- [[ 🎀 NEKO TERMINAL - ALL FUNCTIONS RESTORED 🎀 ]] --
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
@@ -9,18 +9,19 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Camera = workspace.CurrentCamera
 
 -- ==========================================
--- 【 🍭 貓咪設定箱 】
+-- 【 🍭 核心設定箱 】
 -- ==========================================
 local Settings = { 
     ClickDelay = 0.1,
     Distance = 1500,
     PullEnemies = false,
     Mode = "None",
-    FOV = 70,           -- 視野角度 (1-120)
-    ZoomDist = 128      -- 縮放距離 (1-10000)
+    FOV = 70,           
+    ZoomDist = 128      
 }
 
-_G.NekoAttack = false; _G.NekoV4 = false; _G.NekoRunning = true
+_G.NekoAttack = false; _G.NekoV4 = false; _G.NekoESP = false; _G.NekoSPD = false; _G.NekoFly = false
+_G.NekoRunning = true
 
 local Whitelist = { ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, ["tw_vic2012"] = true }
 
@@ -79,7 +80,7 @@ local function NekoCombatLogic()
 end
 
 -- ==========================================
--- 【 🎨 貓咪 UI 介面 】
+-- 【 🎨 貓咪 UI 介面系統 】
 -- ==========================================
 local function BuildNekoUI()
     if CoreGui:FindFirstChild("NEKO_TERMINAL") then CoreGui.NEKO_TERMINAL:Destroy() end
@@ -89,7 +90,7 @@ local function BuildNekoUI()
     local Stroke = Instance.new("UIStroke", Main); Stroke.Thickness = 2.5; RunService.RenderStepped:Connect(function() Stroke.Color = Color3.fromHSV((tick() * 0.4) % 1, 0.6, 1) end)
 
     local TitleBar = Instance.new("Frame", Main); TitleBar.Size = UDim2.new(1, 0, 0, 35); TitleBar.BackgroundTransparency = 1
-    local Title = Instance.new("TextLabel", TitleBar); Title.Size = UDim2.new(1, -50, 1, 0); Title.Position = UDim2.new(0, 15, 0, 0); Title.Text = "🐾 NEKO TERMINAL - 貓眼神刀版 🐾"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = "GothamBold"; Title.TextSize = 14; Title.TextXAlignment = "Left"; Title.BackgroundTransparency = 1
+    local Title = Instance.new("TextLabel", TitleBar); Title.Size = UDim2.new(1, -50, 1, 0); Title.Position = UDim2.new(0, 15, 0, 0); Title.Text = "🐾 NEKO TERMINAL - 終極全功能版 🐾"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = "GothamBold"; Title.TextSize = 14; Title.TextXAlignment = "Left"; Title.BackgroundTransparency = 1
     local MiniBtn = Instance.new("TextButton", TitleBar); MiniBtn.Size = UDim2.new(0, 30, 0, 30); MiniBtn.Position = UDim2.new(1, -35, 0, 2.5); MiniBtn.Text = "🐾"; MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180); MiniBtn.BackgroundTransparency = 1; MiniBtn.TextSize = 18; MiniBtn.Font = "GothamBold"
 
     local Content = Instance.new("Frame", Main); Content.Size = UDim2.new(1, 0, 1, -40); Content.Position = UDim2.new(0, 0, 0, 40); Content.BackgroundTransparency = 1
@@ -106,11 +107,16 @@ local function BuildNekoUI()
             Page.Visible = true; B.TextColor3 = Color3.new(1, 1, 1)
         end)
         return {
-            AddToggle = function(_, text, tbl, key)
+            AddToggle = function(_, text, tbl, key, callback)
                 local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
                 local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 42, 0, 20); b.Position = UDim2.new(1, -50, 0.5, -10); b.Text = tbl[key] and "Meow" or "Hiss"; b.BackgroundColor3 = tbl[key] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55); b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 9; Instance.new("UICorner", b)
                 local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -60, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = "🐱 " .. text; t.TextColor3 = Color3.new(1, 1, 1); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 12; t.TextXAlignment = "Left"
-                b.MouseButton1Click:Connect(function() tbl[key] = not tbl[key]; b.Text = tbl[key] and "Meow" or "Hiss"; b.BackgroundColor3 = tbl[key] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55) end)
+                b.MouseButton1Click:Connect(function() 
+                    tbl[key] = not tbl[key]
+                    b.Text = tbl[key] and "Meow" or "Hiss"
+                    b.BackgroundColor3 = tbl[key] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55)
+                    if callback then callback(tbl[key]) end
+                end)
             end,
             AddInput = function(_, text, tbl, key)
                 local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
@@ -134,30 +140,42 @@ local function BuildNekoUI()
     Combat:AddButton("模式：全場", function() Settings.Mode = "All" end)
     Combat:AddButton("收爪休息", function() Settings.Mode = "None" end)
 
+    local Movement = CreateTab("🚀 移動", false)
+    Movement:AddToggle("貓速 (SPD)", _G, "NekoSPD", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end end)
+    Movement:AddToggle("輕功 (Fly)", _G, "NekoFly", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end end)
+    
     local Visual = CreateTab("👁️ 貓眼", false)
     Visual:AddInput("視角角度(1-120)", Settings, "FOV")
     Visual:AddInput("視距(1-10000)", Settings, "ZoomDist")
-    Visual:AddToggle("貓眼透視", _G, "NekoESP")
+    Visual:AddToggle("貓眼透視", _G, "NekoESP", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end end)
 
     UserInputService.InputBegan:Connect(function(i,p) if not p and i.KeyCode == Enum.KeyCode.Insert then NekoGui.Enabled = not NekoGui.Enabled end end)
 end
 
 -- ==========================================
--- 【 🚀 啟動 】
+-- 【 🚀 啟動邏輯 】
 -- ==========================================
 if Whitelist[localPlayer.Name] then
     BuildNekoUI()
     task.spawn(function()
         while _G.NekoRunning do
             pcall(NekoCombatLogic)
-            -- V4 & 貓眼 FOV 邏輯
-            if _G.NekoV4 then pcall(function() local awake = localPlayer.Character:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening"); if awake then awake.RemoteFunction:InvokeServer(true) end end) end
             
-            -- 自由縮放貓眼視野
+            -- 自動覺醒
+            if _G.NekoV4 then 
+                pcall(function() 
+                    local awake = localPlayer.Character:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
+                    if awake then awake.RemoteFunction:InvokeServer(true) end 
+                end) 
+            end
+            
+            -- 自由縮放貓眼視野 1-120 & 1-10000
             Camera.FieldOfView = math.clamp(tonumber(Settings.FOV) or 70, 1, 120)
             localPlayer.CameraMaxZoomDistance = tonumber(Settings.ZoomDist) or 128
             
             task.wait(Settings.ClickDelay)
         end
     end)
-else localPlayer:Kick("不是主人的貓喵！") end
+else 
+    localPlayer:Kick("不是主人的貓喵！") 
+end
