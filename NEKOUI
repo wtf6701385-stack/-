@@ -1,4 +1,4 @@
--- [[ 🎀 NEKO CLOUD UI LIBRARY 🎀 ]] --
+-- [[ 🎀 NEKO MASTER CLOUD UI - FULL VERSION 🎀 ]] --
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -13,10 +13,11 @@ function NekoUI:CreateLib()
     local Main = Instance.new("Frame", Gui); Main.Size = UDim2.new(0, 450, 0, 280); Main.Position = UDim2.new(0.5, -225, 0.5, -140)
     Main.BackgroundColor3 = Color3.fromRGB(18, 18, 22); Main.Active = true; Main.Draggable = true; Main.ClipsDescendants = true
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
-    local Stroke = Instance.new("UIStroke", Main); Stroke.Thickness = 2.5; RunService.RenderStepped:Connect(function() Stroke.Color = Color3.fromHSV((tick() * 0.4) % 1, 0.6, 1) end)
+    local Stroke = Instance.new("UIStroke", Main); Stroke.Thickness = 2.5
+    RunService.RenderStepped:Connect(function() Stroke.Color = Color3.fromHSV((tick() * 0.4) % 1, 0.6, 1) end)
 
     local TitleBar = Instance.new("Frame", Main); TitleBar.Size = UDim2.new(1, 0, 0, 35); TitleBar.BackgroundTransparency = 1
-    local Title = Instance.new("TextLabel", TitleBar); Title.Size = UDim2.new(1, -50, 1, 0); Title.Position = UDim2.new(0, 15, 0, 0); Title.Text = "🐾 NEKO MASTER CLOUD"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = "GothamBold"; Title.TextSize = 14; Title.TextXAlignment = "Left"; Title.BackgroundTransparency = 1
+    local Title = Instance.new("TextLabel", TitleBar); Title.Size = UDim2.new(1, -50, 1, 0); Title.Position = UDim2.new(0, 15, 0, 0); Title.Text = "🐾 NEKO MASTER FINAL"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = "GothamBold"; Title.TextSize = 14; Title.TextXAlignment = "Left"; Title.BackgroundTransparency = 1
 
     local MiniBtn = Instance.new("TextButton", TitleBar); MiniBtn.Size = UDim2.new(0, 30, 0, 30); MiniBtn.Position = UDim2.new(1, -35, 0, 2.5); MiniBtn.Text = "🐾"; MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180); MiniBtn.BackgroundTransparency = 1; MiniBtn.TextSize = 18; MiniBtn.Font = "GothamBold"
 
@@ -36,6 +37,7 @@ function NekoUI:CreateLib()
         local Page = Instance.new("ScrollingFrame", Pages); Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundTransparency = 1; Page.Visible = default; Page.ScrollBarThickness = 2; Page.BorderSizePixel = 0
         local L = Instance.new("UIListLayout", Page); L.Padding = UDim.new(0, 6)
         local B = Instance.new("TextButton", TabBar); B.Size = UDim2.new(1, 0, 0, 32); B.Text = name; B.BackgroundColor3 = Color3.fromRGB(28, 28, 34); B.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(130,130,130); B.Font = "GothamMedium"; B.TextSize = 12; Instance.new("UICorner", B)
+        
         B.MouseButton1Click:Connect(function()
             for _, p in pairs(Pages:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible = false end end
             for _, b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(130,130,130) end end
@@ -47,25 +49,29 @@ function NekoUI:CreateLib()
             local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
             local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -60, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = "🐾 " .. text; t.TextColor3 = Color3.new(1, 1, 1); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 12; t.TextXAlignment = "Left"
             local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 42, 0, 20); b.Position = UDim2.new(1, -50, 0.5, -10); b.Text = targetTable[targetKey] and "ON" or "OFF"; b.BackgroundColor3 = targetTable[targetKey] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55); b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 9; Instance.new("UICorner", b)
-            b.MouseButton1Click:Connect(function() 
+            
+            b.MouseButton1Click:Connect(function()
                 targetTable[targetKey] = not targetTable[targetKey]
                 b.Text = targetTable[targetKey] and "ON" or "OFF"
                 b.BackgroundColor3 = targetTable[targetKey] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55)
-                if callback then callback(targetTable[targetKey]) end 
+                if callback then callback(targetTable[targetKey]) end
             end)
             Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
         end
+
         function Obj:AddInput(text, targetTable, targetKey, callback)
             local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
             local t = Instance.new("TextLabel", f); t.Size = UDim2.new(0.6, 0, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = "🐾 " .. text; t.TextColor3 = Color3.new(0.8, 0.8, 0.8); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 12; t.TextXAlignment = "Left"
             local i = Instance.new("TextBox", f); i.Size = UDim2.new(0, 55, 0, 20); i.Position = UDim2.new(1, -65, 0.5, -10); i.BackgroundColor3 = Color3.fromRGB(40, 40, 45); i.Text = tostring(targetTable[targetKey]); i.TextColor3 = Color3.new(1, 1, 1); i.Font = "Gotham"; i.TextSize = 11; Instance.new("UICorner", i)
-            i.FocusLost:Connect(function() 
+            
+            i.FocusLost:Connect(function()
                 local val = tonumber(i.Text) or i.Text
                 targetTable[targetKey] = val
-                if callback then callback(val) end 
+                if callback then callback(val) end
             end)
             Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
         end
+
         function Obj:AddButton(text, callback)
             local b = Instance.new("TextButton", Page); b.Size = UDim2.new(0.95, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(40, 40, 50); b.Text = "🐾 " .. text; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamMedium"; b.TextSize = 12; Instance.new("UICorner", b)
             b.MouseButton1Click:Connect(callback)
@@ -76,5 +82,4 @@ function NekoUI:CreateLib()
     UserInputService.InputBegan:Connect(function(i,p) if not p and i.KeyCode == Enum.KeyCode.Insert then Gui.Enabled = not Gui.Enabled end end)
     return Lib
 end
-
-return NekoUI -- 這是關鍵喵！必須回傳物件才能被外部讀取
+return NekoUI
