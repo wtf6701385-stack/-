@@ -1,20 +1,76 @@
-if _G.ESPStarted then return end; _G.ESPStarted = true
-local Folder = game:GetService("CoreGui"):FindFirstChild("NekoESP") or Instance.new("Folder", game:GetService("CoreGui")); Folder.Name = "NekoESP"
+-- [[ 👁️ NEKO SENSE - ULTIMATE INTEGRATION 🐾 ]] --
+-- [[ 名字 + 上下排版 + 血條 + 碰撞箱邊框 ]] --
+
+if _G.ESPStarted then _G.ESPStarted = false; task.wait(0.2) end
+_G.ESPStarted = true
+
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local LocalPlayer = Players.LocalPlayer
+
+-- 建立 ESP 容器
+local Folder = CoreGui:FindFirstChild("NekoESP") or Instance.new("Folder", CoreGui)
+Folder.Name = "NekoESP"
+
 task.spawn(function()
-    while true do
-        for _, p in ipairs(game.Players:GetPlayers()) do
-            if p ~= game.Players.LocalPlayer then
-                local char = p.Character; local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                if _G.ESP and hrp and char:FindFirstChildOfClass("Humanoid").Health > 0 then
+    while _G.ESPStarted do
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer then
+                local char = p.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                
+                -- 核心判定：開關、存在、存活
+                if _G.ESP and char and hrp and hum and hum.Health > 0 then
+                    
+                    -- 1. 🐾 BillboardGui 系統 (文字與血條)
                     local bb = Folder:FindFirstChild(p.Name) or Instance.new("BillboardGui", Folder)
-                    bb.Name = p.Name; bb.Adornee = hrp; bb.AlwaysOnTop = true; bb.Size = UDim2.new(0,100,0,30); bb.Enabled = true
-                    local l = bb:FindFirstChild("L") or Instance.new("TextLabel", bb); l.Name = "L"; l.Size = UDim2.new(1,0,1,0); l.BackgroundTransparency = 1; l.TextColor3 = Color3.new(1,1,1); l.TextSize = 12
-                    l.Text = p.Name .. " [" .. math.floor((hrp.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude) .. "m]"
+                    bb.Name = p.Name; bb.Adornee = hrp; bb.AlwaysOnTop = true
+                    bb.Size = UDim2.new(0, 160, 0, 60); bb.ExtentsOffset = Vector3.new(0, 4, 0); bb.Enabled = true
+                    
+                    -- 名字 (上方)
+                    local nameL = bb:FindFirstChild("NameL") or Instance.new("TextLabel", bb)
+                    nameL.Name = "NameL"; nameL.Size = UDim2.new(1, 0, 0.4, 0); nameL.Position = UDim2.new(0, 0, 0, 0)
+                    nameL.BackgroundTransparency = 1; nameL.Font = "GothamBold"; nameL.TextSize = 14
+                    nameL.TextColor3 = Color3.new(1, 1, 1); nameL.TextStrokeTransparency = 0; nameL.Text = "🐾 " .. p.Name
+                    
+                    -- 數據 (下方: 血量與距離)
+                    local statsL = bb:FindFirstChild("StatsL") or Instance.new("TextLabel", bb)
+                    statsL.Name = "StatsL"; statsL.Size = UDim2.new(1, 0, 0.3, 0); statsL.Position = UDim2.new(0, 0, 0.4, 0)
+                    statsL.BackgroundTransparency = 1; statsL.Font = "GothamMedium"; statsL.TextSize = 11
+                    
+                    local healthPercent = hum.Health / hum.MaxHealth
+                    local healthColor = Color3.fromRGB(100, 255, 100):Lerp(Color3.fromRGB(255, 50, 50), 1 - healthPercent)
+                    local dist = math.floor((hrp.Position - (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position or Vector3.new())).Magnitude)
+                    
+                    statsL.TextColor3 = healthColor
+                    statsL.Text = string.format("[ %d%% ]  [ %dm ]", math.floor(healthPercent * 100), dist)
+                    
+                    -- 血條裝飾
+                    local barBg = bb:FindFirstChild("BarBg") or Instance.new("Frame", bb)
+                    barBg.Name = "BarBg"; barBg.Size = UDim2.new(0.8, 0, 0, 3); barBg.Position = UDim2.new(0.1, 0, 0.75, 0)
+                    barBg.BackgroundColor3 = Color3.new(0, 0, 0); barBg.BorderSizePixel = 0
+                    
+                    local bar = barBg:FindFirstChild("Bar") or Instance.new("Frame", barBg)
+                    bar.Name = "Bar"; bar.Size = UDim2.new(healthPercent, 0, 1, 0)
+                    bar.BackgroundColor3 = healthColor; bar.BorderSizePixel = 0
+
+                    -- 2. 🐾 Highlight 系統 (碰撞箱邊框)
+                    local highlight = char:FindFirstChild("NekoHighlight") or Instance.new("Highlight", char)
+                    highlight.Name = "NekoHighlight"
+                    highlight.Adornee = char
+                    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    highlight.FillColor = healthColor
+                    highlight.FillTransparency = 0.7
+                    highlight.OutlineColor = healthColor
+                    highlight.OutlineTransparency = 0
                 else
+                    -- 關閉或移除
                     if Folder:FindFirstChild(p.Name) then Folder[p.Name].Enabled = false end
+                    if char and char:FindFirstChild("NekoHighlight") then char.NekoHighlight:Destroy() end
                 end
             end
         end
-        task.wait(0.5)
+        task.wait(0.05) -- 高頻率刷新
     end
 end)
