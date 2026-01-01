@@ -1,4 +1,4 @@
--- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 完整功能對接版 🐾 ]] --
+-- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 2026 終極完全體 🐾 ]] --
 
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
@@ -8,7 +8,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 -- ==========================================
--- 【 ❤️ 1. 白名單判定 】
+-- 【 ❤️ 1. 白名單與環境檢查 】
 -- ==========================================
 local Whitelist = { 
     ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, 
@@ -17,51 +17,16 @@ local Whitelist = {
 }
 
 if not Whitelist[localPlayer.Name] then 
-    localPlayer:Kick("🐾 貓貓製作 | 你不在主人的名單裡喵！") 
+    localPlayer:Kick("🐾 貓貓製作 | 權限不足喵！") 
     return 
 end
 
 -- ==========================================
--- 【 🍭 2. 加載 GitHub UI (優先加載) 】
+-- 【 🍭 2. 立即加載 UI 】
 -- ==========================================
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("貓貓腳本")
 
--- ==========================================
--- 【 📢 3. Discord 背景通報 (不卡UI) 】
--- ==========================================
-local function ReportToDiscord(status)
-    task.spawn(function()
-        task.wait(5) -- 確保 UI 加載完畢後才發送
-        local WebhookURL = "https://discord.com/api/webhooks/1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
-        local data = {
-            ["embeds"] = {{
-                ["title"] = "🐾 貓貓監控報喜",
-                ["description"] = "GitHub UI 加載成功，功能全數上線！",
-                ["color"] = 16742584,
-                ["fields"] = {
-                    {["name"] = "玩家", ["value"] = localPlayer.Name, ["inline"] = true},
-                    {["name"] = "狀態", ["value"] = status, ["inline"] = true}
-                },
-                ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
-            }}
-        }
-        pcall(function()
-            local requestFunc = (syn and syn.request) or (http and http.request) or http_request or request or (HttpService and HttpService.request)
-            if requestFunc then
-                requestFunc({
-                    Url = WebhookURL, Method = "POST",
-                    Headers = {["Content-Type"] = "application/json"},
-                    Body = HttpService:JSONEncode(data)
-                })
-            end
-        end)
-    end)
-end
-
--- ==========================================
--- 【 ⚙️ 4. 核心變數設定 】
--- ==========================================
 local Settings = { 
     ClickDelay = 0.1, Distance = 1500, PullEnemies = false, Mode = "None",
     FOV = 70, ZoomDist = 128, CatSpeedValue = 50, SpeedEnabled = false
@@ -72,17 +37,8 @@ _G.AutoV4 = false
 _G.NekoRunning = true
 _G.NekoESP = false
 
--- 主按鈕
-local MiniBtn = Instance.new("TextButton", screenGui)
-MiniBtn.Size = UDim2.new(0, 50, 0, 50)
-MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
-MiniBtn.Text = "🐾"; MiniBtn.TextSize = 30; MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MiniBtn.BackgroundTransparency = 0.3; MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
-Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
-myUI:AddDrag(MiniBtn)
-MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
-
 -- ==========================================
--- 【 ⚔️ 5. UI 分頁與對接 】
+-- 【 ⚔️ 3. UI 分頁與功能配置 】
 -- ==========================================
 local Tab1 = myUI:Tab("戰鬥系統")
 local Sec1 = Tab1:Section("貓貓神刀")
@@ -104,6 +60,7 @@ Sec2:Toggle("貓貓透視 (ESP)", function(s)
     end
 end)
 Sec2:Textbox("視野角度", "70", function(v) Settings.FOV = tonumber(v) or 70 end)
+Sec2:Textbox("最大視距", "128", function(v) Settings.ZoomDist = tonumber(v) or 128 end)
 
 local Tab3 = myUI:Tab("貓貓移動")
 local Sec3 = Tab3:Section("位移控制")
@@ -117,20 +74,14 @@ Sec3:Button("第二海域", function() ReplicatedStorage.Remotes.CommF_:InvokeSe
 Sec3:Button("第三海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelZou") end)
 
 -- ==========================================
--- 【 🚀 6. 核心戰鬥、加速與循環 】
+-- 【 🚀 4. 核心戰鬥邏輯與循環 】
 -- ==========================================
 local function GetNekoValidPart(target)
-    local allParts = target:GetDescendants()
-    local validParts = {}
-    for _, part in ipairs(allParts) do
-        if part:IsA("BasePart") and part.CanCollide and part:IsDescendantOf(target) then
-            table.insert(validParts, part)
-        end
-    end
-    return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
+    local part = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
+    return part
 end
 
--- 絲滑加速
+-- 絲滑加速 (Heartbeat 版)
 RunService.Heartbeat:Connect(function()
     if Settings.SpeedEnabled then
         local char = localPlayer.Character
@@ -144,24 +95,22 @@ end)
 -- 戰鬥主循環
 task.spawn(function()
     while _G.NekoRunning do
-        -- 自動 V4
-        if _G.AutoV4 then
-            pcall(function()
+        pcall(function()
+            -- 自動 V4
+            if _G.AutoV4 then
                 local char = localPlayer.Character
                 local awake = char:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
                 if awake then awake.RemoteFunction:InvokeServer(true) end
-            end)
-        end
+            end
 
-        -- 攻擊邏輯
-        pcall(function()
+            -- 神刀攻擊
             if _G.NekoAttack and Settings.Mode ~= "None" then
                 local char = localPlayer.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
                 local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
                 local RegHit = Net and Net:FindFirstChild("RE/RegisterHit")
                 local RegAttack = Net and Net:FindFirstChild("RE/RegisterAttack")
-                
+
                 if root and RegHit then
                     local NekoTargets = {}
                     local NekoPart = nil
@@ -186,20 +135,48 @@ task.spawn(function()
                             end
                         end
                     end
-                    
+
                     Scan(workspace:FindFirstChild("Enemies") or workspace, false)
                     if Settings.Mode == "All" then Scan(Players, true) end
-                    
+
                     if NekoPart then 
                         RegAttack:FireServer(Settings.ClickDelay)
                         RegHit:FireServer(NekoPart, NekoTargets) 
                     end
                 end
             end
+
+            -- 視覺更新
             Camera.FieldOfView = math.clamp(Settings.FOV, 1, 120)
+            localPlayer.CameraMaxZoomDistance = Settings.ZoomDist
         end)
         task.wait(Settings.ClickDelay)
     end
+end)
+
+-- ==========================================
+-- 【 📢 5. 獨立 Discord 通知 (背景執行) 】
+-- ==========================================
+task.spawn(function()
+    task.wait(8) -- 延長到 8 秒，確保 GitHub 完全斷開連線
+    local WebhookURL = "https://discord.com/api/webhooks/1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
+    local data = {
+        ["embeds"] = {{
+            ["title"] = "🐾 貓貓腳本狀態報告",
+            ["description"] = "腳本功能與 UI 已全數載入完畢喵！",
+            ["color"] = 16742584,
+            ["fields"] = {
+                {["name"] = "玩家", ["value"] = localPlayer.Name, ["inline"] = true},
+                {["name"] = "執行器", ["value"] = (syn and "Synapse") or "Mobile/Other", ["inline"] = true}
+            },
+            ["footer"] = {["text"] = "貓貓監控 2026 版"},
+            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
+        }}
+    }
+    pcall(function()
+        local req = syn and syn.request or http_request or request or (HttpService and HttpService.request)
+        if req then req({ Url = WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(data) }) end
+    end)
 end)
 
 -- 防掛機
@@ -208,10 +185,12 @@ localPlayer.Idled:Connect(function()
     game:GetService("VirtualUser"):ClickButton2(Vector2.new(0,0))
 end)
 
--- 啟動成功通知
-ReportToDiscord("✅ 完整功能啟動成功")
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "🐾 貓貓腳本",
-    Text = "神刀、加速、V4 已全部就緒喵！",
-    Duration = 5
-})
+-- 主開關按鈕
+local MiniBtn = Instance.new("TextButton", screenGui)
+MiniBtn.Size = UDim2.new(0, 50, 0, 50); MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
+MiniBtn.Text = "🐾"; MiniBtn.TextSize = 30; MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
+Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
+myUI:AddDrag(MiniBtn)
+MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
+
+game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓啟動", Text = "這次真的是完整版了喵！(摸摸頭)", Duration = 5 })
