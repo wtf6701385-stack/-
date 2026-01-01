@@ -18,7 +18,7 @@ local WhitelistNames = {
     ["iandsere"] = true,
     ["Zadrian664"] = true,
     ["czr_0416"] = true, -- 🐾 修復的逗號在此
-    ["tw_vic2012"] = true
+    ["tw_vic2012"] = true,
 }
 
 -- ==========================================
