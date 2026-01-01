@@ -15,156 +15,161 @@ local Settings = {
     FOV = 70
 }
 
-_G.FastAttack = false; _G.ESP = false; _G.AutoV4 = false; _G.NekoSPD = false; _G.NekoFly = false
+_G.NekoAttack = false; _G.NekoV4 = false; _G.NekoESP = false; _G.NekoSPD = false; _G.NekoFly = false
+_G.NekoRunning = true
 
-local WhitelistNames = { 
+local Whitelist = { 
     ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, 
     ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, 
     ["tw_vic2012"] = true 
 }
 
-local function GetRandomValidPart(target)
-    local allParts = target:GetDescendants()
-    local validParts = {}
-    for _, part in ipairs(allParts) do 
-        if part:IsA("BasePart") and part.CanCollide then table.insert(validParts, part) end 
-    end
-    return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
-end
+if CoreGui:FindFirstChild("NEKO_TERMINAL") then CoreGui.NEKO_TERMINAL:Destroy() end
 
-local function DoNekoAction()
-    if not _G.FastAttack or Settings.Mode == "None" then return end
+local function NekoCombatLogic()
+    if not _G.NekoAttack or Settings.Mode == "None" then return end
+    
     local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
-    local RegAttack = Net:WaitForChild("RE/RegisterAttack")
-    local RegHit = Net:WaitForChild("RE/RegisterHit")
     local char = localPlayer.Character; local root = char and char:FindFirstChild("HumanoidRootPart")
     if not root then return end
-    local Targets = {}; local BasePart = nil
-    local folder = workspace:FindFirstChild("Enemies") or workspace
-    for _, Enemy in ipairs(folder:GetChildren()) do
-        if Enemy:IsA("Model") and Enemy ~= char then
-            local eH = Enemy:FindFirstChildOfClass("Humanoid")
-            local eR = Enemy:FindFirstChild("HumanoidRootPart")
+    
+    local NekoTargets = {}; local NekoPart = nil
+    local NekoFolder = workspace:FindFirstChild("Enemies") or workspace
+    
+    for _, NekoEnemy in ipairs(NekoFolder:GetChildren()) do
+        if NekoEnemy:IsA("Model") and NekoEnemy ~= char then
+            local eH = NekoEnemy:FindFirstChildOfClass("Humanoid")
+            local eR = NekoEnemy:FindFirstChild("HumanoidRootPart")
+            
             if eH and eH.Health > 0 and eR then
-                local isPlayer = Players:GetPlayerFromCharacter(Enemy)
+                local isPlayer = Players:GetPlayerFromCharacter(NekoEnemy)
                 local canTarget = (Settings.Mode == "Mob" and not isPlayer) or (Settings.Mode == "All")
+                
                 if canTarget and (eR.Position - root.Position).Magnitude < Settings.Distance then
                     if Settings.PullEnemies then 
                         eR.CanCollide = false
                         eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) 
                     end
-                    local foundPart = GetRandomValidPart(Enemy)
-                    table.insert(Targets, {Enemy, foundPart})
-                    BasePart = foundPart
+                    NekoPart = eR
+                    table.insert(NekoTargets, {NekoEnemy, eR})
                 end
             end
         end
-        if #Targets >= 15 then break end
+        if #NekoTargets >= 15 then break end
     end
-    if BasePart and #Targets > 0 then 
+    
+    if NekoPart and #NekoTargets > 0 then 
         pcall(function()
-            RegAttack:FireServer(Settings.ClickDelay)
-            RegHit:FireServer(BasePart, Targets) 
+            Net.RE["RegisterAttack"]:FireServer(Settings.ClickDelay)
+            Net.RE["RegisterHit"]:FireServer(NekoPart, NekoTargets) 
         end)
     end
 end
 
-task.spawn(function()
-    while true do
-        if _G.AutoV4 then
-            pcall(function()
-                local char = localPlayer.Character
-                local awake = char:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
-                if awake then awake.RemoteFunction:InvokeServer(true) end
-            end)
-        end
-        Camera.FieldOfView = math.clamp(tonumber(Settings.FOV) or 70, 30, 120)
-        task.wait(0.3)
-    end
-end)
+local function BuildNekoUI()
+    local NekoGui = Instance.new("ScreenGui", CoreGui); NekoGui.Name = "NEKO_TERMINAL"
+    local NekoMain = Instance.new("Frame", NekoGui); NekoMain.Size = UDim2.new(0, 450, 0, 280); NekoMain.Position = UDim2.new(0.5, -225, 0.5, -140)
+    NekoMain.BackgroundColor3 = Color3.fromRGB(18, 18, 22); NekoMain.Active = true; NekoMain.Draggable = true; NekoMain.ClipsDescendants = true
+    Instance.new("UICorner", NekoMain).CornerRadius = UDim.new(0, 12)
+    
+    local NekoStroke = Instance.new("UIStroke", NekoMain); NekoStroke.Thickness = 2.5
+    RunService.RenderStepped:Connect(function() NekoStroke.Color = Color3.fromHSV((tick() * 0.4) % 1, 0.6, 1) end)
 
-local function CreateNekoUI()
-    if CoreGui:FindFirstChild("NEKOUI_MAIN") then CoreGui.NEKOUI_MAIN:Destroy() end
-    local Gui = Instance.new("ScreenGui", CoreGui); Gui.Name = "NEKOUI_MAIN"
-    local Main = Instance.new("Frame", Gui); Main.Size = UDim2.new(0, 450, 0, 280); Main.Position = UDim2.new(0.5, -225, 0.5, -140)
-    Main.BackgroundColor3 = Color3.fromRGB(18, 18, 22); Main.Active = true; Main.Draggable = true; Main.ClipsDescendants = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
-    local Stroke = Instance.new("UIStroke", Main); Stroke.Thickness = 2.5; RunService.RenderStepped:Connect(function() Stroke.Color = Color3.fromHSV((tick() * 0.4) % 1, 0.6, 1) end)
-    local TitleBar = Instance.new("Frame", Main); TitleBar.Size = UDim2.new(1, 0, 0, 35); TitleBar.BackgroundTransparency = 1
-    local Title = Instance.new("TextLabel", TitleBar); Title.Size = UDim2.new(1, -50, 1, 0); Title.Position = UDim2.new(0, 15, 0, 0)
-    Title.Text = "NEKO MASTER FINAL"; Title.TextColor3 = Color3.new(1,1,1); Title.Font = "GothamBold"; Title.TextSize = 14; Title.TextXAlignment = "Left"; Title.BackgroundTransparency = 1
-    local MiniBtn = Instance.new("TextButton", TitleBar); MiniBtn.Size = UDim2.new(0, 30, 0, 30); MiniBtn.Position = UDim2.new(1, -35, 0, 2.5)
-    MiniBtn.Text = "🐾"; MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180); MiniBtn.BackgroundTransparency = 1; MiniBtn.TextSize = 18; MiniBtn.Font = "GothamBold"
-    local Content = Instance.new("Frame", Main); Content.Size = UDim2.new(1, 0, 1, -40); Content.Position = UDim2.new(0, 0, 0, 40); Content.BackgroundTransparency = 1
-    local IsOpened = true
-    MiniBtn.MouseButton1Click:Connect(function()
-        IsOpened = not IsOpened
-        TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = IsOpened and UDim2.new(0, 450, 0, 280) or UDim2.new(0, 450, 0, 35)}):Play()
-        Content.Visible = IsOpened
-        MiniBtn.Text = IsOpened and "🐾" or "⚙️"
+    local NekoTitleBar = Instance.new("Frame", NekoMain); NekoTitleBar.Size = UDim2.new(1, 0, 0, 35); NekoTitleBar.BackgroundTransparency = 1
+    local NekoTitle = Instance.new("TextLabel", NekoTitleBar); NekoTitle.Size = UDim2.new(1, -50, 1, 0); NekoTitle.Position = UDim2.new(0, 15, 0, 0)
+    NekoTitle.Text = "🐾 NEKO SYSTEM - FINAL VERSION 🐾"; NekoTitle.TextColor3 = Color3.new(1,1,1); NekoTitle.Font = "GothamBold"; NekoTitle.TextSize = 14; NekoTitle.TextXAlignment = "Left"; NekoTitle.BackgroundTransparency = 1
+
+    local NekoMiniBtn = Instance.new("TextButton", NekoTitleBar); NekoMiniBtn.Size = UDim2.new(0, 30, 0, 30); NekoMiniBtn.Position = UDim2.new(1, -35, 0, 2.5)
+    NekoMiniBtn.Text = "🐾"; NekoMiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180); NekoMiniBtn.BackgroundTransparency = 1; NekoMiniBtn.TextSize = 18; NekoMiniBtn.Font = "GothamBold"
+
+    local NekoContent = Instance.new("Frame", NekoMain); NekoContent.Size = UDim2.new(1, 0, 1, -40); NekoContent.Position = UDim2.new(0, 0, 0, 40); NekoContent.BackgroundTransparency = 1
+    local NekoTabBar = Instance.new("Frame", NekoContent); NekoTabBar.Size = UDim2.new(0, 110, 1, -10); NekoTabBar.Position = UDim2.new(0, 10, 0, 5); NekoTabBar.BackgroundTransparency = 1; Instance.new("UIListLayout", NekoTabBar).Padding = UDim.new(0, 6)
+    local NekoPages = Instance.new("Frame", NekoContent); NekoPages.Size = UDim2.new(1, -140, 1, -10); NekoPages.Position = UDim2.new(0, 130, 0, 5); NekoPages.BackgroundTransparency = 1
+
+    local NekoOpened = true
+    NekoMiniBtn.MouseButton1Click:Connect(function()
+        NekoOpened = not NekoOpened
+        TweenService:Create(NekoMain, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = NekoOpened and UDim2.new(0, 450, 0, 280) or UDim2.new(0, 450, 0, 35)}):Play()
+        NekoContent.Visible = NekoOpened; NekoMiniBtn.Text = NekoOpened and "🐾" or "🐈"
     end)
-    local TabBar = Instance.new("Frame", Content); TabBar.Size = UDim2.new(0, 110, 1, -10); TabBar.Position = UDim2.new(0, 10, 0, 5); TabBar.BackgroundTransparency = 1
-    Instance.new("UIListLayout", TabBar).Padding = UDim.new(0, 6)
-    local Pages = Instance.new("Frame", Content); Pages.Size = UDim2.new(1, -140, 1, -10); Pages.Position = UDim2.new(0, 130, 0, 5); Pages.BackgroundTransparency = 1
-    local Lib = {}
-    function Lib:CreateTab(name, default)
-        local Page = Instance.new("ScrollingFrame", Pages); Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundTransparency = 1; Page.Visible = default; Page.ScrollBarThickness = 2; Page.BorderSizePixel = 0
-        local L = Instance.new("UIListLayout", Page); L.Padding = UDim.new(0, 6)
-        local B = Instance.new("TextButton", TabBar); B.Size = UDim2.new(1, 0, 0, 32); B.Text = name; B.BackgroundColor3 = Color3.fromRGB(28, 28, 34); B.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(130,130,130); B.Font = "GothamMedium"; B.TextSize = 12; Instance.new("UICorner", B)
-        B.MouseButton1Click:Connect(function()
-            for _, p in pairs(Pages:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible = false end end
-            for _, b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(130,130,130) end end
-            Page.Visible = true; B.TextColor3 = Color3.new(1, 1, 1)
-        end)
-        local TabObj = {}
-        function TabObj:AddToggle(text, targetTable, targetKey, callback)
-            local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
-            local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -60, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = text; t.TextColor3 = Color3.new(1, 1, 1); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 12; t.TextXAlignment = "Left"
-            local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 42, 0, 20); b.Position = UDim2.new(1, -50, 0.5, -10); b.Text = targetTable[targetKey] and "ON" or "OFF"; b.BackgroundColor3 = targetTable[targetKey] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55); b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 9; Instance.new("UICorner", b)
-            b.MouseButton1Click:Connect(function() targetTable[targetKey] = not targetTable[targetKey]; b.Text = targetTable[targetKey] and "ON" or "OFF"; b.BackgroundColor3 = targetTable[targetKey] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55); if callback then callback(targetTable[targetKey]) end end)
-            Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
-        end
-        function TabObj:AddInput(text, targetTable, targetKey, callback)
-            local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
-            local t = Instance.new("TextLabel", f); t.Size = UDim2.new(0.6, 0, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = text; t.TextColor3 = Color3.new(0.8, 0.8, 0.8); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 12; t.TextXAlignment = "Left"
-            local i = Instance.new("TextBox", f); i.Size = UDim2.new(0, 55, 0, 20); i.Position = UDim2.new(1, -65, 0.5, -10); i.BackgroundColor3 = Color3.fromRGB(40, 40, 45); i.Text = tostring(targetTable[targetKey]); i.TextColor3 = Color3.new(1, 1, 1); i.Font = "Gotham"; i.TextSize = 11; Instance.new("UICorner", i)
-            i.FocusLost:Connect(function() local val = tonumber(i.Text) or i.Text; targetTable[targetKey] = val; if callback then callback(val) end end)
-            Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
-        end
-        function TabObj:AddButton(text, callback)
-            local b = Instance.new("TextButton", Page); b.Size = UDim2.new(0.95, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(40, 40, 50); b.Text = text; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamMedium"; b.TextSize = 12; Instance.new("UICorner", b)
-            b.MouseButton1Click:Connect(callback); Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 10)
-        end
-        return TabObj
-    end
-    UserInputService.InputBegan:Connect(function(i,p) if not p and i.KeyCode == Enum.KeyCode.Insert then Gui.Enabled = not Gui.Enabled end end)
-    return Lib
-end
 
-if WhitelistNames[localPlayer.Name] then
-    local Neko = CreateNekoUI()
-    local T2 = Neko:CreateTab("⚔️ 戰鬥", true)
-    local T3 = Neko:CreateTab("🚀 移動", false)
-    local T4 = Neko:CreateTab("👁️ 感官", false)
-    T2:AddToggle("攻擊循環", _G, "FastAttack")
-    T2:AddToggle("自動拉怪", Settings, "PullEnemies")
-    T2:AddToggle("自動 V4 進化", _G, "AutoV4")
-    T2:AddInput("攻擊範圍", Settings, "Distance")
-    T2:AddButton("模式：純打怪", function() Settings.Mode = "Mob" end)
-    T2:AddButton("模式：眾生平等", function() Settings.Mode = "All" end)
-    T2:AddButton("模式：關閉攻擊", function() Settings.Mode = "None" end)
-    T3:AddToggle("加速 (SPD)", _G, "NekoSPD", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end end)
-    T3:AddToggle("飛天 (Fly)", _G, "NekoFly", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end end)
-    T3:AddInput("視野高度 (FOV)", Settings, "FOV")
-    T4:AddToggle("貓咪透視 (ESP)", _G, "ESP", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end end)
-    task.spawn(function() 
-        while true do 
-            if _G.FastAttack and Settings.Mode ~= "None" then 
-                pcall(DoNekoAction) 
+    local function CreateNekoTab(name, default)
+        local NekoPage = Instance.new("ScrollingFrame", NekoPages); NekoPage.Size = UDim2.new(1, 0, 1, 0); NekoPage.BackgroundTransparency = 1; NekoPage.Visible = default; NekoPage.ScrollBarThickness = 2; NekoPage.BorderSizePixel = 0
+        local NekoL = Instance.new("UIListLayout", NekoPage); NekoL.Padding = UDim.new(0, 6)
+        local NekoB = Instance.new("TextButton", NekoTabBar); NekoB.Size = UDim2.new(1, 0, 0, 32); NekoB.Text = name; NekoB.BackgroundColor3 = Color3.fromRGB(28, 28, 34); NekoB.TextColor3 = default and Color3.new(1,1,1) or Color3.fromRGB(130,130,130); NekoB.Font = "GothamMedium"; NekoB.TextSize = 12; Instance.new("UICorner", NekoB)
+        
+        NekoB.MouseButton1Click:Connect(function()
+            for _, p in pairs(NekoPages:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible = false end end
+            for _, b in pairs(NekoTabBar:GetChildren()) do if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(130,130,130) end end
+            NekoPage.Visible = true; NekoB.TextColor3 = Color3.new(1, 1, 1)
+        end)
+        
+        return {
+            AddNekoToggle = function(_, text, tbl, key, callback)
+                local f = Instance.new("Frame", NekoPage); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
+                local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -60, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = "🐱 " .. text; t.TextColor3 = Color3.new(1, 1, 1); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 12; t.TextXAlignment = "Left"
+                local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 42, 0, 20); b.Position = UDim2.new(1, -50, 0.5, -10); b.Text = tbl[key] and "Meow" or "Hiss"; b.BackgroundColor3 = tbl[key] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55); b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 9; Instance.new("UICorner", b)
+                b.MouseButton1Click:Connect(function() 
+                    tbl[key] = not tbl[key]
+                    b.Text = tbl[key] and "Meow" or "Hiss"
+                    b.BackgroundColor3 = tbl[key] and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55)
+                    if callback then callback(tbl[key]) end
+                end)
+                NekoPage.CanvasSize = UDim2.new(0, 0, 0, NekoL.AbsoluteContentSize.Y + 10)
+            end,
+            AddNekoButton = function(_, text, cb)
+                local b = Instance.new("TextButton", NekoPage); b.Size = UDim2.new(0.95, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(40, 40, 50); b.Text = "🐾 " .. text; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamMedium"; b.TextSize = 12; Instance.new("UICorner", b)
+                b.MouseButton1Click:Connect(cb); NekoPage.CanvasSize = UDim2.new(0, 0, 0, NekoL.AbsoluteContentSize.Y + 10)
+            end,
+            AddNekoInput = function(_, text, tbl, key)
+                local f = Instance.new("Frame", NekoPage); f.Size = UDim2.new(0.95, 0, 0, 34); f.BackgroundColor3 = Color3.fromRGB(30, 30, 36); Instance.new("UICorner", f)
+                local t = Instance.new("TextLabel", f); t.Size = UDim2.new(0.6, 0, 1, 0); t.Position = UDim2.new(0, 10, 0, 0); t.Text = "🐈 " .. text; t.TextColor3 = Color3.new(0.8, 0.8, 0.8); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 12; t.TextXAlignment = "Left"
+                local i = Instance.new("TextBox", f); i.Size = UDim2.new(0, 55, 0, 20); i.Position = UDim2.new(1, -65, 0.5, -10); i.BackgroundColor3 = Color3.fromRGB(40, 40, 45); i.Text = tostring(tbl[key]); i.TextColor3 = Color3.new(1, 1, 1); i.Font = "Gotham"; i.TextSize = 11; Instance.new("UICorner", i)
+                i.FocusLost:Connect(function() tbl[key] = tonumber(i.Text) or i.Text end)
             end
-            task.wait(math.max(tonumber(Settings.ClickDelay) or 0.1, 0.05))
-        end 
+        }
+    end
+
+    local NekoCombatPage = CreateNekoTab("⚔️ 獵殺", true)
+    local NekoMovePage = CreateNekoTab("🚀 貓步", false)
+    local NekoMiscPage = CreateNekoTab("👁️ 貓眼", false)
+
+    NekoCombatPage:AddNekoToggle("連擊引擎", _G, "NekoAttack")
+    NekoCombatPage:AddNekoToggle("貓抓拉怪", Settings, "PullEnemies")
+    NekoCombatPage:AddNekoToggle("自動覺醒", _G, "NekoV4")
+    NekoCombatPage:AddNekoInput("抓捕範圍", Settings, "Distance")
+    NekoCombatPage:AddNekoButton("獵殺模式：小怪", function() Settings.Mode = "Mob" end)
+    NekoCombatPage:AddNekoButton("獵殺模式：全場", function() Settings.Mode = "All" end)
+    NekoCombatPage:AddNekoButton("收爪休息", function() Settings.Mode = "None" end)
+
+    NekoMovePage:AddNekoToggle("貓速 (SPD)", _G, "NekoSPD", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end end)
+    NekoMovePage:AddNekoToggle("輕功 (Fly)", _G, "NekoFly", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end end)
+    NekoMovePage:AddNekoInput("視野高度", Settings, "FOV")
+
+    NekoMiscPage:AddNekoToggle("貓眼透視", _G, "NekoESP", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end end)
+
+    UserInputService.InputBegan:Connect(function(i,p) if not p and i.KeyCode == Enum.KeyCode.Insert then NekoGui.Enabled = not NekoGui.Enabled end end)
+end
+
+if Whitelist[localPlayer.Name] then
+    BuildNekoUI()
+    
+    task.spawn(function()
+        while _G.NekoRunning do
+            pcall(NekoCombatLogic)
+            
+            if _G.NekoV4 then
+                pcall(function()
+                    local char = localPlayer.Character
+                    local awake = char:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
+                    if awake then awake.RemoteFunction:InvokeServer(true) end
+                end)
+            end
+            
+            Camera.FieldOfView = math.clamp(tonumber(Settings.FOV) or 70, 30, 120)
+            task.wait(0.1)
+        end
     end)
-else 
-    localPlayer:Kick("Access Denied") 
+else
+    localPlayer:Kick("Access Denied 🐾 - 你不是本貓的主人喵！")
 end
