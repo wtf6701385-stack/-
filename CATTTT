@@ -1,32 +1,24 @@
 -- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 2026 終極重生版 🐾 ]] --
 
 -- ==========================================
--- 【 ♻️ 0. 強制清場 (清除截圖中那些疊在一起的按鈕) 】
+-- 【 ♻️ 0. 強制清場邏輯 (解決重複載入問題) 】
 -- ==========================================
-_G.NekoRunning = false -- 強制關閉舊循環
+if _G.NekoRunning then _G.NekoRunning = false end
 
 local function NuclearClean()
     local CoreGui = game:GetService("CoreGui")
     local PlayerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
-    
-    -- 遍歷所有可能的名字，把幽靈 UI 全部砍掉
-    local targets = {"貓貓腳本", "NEKO", "NekoUI", "ScreenGui"}
+    local targets = {"貓貓腳本", "NEKO", "NekoUI"}
     for _, name in ipairs(targets) do
-        for _, gui in ipairs(CoreGui:GetChildren()) do
-            if gui.Name:find("貓") or gui.Name:find("NEKO") then gui:Destroy() end
-        end
-        if PlayerGui then
-            for _, gui in ipairs(PlayerGui:GetChildren()) do
-                if gui.Name:find("貓") or gui.Name:find("NEKO") then gui:Destroy() end
-            end
-        end
+        local old = CoreGui:FindFirstChild(name) or (PlayerGui and PlayerGui:FindFirstChild(name))
+        if old then old:Destroy() end
     end
 end
 NuclearClean()
-task.wait(0.3) -- 給執行器一點時間喘氣
+task.wait(0.2)
 
 -- ==========================================
--- 【 🛡️ 1. 重新初始化 】
+-- 【 🛡️ 1. 環境初始化與白名單 】
 -- ==========================================
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
@@ -35,50 +27,104 @@ local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
--- 白名單
-local Whitelist = { ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, ["tw_vic2012"] = true, ["12i21777"] = true }
+local Whitelist = { 
+    ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, 
+    ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, 
+    ["tw_vic2012"] = true, ["12i21777"] = true
+}
 if not Whitelist[localPlayer.Name] then return end
 
 -- ==========================================
--- 【 🍭 2. 載入全新的 UI 】
+-- 【 🍭 2. 載入 UI 系統 】
 -- ==========================================
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("貓貓腳本")
-screenGui.Name = "貓貓腳本_NEW" -- 標記新版
+screenGui.Name = "貓貓腳本"
 
-local Settings = { ClickDelay = 0.1, Distance = 1500, PullEnemies = false, Mode = "None", FOV = 70, ZoomDist = 128, CatSpeedValue = 50, SpeedEnabled = false }
+local Settings = { 
+    ClickDelay = 0.1, Distance = 1500, PullEnemies = false, Mode = "None",
+    FOV = 70, ZoomDist = 128, CatSpeedValue = 50, SpeedEnabled = false
+}
+
 _G.NekoRunning = true
 _G.NekoAttack = false
 _G.AutoV4 = false
+_G.NekoESP = false
 
--- [ 這裡放入 Tab1, Tab2, Tab3 的 UI 設定代碼... ]
+-- ==========================================
+-- 【 ⚔️ 3. UI 選單功能配置 】
+-- ==========================================
 local Tab1 = myUI:Tab("戰鬥系統")
 local Sec1 = Tab1:Section("貓貓神刀")
 Sec1:Toggle("神刀連擊", function(s) _G.NekoAttack = s end)
 Sec1:Toggle("貓抓拉怪", function(s) Settings.PullEnemies = s end)
 Sec1:Toggle("自動覺醒 (V4)", function(s) _G.AutoV4 = s end)
+Sec1:Textbox("抓捕範圍", "1500", function(v) Settings.Distance = tonumber(v) or 1500 end)
 Sec1:Button("模式：打怪", function() Settings.Mode = "Mob" end)
 Sec1:Button("模式：全殺", function() Settings.Mode = "All" end)
-Sec1:Button("關閉", function() Settings.Mode = "None" end)
+Sec1:Button("休息", function() Settings.Mode = "None" end)
+
+local Tab2 = myUI:Tab("貓眼視覺")
+local Sec2 = Tab2:Section("環境調整")
+Sec2:Toggle("貓貓透視 (ESP)", function(s) 
+    _G.NekoESP = s
+    if s and not _G.ESPLoaded then
+        _G.ESPLoaded = true
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() 
+    end
+end)
+Sec2:Textbox("視野角度", "70", function(v) Settings.FOV = tonumber(v) or 70 end)
+Sec2:Textbox("最大視距", "128", function(v) Settings.ZoomDist = tonumber(v) or 128 end)
+
+local Tab3 = myUI:Tab("貓貓移動")
+local Sec3 = Tab3:Section("位移控制")
+Sec3:Toggle("絲滑加速", function(s) Settings.SpeedEnabled = s end)
+Sec3:Textbox("速度", "50", function(v) Settings.CatSpeedValue = tonumber(v) or 50 end)
+Sec3:Button("召喚貓貓飛行", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
 
 -- ==========================================
--- 【 🚀 4. 核心功能循環 (支援重生) 】
+-- 【 🚀 4. 核心功能邏輯 (靈魂重連版) 】
 -- ==========================================
 local Character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-localPlayer.CharacterAdded:Connect(function(newChar) Character = newChar end)
+localPlayer.CharacterAdded:Connect(function(newChar) 
+    Character = newChar -- 死亡復活後自動綁定新身體
+end)
 
+-- 絲滑加速
+RunService.Heartbeat:Connect(function()
+    if not _G.NekoRunning then return end
+    if Settings.SpeedEnabled and Character then
+        local hum = Character:FindFirstChildOfClass("Humanoid")
+        if hum and hum.MoveDirection.Magnitude > 0 then
+            Character:TranslateBy(hum.MoveDirection * (Settings.CatSpeedValue / 10))
+        end
+    end
+end)
+
+-- 戰鬥與 V4 循環
 task.spawn(function()
     while _G.NekoRunning do
         pcall(function()
             local root = Character and Character:FindFirstChild("HumanoidRootPart")
             local hum = Character and Character:FindFirstChildOfClass("Humanoid")
+            
             if hum and hum.Health > 0 and root then
-                -- [ 戰鬥邏輯與原本的一樣... ]
+                -- 自動 V4
+                if _G.AutoV4 then
+                    local awake = Character:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
+                    if awake then awake.RemoteFunction:InvokeServer(true) end
+                end
+
+                -- 神刀攻擊邏輯
                 if _G.NekoAttack and Settings.Mode ~= "None" then
                     local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
                     local RegHit = Net and Net:FindFirstChild("RE/RegisterHit")
                     local RegAttack = Net and Net:FindFirstChild("RE/RegisterAttack")
+
                     if RegHit and RegAttack then
+                        local NekoTargets = {}
+                        local NekoPart = nil
+                        
                         local function Scan(folder, isPlayers)
                             for _, obj in ipairs(folder:GetChildren()) do
                                 local enemyChar = isPlayers and obj.Character or obj
@@ -86,26 +132,66 @@ task.spawn(function()
                                     local eH = enemyChar:FindFirstChildOfClass("Humanoid")
                                     local eR = enemyChar:FindFirstChild("HumanoidRootPart")
                                     if eH and eH.Health > 0 and eR and (eR.Position - root.Position).Magnitude < Settings.Distance then
+                                        -- 拉怪功能
+                                        if Settings.PullEnemies and not isPlayers then 
+                                            eR.CanCollide = false
+                                            eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) 
+                                        end
                                         local part = eR or enemyChar:FindFirstChild("Head")
-                                        RegAttack:FireServer(Settings.ClickDelay)
-                                        RegHit:FireServer(part, {{enemyChar, part}})
+                                        if part then 
+                                            NekoPart = part
+                                            table.insert(NekoTargets, {enemyChar, part}) 
+                                        end
                                     end
                                 end
                             end
                         end
+
                         Scan(workspace:FindFirstChild("Enemies") or workspace, false)
                         if Settings.Mode == "All" then Scan(Players, true) end
+
+                        if NekoPart then 
+                            RegAttack:FireServer(Settings.ClickDelay)
+                            RegHit:FireServer(NekoPart, NekoTargets) 
+                        end
                     end
                 end
             end
-            Camera.FieldOfView = Settings.FOV
+            -- 視覺更新
+            Camera.FieldOfView = math.clamp(Settings.FOV, 1, 120)
             localPlayer.CameraMaxZoomDistance = Settings.ZoomDist
         end)
         task.wait(Settings.ClickDelay)
     end
 end)
 
--- 最後的新按鈕
+-- ==========================================
+-- 【 📢 5. 背景 Discord 通報 】
+-- ==========================================
+task.spawn(function()
+    task.wait(10)
+    if not _G.NekoRunning then return end
+    local WebhookURL = "https://discord.com/api/webhooks/1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
+    local data = {
+        ["embeds"] = {{
+            ["title"] = "🐾 貓貓保衛系統報告",
+            ["description"] = "全新重生系統已成功注入喵！",
+            ["color"] = 16742584,
+            ["fields"] = {
+                {["name"] = "玩家", ["value"] = localPlayer.Name, ["inline"] = true},
+                {["name"] = "狀態", ["value"] = "✅ 死亡重連已就緒", ["inline"] = true}
+            },
+            ["footer"] = {["text"] = "小柒保衛系統 2026"},
+            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
+        }}
+    }
+    pcall(function()
+        local req = syn and syn.request or http_request or request or (HttpService and HttpService.request)
+        if req then req({ Url = WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(data) }) end
+    end)
+end)
+
+-- 主開關按鈕
 local MiniBtn = Instance.new("TextButton", screenGui)
 MiniBtn.Size = UDim2.new(0, 50, 0, 50); MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
 MiniBtn.Text = "🐾"; MiniBtn.TextSize = 30; MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
@@ -113,4 +199,4 @@ Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 myUI:AddDrag(MiniBtn)
 MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
 
-game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓重置成功", Text = "截圖裡的幽靈已經被清空喵！", Duration = 5 })
+game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓重生", Text = "這次連死神都擋不住我們了喵！", Duration = 5 })
