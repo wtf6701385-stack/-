@@ -1,14 +1,19 @@
--- [[ 🎀 NEKO MASTER - MAIN EXECUTOR 🎀 ]] --
--- 小柒主腳本：負責幹活與召喚雲端介面喵！
+-- [[ 🎀 NEKO MASTER - COMBAT FULL LOGIC 🎀 ]] --
+-- 小柒主腳本：攻擊邏輯強力回歸！(請搭配雲端 UI 使用喵🐾)
 
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- ==========================================
--- 【 🍭 核心數據設定 】
--- ==========================================
+-- [1] 預防重複執行喵 🐾
+if _G.NekoRunning then 
+    _G.NekoRunning = false 
+    task.wait(0.3) 
+end
+_G.NekoRunning = true
+
+-- [2] 核心數據庫 🐾
 local Settings = { 
     ClickDelay = 0.1, 
     Distance = 500, 
@@ -17,80 +22,86 @@ local Settings = {
     FOV = 70 
 }
 
-_G.FastAttack = false; _G.ESP = false; _G.AutoV4 = false; _G.NekoSPD = false; _G.NekoFly = false
+_G.FastAttack = false
+_G.AutoV4 = false
 
 local WhitelistNames = { ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, ["tw_vic2012"] = true }
 
--- ==========================================
--- 【 ⚔️ 核心戰鬥功能 】
--- ==========================================
-local NekoFunctions = {}
+-- [3] 核心戰鬥邏輯（包含傷害判定與目標掃描喵🐾）
+local function DoCombatAction()
+    local char = localPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root or not _G.FastAttack or Settings.Mode == "None" then return end
 
-function NekoFunctions.GetRandomPart(target)
-    local allParts = target:GetDescendants()
-    local validParts = {}
-    for _, part in ipairs(allParts) do if part:IsA("BasePart") and part.CanCollide then table.insert(validParts, part) end end
-    return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
-end
-
-function NekoFunctions.Attack()
     local Net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
-    local char = localPlayer.Character; local root = char and char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    
-    local Targets = {}; local BasePart = nil
+    local Targets = {}
+    local BasePart = nil
+
+    -- 掃描敵對目標 🐾
     local folder = workspace:FindFirstChild("Enemies") or workspace
-    
-    for _, Enemy in ipairs(folder:GetChildren()) do
-        local eH = Enemy:FindFirstChildOfClass("Humanoid"); local eR = Enemy:FindFirstChild("HumanoidRootPart")
-        if Enemy ~= char and not Players:GetPlayerFromCharacter(Enemy) and eH and eH.Health > 0 and eR then
-            if (eR.Position - root.Position).Magnitude < Settings.Distance then
-                if Settings.PullEnemies then eR.CanCollide = false; eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) end
-                local fp = NekoFunctions.GetRandomPart(Enemy); table.insert(Targets, {Enemy, fp}); BasePart = fp
+    for _, obj in ipairs(folder:GetChildren()) do
+        if obj:IsA("Model") and obj ~= char then
+            local eHum = obj:FindFirstChildOfClass("Humanoid")
+            local eRoot = obj:FindFirstChild("HumanoidRootPart")
+            
+            -- 模式判斷：打怪或全殺喵 🐾
+            local isPlayer = Players:GetPlayerFromCharacter(obj)
+            local shouldTarget = false
+            if Settings.Mode == "Mob" and not isPlayer then shouldTarget = true
+            elseif Settings.Mode == "All" then shouldTarget = true end
+
+            if shouldTarget and eHum and eRoot and eHum.Health > 0 then
+                local dist = (eRoot.Position - root.Position).Magnitude
+                if dist < Settings.Distance then
+                    -- 自動拉怪邏輯喵 🐾
+                    if Settings.PullEnemies then
+                        eRoot.CanCollide = false
+                        eRoot.CFrame = root.CFrame * CFrame.new(0, 0, -3)
+                    end
+                    -- 選定攻擊點喵 🐾
+                    BasePart = eRoot
+                    table.insert(Targets, {obj, eRoot})
+                end
             end
         end
-        if #Targets >= 15 then break end
+        if #Targets >= 15 then break end -- 效能優化，一次最多抓15個喵
     end
-    
-    if BasePart and #Targets > 0 then 
-        Net.RE["RegisterAttack"]:FireServer(Settings.ClickDelay)
-        Net.RE["RegisterHit"]:FireServer(BasePart, Targets) 
+
+    -- 發射傷害封包喵！🐾
+    if BasePart and #Targets > 0 then
+        pcall(function()
+            Net.RE["RegisterAttack"]:FireServer(Settings.ClickDelay)
+            Net.RE["RegisterHit"]:FireServer(BasePart, Targets)
+        end)
     end
 end
 
--- ==========================================
--- 【 🚀 啟動與雲端連接 】
--- ==========================================
+-- [4] 啟動介面與功能連接 🐾
 if WhitelistNames[localPlayer.Name] then
-    -- 🐈 從雲端抓取小柒的介面
+    -- 讀取主人存在 GitHub 的 UI 庫喵
     local NekoUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
     local Lib = NekoUI:CreateLib()
     
-    -- 🐈 佈置分頁
     local Combat = Lib:NewTab("⚔️ 戰鬥", true)
     local Travel = Lib:NewTab("🚀 移動", false)
-    local Visual = Lib:NewTab("👁️ 感官", false)
 
-    -- ⚔️ 戰鬥分頁內容
     Combat:AddToggle("攻擊循環", _G, "FastAttack")
     Combat:AddToggle("自動拉怪", Settings, "PullEnemies")
     Combat:AddToggle("自動 V4 進化", _G, "AutoV4")
-    Combat:AddInput("攻擊距離", Settings, "Distance")
+    Combat:AddInput("距離", Settings, "Distance")
     Combat:AddButton("模式：打怪喵", function() Settings.Mode = "Mob" end)
     Combat:AddButton("模式：全部抓抓", function() Settings.Mode = "All" end)
+    Combat:AddButton("模式：關閉", function() Settings.Mode = "None" end)
 
-    -- 🚀 移動分頁內容
-    Travel:AddToggle("加速 (SPD)", _G, "NekoSPD", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end end)
-    Travel:AddToggle("飛天 (Fly)", _G, "NekoFly", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end end)
     Travel:AddInput("視野高度 (FOV)", Settings, "FOV")
 
-    -- 👁️ 感官分頁內容
-    Visual:AddToggle("貓咪透視 (ESP)", _G, "ESP", function(s) if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end end)
-
-    -- 🐈 核心後台循環
+    -- [5] 核心引擎循環 🐾
     task.spawn(function()
-        while true do
-            if _G.FastAttack and Settings.Mode ~= "None" then pcall(NekoFunctions.Attack) end
+        while _G.NekoRunning do
+            -- 執行戰鬥喵！
+            pcall(DoCombatAction)
+
+            -- 自動 V4 進化喵！
             if _G.AutoV4 then
                 pcall(function()
                     local char = localPlayer.Character
@@ -98,10 +109,12 @@ if WhitelistNames[localPlayer.Name] then
                     if awake then awake.RemoteFunction:InvokeServer(true) end
                 end)
             end
+
+            -- 環境同步喵！
             Camera.FieldOfView = math.clamp(tonumber(Settings.FOV) or 70, 30, 120)
-            task.wait(math.max(Settings.ClickDelay, 0.05))
+            task.wait(math.max(tonumber(Settings.ClickDelay) or 0.1, 0.05))
         end
     end)
-else 
-    localPlayer:Kick("喵嗚！你不是小柒最喜歡的主人，快走開喵！🐾") 
+else
+    localPlayer:Kick("邏輯錯誤！找不到主人的氣味喵！🐾")
 end
