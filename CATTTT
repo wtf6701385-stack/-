@@ -1,4 +1,4 @@
--- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 核心對接監控版 🐾 ]] --
+-- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 終極監控完整版 🐾 ]] --
 -- 核心編碼：貓貓製作
 -- UI 框架：調用自 GitHub (NEKOUI)
 
@@ -10,7 +10,7 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 -- ==========================================
--- 【 📢 Discord 通知系統 (保持原樣植入) 】
+-- 【 📢 1. Discord 通知系統 (強化穩定版) 】
 -- ==========================================
 local function ReportToDiscord(status)
     local WebhookURL = "https://discord.com/api/webhooks/1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
@@ -28,18 +28,28 @@ local function ReportToDiscord(status)
             ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }}
     }
-    pcall(function()
-        (syn and syn.request or http_request or request or HttpService.request)({
-            Url = WebhookURL,
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = HttpService:JSONEncode(data)
-        })
+    
+    -- 使用非同步發送，避免卡死主腳本
+    task.spawn(function()
+        local requestFunc = (syn and syn.request) or (http and http.request) or http_request or request or (HttpService and HttpService.request)
+        if requestFunc then
+            pcall(function()
+                requestFunc({
+                    Url = WebhookURL,
+                    Method = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body = HttpService:JSONEncode(data)
+                })
+            end)
+        end
     end)
 end
 
+-- 給予執行器 3 秒準備時間，確保 Webhook 成功率喵！
+task.wait(3)
+
 -- ==========================================
--- 【 ❤️ 原始白名單檢測 】
+-- 【 ❤️ 2. 原始白名單檢測 】
 -- ==========================================
 local Whitelist = { 
     ["Kadys5373"] = true,
@@ -61,7 +71,7 @@ else
 end
 
 -- ==========================================
--- 【 🍭 核心環境初始化 】
+-- 【 🍭 3. 核心環境初始化 】
 -- ==========================================
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("貓貓腳本")
@@ -80,21 +90,10 @@ local Settings = {
 _G.NekoAttack = false
 _G.AutoV4 = false
 _G.NekoRunning = true
+_G.NekoESP = false
 
 -- ==========================================
--- 【 🐾 1. 主選單開關按鈕 】
--- ==========================================
-local MiniBtn = Instance.new("TextButton", screenGui)
-MiniBtn.Size = UDim2.new(0, 50, 0, 50)
-MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
-MiniBtn.Text = "🐾"; MiniBtn.TextSize = 30; MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MiniBtn.BackgroundTransparency = 0.3; MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
-Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
-
-myUI:AddDrag(MiniBtn)
-MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
-
--- ==========================================
--- 【 🚀 2. 核心移動代碼 (Heartbeat 絲滑加速) 】
+-- 【 🚀 4. 核心移動代碼 (Heartbeat 絲滑加速) 】
 -- ==========================================
 RunService.Heartbeat:Connect(function()
     if Settings.SpeedEnabled then
@@ -107,7 +106,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- ==========================================
--- 【 ⚔️ 3. UI 功能按鈕對接 】
+-- 【 ⚔️ 5. UI 功能按鈕對接 】
 -- ==========================================
 
 -- [ 戰鬥分頁 ]
@@ -125,7 +124,7 @@ Sec1:Button("收爪休息", function() Settings.Mode = "None" end)
 local Tab2 = myUI:Tab("貓眼視覺")
 local Sec2 = Tab2:Section("環境調整")
 Sec2:Toggle("貓貓透視 (ESP)", function(s) 
-    _G.NekoESP = s -- 確保與 ESP 腳本對接
+    _G.NekoESP = s
     if s and not _G.ESPLoaded then
         _G.ESPLoaded = true
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() 
@@ -147,7 +146,7 @@ Sec3:Button("傳送：第二海域", function() ReplicatedStorage.Remotes.CommF_
 Sec3:Button("傳送：第三海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelZou") end)
 
 -- ==========================================
--- 【 🚀 4. 戰鬥與自動覺醒循環 】
+-- 【 🚀 6. 戰鬥與自動覺醒循環 】
 -- ==========================================
 local function GetNekoValidPart(target)
     local allParts = target:GetDescendants()
@@ -210,6 +209,7 @@ task.spawn(function()
     end
 end)
 
+-- 防掛機 (主人必備)
 localPlayer.Idled:Connect(function()
     game:GetService("VirtualUser"):CaptureController()
     game:GetService("VirtualUser"):ClickButton2(Vector2.new(0,0))
@@ -217,6 +217,6 @@ end)
 
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "🐾 貓貓腳本",
-    Text = "飛行、透視、自動覺醒已全部對接！通報已送達喵~",
+    Text = "載入成功！通報與功能已就緒喵~",
     Duration = 5
 })
