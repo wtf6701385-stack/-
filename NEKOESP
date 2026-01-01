@@ -1,17 +1,3 @@
--- [[ 👁️ NEKO SENSE - ULTIMATE INTEGRATION 🐾 ]] --
--- [[ 已修正變數對接：使用 _G.NekoESP ]] --
-
-if _G.ESPStarted then _G.ESPStarted = false; task.wait(0.2) end
-_G.ESPStarted = true
-
-local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-local LocalPlayer = Players.LocalPlayer
-
--- 建立 ESP 容器
-local Folder = CoreGui:FindFirstChild("NekoESP") or Instance.new("Folder", CoreGui)
-Folder.Name = "NekoESP"
-
 task.spawn(function()
     while _G.ESPStarted do
         for _, p in ipairs(Players:GetPlayers()) do
@@ -20,64 +6,46 @@ task.spawn(function()
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 
-                -- 核心判定：對接主程式的 _G.NekoESP 喵！
+                -- 核心判定
                 if _G.NekoESP and char and hrp and hum and hum.Health > 0 then
-                    
-                    -- 1. 🐾 BillboardGui 系統 (文字與血條)
                     local bb = Folder:FindFirstChild(p.Name) or Instance.new("BillboardGui", Folder)
                     bb.Name = p.Name; bb.Adornee = hrp; bb.AlwaysOnTop = true
                     bb.Size = UDim2.new(0, 160, 0, 60); bb.ExtentsOffset = Vector3.new(0, 4, 0); bb.Enabled = true
                     
-                    -- 名字 (上方)
-                    local nameL = bb:FindFirstChild("NameL") or Instance.new("TextLabel", bb)
-                    if nameL.Parent ~= bb then nameL.Parent = bb end -- 確保層級
-                    nameL.Name = "NameL"; nameL.Size = UDim2.new(1, 0, 0.4, 0); nameL.Position = UDim2.new(0, 0, 0, 0)
-                    nameL.BackgroundTransparency = 1; nameL.Font = "GothamBold"; nameL.TextSize = 14
-                    nameL.TextColor3 = Color3.new(1, 1, 1); nameL.TextStrokeTransparency = 0; nameL.Text = "🐾 " .. p.Name
-                    
-                    -- 數據 (下方)
-                    local statsL = bb:FindFirstChild("StatsL") or Instance.new("TextLabel", bb)
-                    statsL.Name = "StatsL"; statsL.Size = UDim2.new(1, 0, 0.3, 0); statsL.Position = UDim2.new(0, 0, 0.4, 0)
-                    statsL.BackgroundTransparency = 1; statsL.Font = "GothamMedium"; statsL.TextSize = 11
-                    
+                    -- [[ ✨ 關鍵修正：每次循環重新計算血量數值 ✨ ]]
                     local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
                     local healthColor = Color3.fromRGB(100, 255, 100):Lerp(Color3.fromRGB(255, 50, 50), 1 - healthPercent)
                     
-                    -- 距離計算
+                    -- 1. 更新名字與顏色
+                    local nameL = bb:FindFirstChild("NameL") or Instance.new("TextLabel", bb)
+                    nameL.Text = "🐾 " .. p.Name
+                    
+                    -- 2. 更新數據文字 (百分比與距離)
+                    local statsL = bb:FindFirstChild("StatsL") or Instance.new("TextLabel", bb)
                     local lroot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                     local dist = lroot and math.floor((hrp.Position - lroot.Position).Magnitude) or 0
-                    
                     statsL.TextColor3 = healthColor
                     statsL.Text = string.format("[ %d%% ]  [ %dm ]", math.floor(healthPercent * 100), dist)
                     
-                    -- 血條裝飾
+                    -- 3. 更新血條長度 (這就是原本不會動的地方喵！)
                     local barBg = bb:FindFirstChild("BarBg") or Instance.new("Frame", bb)
-                    barBg.Name = "BarBg"; barBg.Size = UDim2.new(0.8, 0, 0, 3); barBg.Position = UDim2.new(0.1, 0, 0.75, 0)
-                    barBg.BackgroundColor3 = Color3.new(0, 0, 0); barBg.BorderSizePixel = 0
-                    
                     local bar = barBg:FindFirstChild("Bar") or Instance.new("Frame", barBg)
-                    bar.Name = "Bar"; bar.Size = UDim2.new(healthPercent, 0, 1, 0)
-                    bar.BackgroundColor3 = healthColor; bar.BorderSizePixel = 0
+                    
+                    -- 強制更新長度與顏色
+                    bar.Size = UDim2.new(healthPercent, 0, 1, 0)
+                    bar.BackgroundColor3 = healthColor
 
-                    -- 2. 🐾 Highlight 系統 (碰撞箱邊框)
+                    -- 4. 更新 Highlight 顏色
                     local highlight = char:FindFirstChild("NekoHighlight") or Instance.new("Highlight", char)
-                    highlight.Name = "NekoHighlight"
-                    highlight.Adornee = char
                     highlight.Enabled = true
-                    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                     highlight.FillColor = healthColor
-                    highlight.FillTransparency = 0.7
-                    highlight.OutlineColor = Color3.new(1, 1, 1) -- 白色邊框更明顯
-                    highlight.OutlineTransparency = 0
                 else
-                    -- 隱藏
+                    -- 隱藏處理...
                     if Folder:FindFirstChild(p.Name) then Folder[p.Name].Enabled = false end
                     if char and char:FindFirstChild("NekoHighlight") then char.NekoHighlight.Enabled = false end
                 end
             end
         end
-        task.wait(0.02) -- 更流暢的刷新喵！
+        task.wait(0.1) -- 調整刷新率，兼顧流暢與效能
     end
-    -- 清理
-    Folder:ClearAllChildren()
 end)
