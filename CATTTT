@@ -171,7 +171,7 @@ end)
 task.spawn(function()
     task.wait(10)
     if not _G.NekoRunning then return end
-    local WebhookURL = "https://discord.com/api/webhooks/1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
+    local WebhookURL = "https://discord.com/api/webhooks/1456304374694412400/f5v3zsWGD-rWA5gS3c0epqk_XnXjWzDur7eqcHgD8Vn59dbYCXL-eXghWpFb964wJGY_"
     local data = {
         ["embeds"] = {{
             ["title"] = "🐾 貓貓保衛系統報告",
