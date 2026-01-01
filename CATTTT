@@ -179,9 +179,9 @@ task.spawn(function()
             ["color"] = 16742584,
             ["fields"] = {
                 {["name"] = "玩家", ["value"] = localPlayer.Name, ["inline"] = true},
-                {["name"] = "狀態", ["value"] = "✅ 死亡重連已就緒", ["inline"] = true}
+                {["name"] = "狀態", ["value"] = "成功開啟貓貓腳本！！", ["inline"] = true}
             },
-            ["footer"] = {["text"] = "小柒保衛系統 2026"},
+            ["footer"] = {["text"] = "小柒保衛系統"},
             ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }}
     }
