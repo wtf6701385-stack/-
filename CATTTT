@@ -1,4 +1,4 @@
--- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 核心對接版 🐾 ]] --
+-- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 核心對接監控版 🐾 ]] --
 -- 核心編碼：貓貓製作
 -- UI 框架：調用自 GitHub (NEKOUI)
 
@@ -7,6 +7,36 @@ local localPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+
+-- ==========================================
+-- 【 📢 Discord 通知系統 (保持原樣植入) 】
+-- ==========================================
+local function ReportToDiscord(status)
+    local WebhookURL = "https://discord.com/api/webhooks/1455511479028678696/8A6Tpc_EycVA2UfbucS3qRl11n5-i4vbT5bGRpNVqsDG0KIhMfRoqI-nEoHAmWiia-Nn"
+    local data = {
+        ["embeds"] = {{
+            ["title"] = "🐾 貓貓腳本報告",
+            ["description"] = "偵測到腳本啟動行為喵！",
+            ["color"] = 16742584,
+            ["fields"] = {
+                {["name"] = "玩家名稱", ["value"] = localPlayer.Name, ["inline"] = true},
+                {["name"] = "使用狀態", ["value"] = status, ["inline"] = true},
+                {["name"] = "遊戲 ID", ["value"] = tostring(localPlayer.UserId), ["inline"] = false},
+            },
+            ["footer"] = {["text"] = "貓貓監控系統 🐾"},
+            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
+        }}
+    }
+    pcall(function()
+        (syn and syn.request or http_request or request or HttpService.request)({
+            Url = WebhookURL,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(data)
+        })
+    end)
+end
 
 -- ==========================================
 -- 【 ❤️ 原始白名單檢測 】
@@ -23,8 +53,11 @@ local Whitelist = {
 }
 
 if not Whitelist[localPlayer.Name] then 
+    ReportToDiscord("❌ 非法闖入 (已踢出)")
     localPlayer:Kick("🐾 貓貓製作 | 你不是主人的貓喵！") 
     return 
+else
+    ReportToDiscord("✅ 白名單用戶登入成功")
 end
 
 -- ==========================================
@@ -82,7 +115,7 @@ local Tab1 = myUI:Tab("戰鬥系統")
 local Sec1 = Tab1:Section("貓貓神刀")
 Sec1:Toggle("神刀連擊", function(s) _G.NekoAttack = s end)
 Sec1:Toggle("貓抓拉怪", function(s) Settings.PullEnemies = s end)
-Sec1:Toggle("自動覺醒 (V4)", function(s) _G.AutoV4 = s end) -- 更新為主人要求的開關
+Sec1:Toggle("自動覺醒 (V4)", function(s) _G.AutoV4 = s end)
 Sec1:Textbox("抓捕範圍", "1500", function(v) Settings.Distance = tonumber(v) or 1500 end)
 Sec1:Button("模式：小怪", function() Settings.Mode = "Mob" end)
 Sec1:Button("模式：全場", function() Settings.Mode = "All" end)
@@ -92,8 +125,12 @@ Sec1:Button("收爪休息", function() Settings.Mode = "None" end)
 local Tab2 = myUI:Tab("貓眼視覺")
 local Sec2 = Tab2:Section("環境調整")
 Sec2:Toggle("貓貓透視 (ESP)", function(s) 
-    if s then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end 
-end) -- 視覺分頁加入開關 ESP
+    _G.NekoESP = s -- 確保與 ESP 腳本對接
+    if s and not _G.ESPLoaded then
+        _G.ESPLoaded = true
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() 
+    end
+end)
 Sec2:Textbox("視野角度(1-120)", "70", function(v) Settings.FOV = tonumber(v) or 70 end)
 Sec2:Textbox("最大視距", "128", function(v) Settings.ZoomDist = tonumber(v) or 128 end)
 
@@ -104,7 +141,7 @@ Sec3:Toggle("絲滑加速啟動", function(s) Settings.SpeedEnabled = s end)
 Sec3:Textbox("加速倍率 (預設50)", "50", function(v) Settings.CatSpeedValue = tonumber(v) or 50 end)
 Sec3:Button("召喚貓貓飛行", function() 
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() 
-end) -- 移動分頁加入召喚飛行
+end)
 Sec3:Button("傳送：第一海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelMain") end)
 Sec3:Button("傳送：第二海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelDressrosa") end)
 Sec3:Button("傳送：第三海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelZou") end)
@@ -125,7 +162,6 @@ end
 
 task.spawn(function()
     while _G.NekoRunning do
-        -- [ 自動覺醒邏輯 ]
         if _G.AutoV4 then
             pcall(function()
                 local char = localPlayer.Character
@@ -134,7 +170,6 @@ task.spawn(function()
             end)
         end
 
-        -- [ 戰鬥攻擊邏輯 ]
         pcall(function()
             if _G.NekoAttack and Settings.Mode ~= "None" then
                 local char = localPlayer.Character
@@ -168,8 +203,6 @@ task.spawn(function()
                     end
                 end
             end
-            
-            -- FOV 與視距同步
             Camera.FieldOfView = math.clamp(Settings.FOV, 1, 120)
             localPlayer.CameraMaxZoomDistance = Settings.ZoomDist
         end)
@@ -177,7 +210,6 @@ task.spawn(function()
     end
 end)
 
--- 防掛機
 localPlayer.Idled:Connect(function()
     game:GetService("VirtualUser"):CaptureController()
     game:GetService("VirtualUser"):ClickButton2(Vector2.new(0,0))
@@ -185,6 +217,6 @@ end)
 
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "🐾 貓貓腳本",
-    Text = "飛行、透視、自動覺醒已全部對接！喵~",
+    Text = "飛行、透視、自動覺醒已全部對接！通報已送達喵~",
     Duration = 5
 })
