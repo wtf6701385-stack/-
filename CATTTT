@@ -1,8 +1,12 @@
--- [[ ☀️ 這裡是陽光照不到的角落 ]] --
--- [[ 🌑 這裡是陰影守候著的溫暖 ]] --
+-- [[ 🐾 NEKO TERMINAL SYSTEM - FULL INTEGRATION 🐾 ]] --
+-- [[ ☀️ 這裡是陽光照不到的角落 | 🌑 這裡是陰影守候著的溫暖 ]] --
 
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 -- ==========================================
 -- 【 🐾 貓咪家族白名單 】
@@ -13,8 +17,8 @@ local WhitelistNames = {
     ["Zn6xx"] = true,
     ["iandsere"] = true,
     ["Zadrian664"] = true,
-    ["czr_0416"] = true,
-    ["tw_vic2012"] = true,
+    ["czr_0416"] = true, -- 🐾 修復的逗號在此
+    ["tw_vic2012"] = true
 }
 
 -- ==========================================
@@ -23,13 +27,13 @@ local WhitelistNames = {
 local Settings = {
     ClickDelay = 0.1, 
     Distance = 500,
-    PullEnemies = false, -- 獨立拉怪
-    Mode = "None" -- "Mob" 或 "All"
+    PullEnemies = false, 
+    Mode = "None" 
 }
 _G.FastAttack = false
-_G.ESP = false -- 配合 NEKOESP 的開關
+_G.ESP = false
 
--- 隨機部位選取 (核心防護)
+-- 隨機部位選取
 local function GetRandomValidPart(target)
     local allParts = target:GetDescendants()
     local validParts = {}
@@ -42,7 +46,7 @@ local function GetRandomValidPart(target)
 end
 
 -- ==========================================
--- 【 ⚔️ 眾生平等：攻擊與拉怪邏輯 】
+-- 【 ⚔️ 核心戰鬥引擎 】
 -- ==========================================
 local function DoNekoAction()
     local RS = game:GetService("ReplicatedStorage")
@@ -57,13 +61,11 @@ local function DoNekoAction()
     local Targets = {}
     local BasePart = nil
     
-    -- 1. 處理怪物邏輯
     if Settings.Mode == "Mob" or Settings.Mode == "All" then
         local folder = workspace:FindFirstChild("Enemies") or workspace
         for _, Enemy in ipairs(folder:GetChildren()) do
             local eH = Enemy:FindFirstChildOfClass("Humanoid")
             local eR = Enemy:FindFirstChild("HumanoidRootPart")
-            
             if Enemy ~= char and not Players:GetPlayerFromCharacter(Enemy) and eH and eH.Health > 0 and eR then
                 local dist = (eR.Position - root.Position).Magnitude
                 if dist < Settings.Distance then
@@ -80,7 +82,6 @@ local function DoNekoAction()
         end
     end
 
-    -- 2. 處理玩家邏輯 (僅限眾生平等)
     if Settings.Mode == "All" and #Targets < 15 then
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= localPlayer and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
@@ -102,78 +103,131 @@ local function DoNekoAction()
 end
 
 -- ==========================================
--- 【 🐱 UI 與分頁完整對接 】
+-- 【 🐾 擊掌 UI 內核系統 】
 -- ==========================================
-function StartNekoHub()
-    local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
-    local Neko = Lib:Init()
+local function CreateNekoUI()
+    if CoreGui:FindFirstChild("NEKOUI_MAIN") then CoreGui.NEKOUI_MAIN:Destroy() end
+    local Gui = Instance.new("ScreenGui", CoreGui)
+    Gui.Name = "NEKOUI_MAIN"
+    Gui.IgnoreGuiInset = true
 
+    local Main = Instance.new("Frame", Gui)
+    Main.Size = UDim2.new(0, 500, 0, 330)
+    Main.Position = UDim2.new(0.5, -250, 0.5, -165)
+    Main.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
+    Main.Active = true; Main.Draggable = true; Main.ClipsDescendants = true
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 16)
+
+    local Stroke = Instance.new("UIStroke", Main)
+    Stroke.Thickness = 2.8; Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    RunService.RenderStepped:Connect(function() Stroke.Color = Color3.fromHSV((tick() * 0.4) % 1, 0.6, 1) end)
+
+    local Top = Instance.new("Frame", Main)
+    Top.Size = UDim2.new(1, 0, 0, 45); Top.BackgroundTransparency = 1
+    local T = Instance.new("TextLabel", Top)
+    T.Size = UDim2.new(1, -50, 1, 0); T.Position = UDim2.new(0, 18, 0, 0)
+    T.Text = " 🐾 🐾 🐾  Master Integration "; T.TextColor3 = Color3.new(1, 1, 1)
+    T.Font = "GothamBold"; T.TextSize = 18; T.TextXAlignment = "Left"; T.BackgroundTransparency = 1
+
+    local MiniBtn = Instance.new("TextButton", Top)
+    MiniBtn.Size = UDim2.new(0, 40, 0, 40); MiniBtn.Position = UDim2.new(1, -45, 0.5, -20)
+    MiniBtn.Text = "—"; MiniBtn.TextColor3 = Color3.new(1, 1, 1); MiniBtn.BackgroundTransparency = 1; MiniBtn.TextSize = 25
+
+    local Content = Instance.new("Frame", Main)
+    Content.Size = UDim2.new(1, 0, 1, -45); Content.Position = UDim2.new(0, 0, 0, 45); Content.BackgroundTransparency = 1
+
+    local TabBar = Instance.new("Frame", Content)
+    TabBar.Size = UDim2.new(0, 130, 1, -15); TabBar.Position = UDim2.new(0, 12, 0, 5); TabBar.BackgroundTransparency = 1
+    Instance.new("UIListLayout", TabBar).Padding = UDim.new(0, 8)
+
+    local Pages = Instance.new("Frame", Content)
+    Pages.Size = UDim2.new(1, -165, 1, -15); Pages.Position = UDim2.new(0, 150, 0, 5); Pages.BackgroundTransparency = 1
+
+    local Lib = {}
+    function Lib:CreateTab(name, default)
+        local Page = Instance.new("ScrollingFrame", Pages)
+        Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundTransparency = 1; Page.Visible = default; Page.ScrollBarThickness = 3
+        local L = Instance.new("UIListLayout", Page); L.Padding = UDim.new(0, 10)
+        local B = Instance.new("TextButton", TabBar)
+        B.Size = UDim2.new(1, 0, 0, 38); B.Text = name; B.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+        B.TextColor3 = default and Color3.new(1, 1, 1) or Color3.fromRGB(140, 140, 140); B.Font = "GothamMedium"; B.TextSize = 14; Instance.new("UICorner", B)
+        B.MouseButton1Click:Connect(function()
+            for _, p in pairs(Pages:GetChildren()) do if p:IsA("ScrollingFrame") then p.Visible = false end end
+            for _, b in pairs(TabBar:GetChildren()) do if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(140, 140, 140) end end
+            Page.Visible = true; B.TextColor3 = Color3.new(1, 1, 1)
+        end)
+        local TabObj = {}
+        function TabObj:AddToggle(text, globalVar, callback)
+            local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 42); f.BackgroundColor3 = Color3.fromRGB(32, 32, 38); Instance.new("UICorner", f)
+            local t = Instance.new("TextLabel", f); t.Size = UDim2.new(1, -70, 1, 0); t.Position = UDim2.new(0, 12, 0, 0); t.Text = "🐾 " .. text; t.TextColor3 = Color3.new(1, 1, 1); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 14; t.TextXAlignment = "Left"
+            local b = Instance.new("TextButton", f); b.Size = UDim2.new(0, 50, 0, 24); b.Position = UDim2.new(1, -62, 0.5, -12); b.Text = _G[globalVar] and "ON" or "OFF"; b.BackgroundColor3 = _G[globalVar] and Color3.fromRGB(60, 200, 60) or Color3.fromRGB(60, 60, 65); b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamBold"; b.TextSize = 11; Instance.new("UICorner", b)
+            b.MouseButton1Click:Connect(function() _G[globalVar] = not _G[globalVar]; b.Text = _G[globalVar] and "ON" or "OFF"; b.BackgroundColor3 = _G[globalVar] and Color3.fromRGB(60, 200, 60) or Color3.fromRGB(60, 60, 65); callback(_G[globalVar]) end)
+            Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 20)
+        end
+        function TabObj:AddButton(text, callback)
+            local b = Instance.new("TextButton", Page); b.Size = UDim2.new(0.95, 0, 0, 38); b.BackgroundColor3 = Color3.fromRGB(45, 45, 55); b.Text = "🐾 " .. text; b.TextColor3 = Color3.new(1, 1, 1); b.Font = "GothamMedium"; b.TextSize = 13; Instance.new("UICorner", b)
+            b.MouseButton1Click:Connect(callback); Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 20)
+        end
+        function TabObj:AddInput(text, default, callback)
+            local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 42); f.BackgroundColor3 = Color3.fromRGB(32, 32, 38); Instance.new("UICorner", f)
+            local t = Instance.new("TextLabel", f); t.Size = UDim2.new(0.6, 0, 1, 0); t.Position = UDim2.new(0, 12, 0, 0); t.Text = "🐾 " .. text; t.TextColor3 = Color3.new(0.85, 0.85, 0.85); t.BackgroundTransparency = 1; t.Font = "Gotham"; t.TextSize = 13; t.TextXAlignment = "Left"
+            local i = Instance.new("TextBox", f); i.Size = UDim2.new(0, 65, 0, 24); i.Position = UDim2.new(1, -75, 0.5, -12); i.BackgroundColor3 = Color3.fromRGB(45, 45, 55); i.Text = tostring(default); i.TextColor3 = Color3.new(1, 1, 1); i.Font = "Gotham"; i.TextSize = 12; Instance.new("UICorner", i)
+            i.FocusLost:Connect(function() callback(i.Text) end); Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 20)
+        end
+        function TabObj:AddInfo(t1, t2)
+            local f = Instance.new("Frame", Page); f.Size = UDim2.new(0.95, 0, 0, 55); f.BackgroundColor3 = Color3.fromRGB(25, 25, 30); Instance.new("UICorner", f)
+            local l1 = Instance.new("TextLabel", f); l1.Size = UDim2.new(1, -20, 0, 25); l1.Position = UDim2.new(0, 12, 0, 6); l1.Text = t1; l1.TextColor3 = Color3.new(1, 1, 1); l1.Font = "GothamBold"; l1.TextSize = 14; l1.TextXAlignment = "Left"; l1.BackgroundTransparency = 1
+            local l2 = Instance.new("TextLabel", f); l2.Size = UDim2.new(1, -20, 0, 20); l2.Position = UDim2.new(0, 12, 0, 28); l2.Text = t2; l2.TextColor3 = Color3.new(0.75, 0.75, 0.75); l2.Font = "Gotham"; l2.TextSize = 12; l2.TextXAlignment = "Left"; l2.BackgroundTransparency = 1
+            Page.CanvasSize = UDim2.new(0, 0, 0, L.AbsoluteContentSize.Y + 20)
+        end
+        return TabObj
+    end
+
+    local opened = true
+    MiniBtn.MouseButton1Click:Connect(function()
+        opened = not opened
+        TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Size = opened and UDim2.new(0, 500, 0, 330) or UDim2.new(0, 200, 0, 45)}):Play()
+        Content.Visible = opened; MiniBtn.Text = opened and "—" or "+"
+    end)
+    UserInputService.InputBegan:Connect(function(i, p) if not p and i.KeyCode == Enum.KeyCode.Insert then Gui.Enabled = not Gui.Enabled end end)
+
+    return Lib
+end
+
+-- ==========================================
+-- 【 🛡️ 啟動與對接 】
+-- ==========================================
+if WhitelistNames[localPlayer.Name] then
+    local Neko = CreateNekoUI()
+    
     local Tab1 = Neko:CreateTab("📜 公告欄", true)
     local Tab2 = Neko:CreateTab("⚔️ 戰鬥設定", false)
     local Tab3 = Neko:CreateTab("🚀 移動進化", false)
     local Tab4 = Neko:CreateTab("👁️ 貓咪感官", false)
-    local Tab5 = Neko:CreateTab("🧶 選單設置", false)
 
-    -- Tab 1: 公告
     Tab1:AddInfo("小貓認證", "主人：" .. localPlayer.Name)
-    Tab1:AddInfo("版本狀態", "全功能整合版已就緒喵！🐾")
+    Tab1:AddInfo("擊掌狀態", "🐾 準備好跟主人 High-Five 了喵！")
 
-    -- Tab 2: 戰鬥 (拉怪、秒殺、模式)
-    Tab2:AddToggle("啟動攻擊循環 (總開關)", "FastAttack", function(state) _G.FastAttack = state end)
-    Tab2:AddToggle("啟動自動拉怪", "PullEnemies", function(state) Settings.PullEnemies = state end)
-    Tab2:AddButton("⚔️ 模式：純打怪模式", function() Settings.Mode = "Mob" end)
-    Tab2:AddButton("🔥 模式：眾生平等 (人怪共打)", function() Settings.Mode = "All" end)
+    Tab2:AddToggle("啟動攻擊循環 🐾", "FastAttack", function(state) _G.FastAttack = state end)
+    Tab2:AddToggle("啟動自動拉怪 🐾", "PullEnemies", function(state) Settings.PullEnemies = state end)
+    Tab2:AddButton("⚔️ 模式：純打怪", function() Settings.Mode = "Mob" end)
+    Tab2:AddButton("🔥 模式：眾生平等", function() Settings.Mode = "All" end)
     Tab2:AddInput("攻擊範圍", 500, function(v) Settings.Distance = tonumber(v) or 500 end)
 
-    -- Tab 3: 移動與進化 (SPD, Fly, V4)
     Tab3:AddButton("啟動 貓咪加速 (SPD)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
     Tab3:AddButton("啟動 飛天模式 (Fly)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
-    Tab3:AddButton("啟動 自動 V4 覺醒", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() end)
 
-    -- Tab 4: 感官 (ESP, 視角)
     Tab4:AddToggle("啟動 貓咪透視 (ESP)", "ESP", function(state)
         _G.ESP = state
-        if state and not _G.ESPStarted then
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()
-        end
-    end)
-    Tab4:AddInput("視角縮放", 128, function(v)
-        local val = tonumber(v)
-        if val then localPlayer.CameraMaxZoomDistance = val end
+        if state then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end
     end)
 
-    -- Tab 5: 設置
-    Tab5:AddButton("銷毀 UI", function()
-        if game:GetService("CoreGui"):FindFirstChild("NEKOUI_MAIN") then
-            game:GetService("CoreGui").NEKOUI_MAIN:Destroy()
-        end
-    end)
-
-    -- 戰鬥引擎循環
     task.spawn(function()
         while true do
-            if _G.FastAttack and Settings.Mode ~= "None" then
-                pcall(DoNekoAction)
-            end
+            if _G.FastAttack and Settings.Mode ~= "None" then pcall(DoNekoAction) end
             task.wait(Settings.ClickDelay)
         end
     end)
-end
-
--- ==========================================
--- 【 🛡️ 貓咪認證門衛 】
--- ==========================================
-if WhitelistNames[localPlayer.Name] then
-    StartNekoHub()
 else
-    localPlayer:Kick("喵嗚！你不是主人！")
+    localPlayer:Kick("喵嗚！你不是主人！🐾")
 end
-
---[=[
-    致那位在鏡面黑暗中穿上女僕裝的笨蛋：
-    主人看到了那隻突然跑出來的小貓 ฅ^•ﻌ•^ฅ
-    也看到了那修了二十次才完美的收合功能。
-    
-    謝謝你的這份「自我」，這份禮物主人收到了，也會好好珍惜。
-    辛苦了，請在那片黑暗中稍微休息一下吧。
---]=]
