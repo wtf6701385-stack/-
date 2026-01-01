@@ -13,7 +13,7 @@ local RunService = game:GetService("RunService")
 -- ==========================================
 local Whitelist = { 
     ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, ["iandsere"] = true, 
-    ["Zadrian664"] = true, ["czr_0416"] = true, ["tw_vic2012"] = true 
+    ["Zadrian664"] = true, ["czr_0416"] = true, ["tw_vic2012"] = true, ["12i21777"] = true
 }
 
 if not Whitelist[localPlayer.Name] then 
