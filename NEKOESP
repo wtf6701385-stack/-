@@ -1,5 +1,5 @@
 -- [[ 👁️ NEKO SENSE - ULTIMATE INTEGRATION 🐾 ]] --
--- [[ 名字 + 上下排版 + 血條 + 碰撞箱邊框 ]] --
+-- [[ 已修正變數對接：使用 _G.NekoESP ]] --
 
 if _G.ESPStarted then _G.ESPStarted = false; task.wait(0.2) end
 _G.ESPStarted = true
@@ -20,8 +20,8 @@ task.spawn(function()
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 
-                -- 核心判定：開關、存在、存活
-                if _G.ESP and char and hrp and hum and hum.Health > 0 then
+                -- 核心判定：對接主程式的 _G.NekoESP 喵！
+                if _G.NekoESP and char and hrp and hum and hum.Health > 0 then
                     
                     -- 1. 🐾 BillboardGui 系統 (文字與血條)
                     local bb = Folder:FindFirstChild(p.Name) or Instance.new("BillboardGui", Folder)
@@ -30,18 +30,22 @@ task.spawn(function()
                     
                     -- 名字 (上方)
                     local nameL = bb:FindFirstChild("NameL") or Instance.new("TextLabel", bb)
+                    if nameL.Parent ~= bb then nameL.Parent = bb end -- 確保層級
                     nameL.Name = "NameL"; nameL.Size = UDim2.new(1, 0, 0.4, 0); nameL.Position = UDim2.new(0, 0, 0, 0)
                     nameL.BackgroundTransparency = 1; nameL.Font = "GothamBold"; nameL.TextSize = 14
                     nameL.TextColor3 = Color3.new(1, 1, 1); nameL.TextStrokeTransparency = 0; nameL.Text = "🐾 " .. p.Name
                     
-                    -- 數據 (下方: 血量與距離)
+                    -- 數據 (下方)
                     local statsL = bb:FindFirstChild("StatsL") or Instance.new("TextLabel", bb)
                     statsL.Name = "StatsL"; statsL.Size = UDim2.new(1, 0, 0.3, 0); statsL.Position = UDim2.new(0, 0, 0.4, 0)
                     statsL.BackgroundTransparency = 1; statsL.Font = "GothamMedium"; statsL.TextSize = 11
                     
-                    local healthPercent = hum.Health / hum.MaxHealth
+                    local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
                     local healthColor = Color3.fromRGB(100, 255, 100):Lerp(Color3.fromRGB(255, 50, 50), 1 - healthPercent)
-                    local dist = math.floor((hrp.Position - (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position or Vector3.new())).Magnitude)
+                    
+                    -- 距離計算
+                    local lroot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    local dist = lroot and math.floor((hrp.Position - lroot.Position).Magnitude) or 0
                     
                     statsL.TextColor3 = healthColor
                     statsL.Text = string.format("[ %d%% ]  [ %dm ]", math.floor(healthPercent * 100), dist)
@@ -59,18 +63,21 @@ task.spawn(function()
                     local highlight = char:FindFirstChild("NekoHighlight") or Instance.new("Highlight", char)
                     highlight.Name = "NekoHighlight"
                     highlight.Adornee = char
+                    highlight.Enabled = true
                     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                     highlight.FillColor = healthColor
                     highlight.FillTransparency = 0.7
-                    highlight.OutlineColor = healthColor
+                    highlight.OutlineColor = Color3.new(1, 1, 1) -- 白色邊框更明顯
                     highlight.OutlineTransparency = 0
                 else
-                    -- 關閉或移除
+                    -- 隱藏
                     if Folder:FindFirstChild(p.Name) then Folder[p.Name].Enabled = false end
-                    if char and char:FindFirstChild("NekoHighlight") then char.NekoHighlight:Destroy() end
+                    if char and char:FindFirstChild("NekoHighlight") then char.NekoHighlight.Enabled = false end
                 end
             end
         end
-        task.wait(0.05) -- 高頻率刷新
+        task.wait(0.02) -- 更流暢的刷新喵！
     end
+    -- 清理
+    Folder:ClearAllChildren()
 end)
