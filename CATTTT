@@ -1,4 +1,4 @@
--- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 主邏輯 🐾 ]] --
+-- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 終極穩定對接版 🐾 ]] --
 -- 核心編碼：貓貓製作
 -- UI 框架：調用自 GitHub (NEKOUI)
 
@@ -9,13 +9,8 @@ local localPlayer = Players.LocalPlayer
 -- 【 ❤️ 原始白名單檢測 】
 -- ==========================================
 local Whitelist = { 
-    ["Kadys5373"] = true, 
-    ["jay04_23"] = true, 
-    ["Zn6xx"] = true, 
-    ["iandsere"] = true, 
-    ["Zadrian664"] = true, 
-    ["czr_0416"] = true, 
-    ["tw_vic2012"] = true 
+    ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, ["iandsere"] = true, 
+    ["Zadrian664"] = true, ["czr_0416"] = true, ["tw_vic2012"] = true 
 }
 
 if not Whitelist[localPlayer.Name] then 
@@ -24,7 +19,7 @@ if not Whitelist[localPlayer.Name] then
 end
 
 -- ==========================================
--- 【 🍭 貓咪設定箱 】
+-- 【 🍭 核心環境初始化 】
 -- ==========================================
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("貓貓腳本")
@@ -33,6 +28,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 
+-- 這裡確保所有 UI 設定都能直接被邏輯抓取
 local Settings = { 
     ClickDelay = 0.1,
     Distance = 1500,
@@ -40,8 +36,8 @@ local Settings = {
     Mode = "None",
     FOV = 70,
     ZoomDist = 128,
-    WalkSpeed = 50,
-    SpeedEnabled = false
+    CatSpeedValue = 50, -- 預設速度
+    SpeedEnabled = false -- 預設關閉
 }
 
 _G.NekoAttack = false
@@ -49,29 +45,37 @@ _G.NekoV4 = false
 _G.NekoRunning = true
 
 -- ==========================================
--- 【 🐾 開關按鈕與拖拽 】
+-- 【 🐾 1. 主選單開關按鈕 】
 -- ==========================================
 local MiniBtn = Instance.new("TextButton", screenGui)
 MiniBtn.Size = UDim2.new(0, 50, 0, 50)
 MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
-MiniBtn.Text = "🐾"
-MiniBtn.TextSize = 30
-MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MiniBtn.BackgroundTransparency = 0.3
-MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
+MiniBtn.Text = "🐾"; MiniBtn.TextSize = 30; MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MiniBtn.BackgroundTransparency = 0.3; MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
 Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 
 myUI:AddDrag(MiniBtn)
+MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
 
-MiniBtn.MouseButton1Click:Connect(function()
-    myUI:Toggle()
+-- ==========================================
+-- 【 🚀 2. 絲滑移動邏輯 (Heartbeat) 】
+-- ==========================================
+RunService.Heartbeat:Connect(function()
+    if Settings.SpeedEnabled then
+        local char = localPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+        if char and hum and hum.MoveDirection.Magnitude > 0 then
+            -- 直接抓取 Settings 內的即時數值
+            char:TranslateBy(hum.MoveDirection * (Settings.CatSpeedValue / 10))
+        end
+    end
 end)
 
 -- ==========================================
--- 【 ⚔️ 貓貓功能對接 】
+-- 【 ⚔️ 3. UI 功能按鈕對接 】
 -- ==========================================
 
--- [ 戰鬥系統 ]
+-- [ 戰鬥分頁 ]
 local Tab1 = myUI:Tab("戰鬥系統")
 local Sec1 = Tab1:Section("貓貓神刀")
 Sec1:Toggle("神刀連擊", function(s) _G.NekoAttack = s end)
@@ -82,25 +86,28 @@ Sec1:Button("模式：小怪", function() Settings.Mode = "Mob" end)
 Sec1:Button("模式：全場", function() Settings.Mode = "All" end)
 Sec1:Button("收爪休息", function() Settings.Mode = "None" end)
 
--- [ 視覺系統 ]
+-- [ 視覺分頁 ]
 local Tab2 = myUI:Tab("貓眼視覺")
 local Sec2 = Tab2:Section("環境調整")
 Sec2:Textbox("視野角度(1-120)", "70", function(v) Settings.FOV = tonumber(v) or 70 end)
 Sec2:Textbox("最大視距", "128", function(v) Settings.ZoomDist = tonumber(v) or 128 end)
 
--- [ 移動系統 ]
+-- [ 移動分頁 ]
 local Tab3 = myUI:Tab("貓貓移動")
 local Sec3 = Tab3:Section("位移控制")
-Sec3:Toggle("加速開關", function(s) Settings.SpeedEnabled = s end)
-Sec3:Textbox("加速值", "50", function(v) Settings.WalkSpeed = tonumber(v) or 50 end)
+-- 關鍵：這裡直接改 Settings 裡的值
+Sec3:Toggle("絲滑加速啟動", function(s) Settings.SpeedEnabled = s end)
+Sec3:Textbox("加速倍率 (預設50)", "50", function(v) 
+    local n = tonumber(v)
+    if n then Settings.CatSpeedValue = n end
+end)
 Sec3:Button("傳送：第一海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelMain") end)
 Sec3:Button("傳送：第二海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelDressrosa") end)
 Sec3:Button("傳送：第三海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelZou") end)
 
 -- ==========================================
--- 【 🚀 核心邏輯循環 】
+-- 【 🚀 4. 秒殺邏輯循環 】
 -- ==========================================
-
 local function GetNekoValidPart(target)
     local allParts = target:GetDescendants()
     local validParts = {}
@@ -125,7 +132,6 @@ task.spawn(function()
                 if root and RegHit then
                     local NekoTargets = {}
                     local NekoPart = nil
-                    
                     local function Scan(folder, isPlayers)
                         for _, obj in ipairs(folder:GetChildren()) do
                             local enemyChar = isPlayers and obj.Character or obj
@@ -133,15 +139,11 @@ task.spawn(function()
                                 local eH = enemyChar:FindFirstChildOfClass("Humanoid")
                                 local eR = enemyChar:FindFirstChild("HumanoidRootPart")
                                 if eH and eH.Health > 0 and eR and (eR.Position - root.Position).Magnitude < Settings.Distance then
-                                    if Settings.PullEnemies and not isPlayers then
-                                        eR.CanCollide = false
-                                        eR.CFrame = root.CFrame * CFrame.new(0, 0, -3)
-                                    end
+                                    if Settings.PullEnemies and not isPlayers then eR.CanCollide = false; eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) end
                                     local part = GetNekoValidPart(enemyChar)
                                     if part then NekoPart = part; table.insert(NekoTargets, {enemyChar, part}) end
                                 end
                             end
-                            if #NekoTargets >= 15 then break end
                         end
                     end
                     Scan(workspace:FindFirstChild("Enemies") or workspace, false)
@@ -152,14 +154,6 @@ task.spawn(function()
                     end
                 end
             end
-            
-            if Settings.SpeedEnabled and localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
-                local hum = localPlayer.Character.Humanoid
-                if hum.MoveDirection.Magnitude > 0 then
-                    localPlayer.Character:TranslateBy(hum.MoveDirection * (Settings.WalkSpeed / 40))
-                end
-            end
-            
             Camera.FieldOfView = math.clamp(Settings.FOV, 1, 120)
             localPlayer.CameraMaxZoomDistance = Settings.ZoomDist
         end)
@@ -167,7 +161,7 @@ task.spawn(function()
     end
 end)
 
--- 防掛機
+-- 防掛機 (主人必備)
 localPlayer.Idled:Connect(function()
     game:GetService("VirtualUser"):CaptureController()
     game:GetService("VirtualUser"):ClickButton2(Vector2.new(0,0))
@@ -175,6 +169,6 @@ end)
 
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "🐾 貓貓腳本",
-    Text = "載入完成，主人請享用喵~",
+    Text = "載入成功！等主人的摸摸頭喵~",
     Duration = 5
 })
