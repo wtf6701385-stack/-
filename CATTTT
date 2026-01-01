@@ -2,18 +2,37 @@
 -- 核心編碼：貓貓製作
 -- UI 框架：調用自 GitHub (NEKOUI)
 
--- 1. 載入主人指定的 UI 框架
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+-- ==========================================
+-- 【 ❤️ 原始白名單檢測 】
+-- ==========================================
+local Whitelist = { 
+    ["Kadys5373"] = true, 
+    ["jay04_23"] = true, 
+    ["Zn6xx"] = true, 
+    ["iandsere"] = true, 
+    ["Zadrian664"] = true, 
+    ["czr_0416"] = true, 
+    ["tw_vic2012"] = true 
+}
+
+if not Whitelist[localPlayer.Name] then 
+    localPlayer:Kick("🐾 貓貓製作 | 你不是主人的貓喵！") 
+    return 
+end
+
+-- ==========================================
+-- 【 🍭 貓咪設定箱 】
+-- ==========================================
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("貓貓腳本")
 
--- 2. 獲取服務
-local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 
--- 3. 設定初始值
 local Settings = { 
     ClickDelay = 0.1,
     Distance = 1500,
@@ -29,10 +48,12 @@ _G.NekoAttack = false
 _G.NekoV4 = false
 _G.NekoRunning = true
 
--- 4. 建立貓爪開關按鈕 (主腳本創造)
+-- ==========================================
+-- 【 🐾 開關按鈕與拖拽 】
+-- ==========================================
 local MiniBtn = Instance.new("TextButton", screenGui)
 MiniBtn.Size = UDim2.new(0, 50, 0, 50)
-MiniBtn.Position = UDim2.new(0, 15, 0.5, -25) -- 放在左側中間
+MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
 MiniBtn.Text = "🐾"
 MiniBtn.TextSize = 30
 MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
@@ -40,7 +61,6 @@ MiniBtn.BackgroundTransparency = 0.3
 MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
 Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 
--- 調用框架的拖拽功能讓按鈕可移動
 myUI:AddDrag(MiniBtn)
 
 MiniBtn.MouseButton1Click:Connect(function()
@@ -48,13 +68,12 @@ MiniBtn.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================================
--- 【 ⚔️ 貓貓功能模組 】
+-- 【 ⚔️ 貓貓功能對接 】
 -- ==========================================
 
--- [ 分頁：戰鬥 ]
+-- [ 戰鬥系統 ]
 local Tab1 = myUI:Tab("戰鬥系統")
 local Sec1 = Tab1:Section("貓貓神刀")
-
 Sec1:Toggle("神刀連擊", function(s) _G.NekoAttack = s end)
 Sec1:Toggle("貓抓拉怪", function(s) Settings.PullEnemies = s end)
 Sec1:Toggle("自動覺醒", function(s) _G.NekoV4 = s end)
@@ -63,17 +82,15 @@ Sec1:Button("模式：小怪", function() Settings.Mode = "Mob" end)
 Sec1:Button("模式：全場", function() Settings.Mode = "All" end)
 Sec1:Button("收爪休息", function() Settings.Mode = "None" end)
 
--- [ 分頁：視覺 ]
+-- [ 視覺系統 ]
 local Tab2 = myUI:Tab("貓眼視覺")
 local Sec2 = Tab2:Section("環境調整")
-
 Sec2:Textbox("視野角度(1-120)", "70", function(v) Settings.FOV = tonumber(v) or 70 end)
 Sec2:Textbox("最大視距", "128", function(v) Settings.ZoomDist = tonumber(v) or 128 end)
 
--- [ 分頁：移動 ]
+-- [ 移動系統 ]
 local Tab3 = myUI:Tab("貓貓移動")
 local Sec3 = Tab3:Section("位移控制")
-
 Sec3:Toggle("加速開關", function(s) Settings.SpeedEnabled = s end)
 Sec3:Textbox("加速值", "50", function(v) Settings.WalkSpeed = tonumber(v) or 50 end)
 Sec3:Button("傳送：第一海域", function() ReplicatedStorage.Remotes.CommF_:InvokeServer("TravelMain") end)
@@ -84,7 +101,6 @@ Sec3:Button("傳送：第三海域", function() ReplicatedStorage.Remotes.CommF_
 -- 【 🚀 核心邏輯循環 】
 -- ==========================================
 
--- 貓貓神刀邏輯 (引用你提供的核心)
 local function GetNekoValidPart(target)
     local allParts = target:GetDescendants()
     local validParts = {}
@@ -99,7 +115,6 @@ end
 task.spawn(function()
     while _G.NekoRunning do
         pcall(function()
-            -- 1. 戰鬥
             if _G.NekoAttack and Settings.Mode ~= "None" then
                 local char = localPlayer.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -138,7 +153,6 @@ task.spawn(function()
                 end
             end
             
-            -- 2. 加速
             if Settings.SpeedEnabled and localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
                 local hum = localPlayer.Character.Humanoid
                 if hum.MoveDirection.Magnitude > 0 then
@@ -146,7 +160,6 @@ task.spawn(function()
                 end
             end
             
-            -- 3. 視覺
             Camera.FieldOfView = math.clamp(Settings.FOV, 1, 120)
             localPlayer.CameraMaxZoomDistance = Settings.ZoomDist
         end)
@@ -154,9 +167,14 @@ task.spawn(function()
     end
 end)
 
--- 通知載入成功
+-- 防掛機
+localPlayer.Idled:Connect(function()
+    game:GetService("VirtualUser"):CaptureController()
+    game:GetService("VirtualUser"):ClickButton2(Vector2.new(0,0))
+end)
+
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "🐾 貓貓腳本",
-    Text = "貓貓製作，功能已對接 NEKOUI 喵~",
+    Text = "載入完成，主人請享用喵~",
     Duration = 5
 })
