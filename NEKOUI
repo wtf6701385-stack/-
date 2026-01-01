@@ -1,189 +1,128 @@
--- [[ 🐾 貓貓腳本 (CAT SCRIPT) - NEKO TERMINAL 🐾 ]] --
--- 核心邏輯：貓貓製作
--- UI 框架：貓貓專屬 UI (小柒優化版)
--- 適配執行器：Delta, Hydrogen, Fluxus
+-- [[ 🐾 貓貓 UI 框架 (CAT UI LIBRARY) 🐾 ]] --
+-- 貓貓製作 | 專為 GitHub & Delta 優化
+-- 功能：純 UI 封裝、支援拖拽、適配移動端
 
 local library = {}
 local services = setmetatable({}, {__index = function(t, k) return game:GetService(k) end})
-local lp = services.Players.LocalPlayer
-local run = services.RunService
 
--- 【 🎨 貓貓主題配置 】
-local Theme = {
-    Main = Color3.fromRGB(15, 15, 15),
-    Accent = Color3.fromRGB(255, 120, 180), -- 貓咪粉
-    Text = Color3.fromRGB(255, 255, 255),
-    Secondary = Color3.fromRGB(30, 30, 35),
-    Trans = 0.4
-}
-
--- 【 ⚙️ 核心後台變數 】
-getfenv().translateSpeed = 50
-getfenv().translateAccelEnabled = false
-_G.FastAttack = false
-_G.AttackRange = 10000
-_G.AutoV4 = false
-
--- 【 🛠️ UI 構建函數 】
-local function Tween(obj, t, data)
-    services.TweenService:Create(obj, TweenInfo.new(t, Enum.EasingStyle.Sine), data):Play()
+-- 【 🛠️ 核心工具：萬用拖拽函數 】
+-- 支援所有 GUI 元素，適配 Delta 觸控與滑鼠
+local function MakeDraggable(obj)
+    local dragging, dragInput, dragStart, startPos
+    obj.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = obj.Position
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    services.UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            obj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
 end
 
+-- 【 🎨 主框架構建 】
 function library.new(name)
     local sg = Instance.new("ScreenGui", services.CoreGui)
-    sg.Name = "CatScript_UI"
+    sg.Name = "NekoTerminal_Lib"
     sg.ResetOnSpawn = false
 
+    -- 主視窗 (預設隱藏)
     local Main = Instance.new("Frame", sg)
     Main.Size = UDim2.new(0, 450, 0, 280)
     Main.Position = UDim2.new(0.5, -225, 0.5, -140)
-    Main.BackgroundColor3 = Theme.Main
-    Main.BackgroundTransparency = Theme.Trans
-    Main.BorderSizePixel = 0
+    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Main.BackgroundTransparency = 0.4
+    Main.Visible = false 
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
-
-    -- 頂部霓虹粉飾條
+    
+    -- 頂部裝飾線
     local Line = Instance.new("Frame", Main)
     Line.Size = UDim2.new(1, 0, 0, 2)
-    Line.BackgroundColor3 = Theme.Accent
+    Line.BackgroundColor3 = Color3.fromRGB(255, 120, 180)
     Line.BorderSizePixel = 0
 
-    -- 右上角開關按鈕 (🐾)
-    local OpenBtn = Instance.new("TextButton", sg)
-    OpenBtn.Size = UDim2.new(0, 45, 0, 45)
-    OpenBtn.Position = UDim2.new(0, 10, 0.5, -22)
-    OpenBtn.BackgroundColor3 = Theme.Main
-    OpenBtn.BackgroundTransparency = 0.2
-    OpenBtn.Text = "🐾"
-    OpenBtn.TextColor3 = Theme.Accent
-    OpenBtn.TextSize = 25
-    Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
-    OpenBtn.MouseButton1Click:Connect(function() 
-        Main.Visible = not Main.Visible 
-        Tween(OpenBtn, 0.3, {Rotation = Main.Visible and 360 or 0})
-    end)
-
+    -- 側邊欄
     local Side = Instance.new("Frame", Main)
-    Side.Size = UDim2.new(0, 110, 1, 0)
+    Side.Size = UDim2.new(0, 115, 1, 0)
     Side.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
     Side.BackgroundTransparency = 0.3
-    
+    Instance.new("UICorner", Side).CornerRadius = UDim.new(0, 10)
+
     local Title = Instance.new("TextLabel", Side)
-    Title.Size = UDim2.new(1, 0, 0, 45); Title.Text = name; Title.TextColor3 = Theme.Accent; Title.Font = "GothamBold"; Title.TextSize = 15; Title.BackgroundTransparency = 1
+    Title.Size = UDim2.new(1, 0, 0, 45); Title.Text = "🐾 " .. name; Title.TextColor3 = Color3.fromRGB(255, 120, 180); Title.Font = "GothamBold"; Title.TextSize = 14; Title.BackgroundTransparency = 1
 
     local TabContainer = Instance.new("ScrollingFrame", Side)
     TabContainer.Size = UDim2.new(1, 0, 1, -50); TabContainer.Position = UDim2.new(0, 0, 0, 45); TabContainer.BackgroundTransparency = 1; TabContainer.ScrollBarThickness = 0
-    local TabList = Instance.new("UIListLayout", TabContainer); TabList.Padding = UDim.new(0, 5); TabList.HorizontalAlignment = "Center"
+    Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0, 5)
 
     local PageContainer = Instance.new("Frame", Main)
-    PageContainer.Size = UDim2.new(1, -125, 1, -15); PageContainer.Position = UDim2.new(0, 120, 0, 8); PageContainer.BackgroundTransparency = 1
+    PageContainer.Size = UDim2.new(1, -130, 1, -15); PageContainer.Position = UDim2.new(0, 125, 0, 8); PageContainer.BackgroundTransparency = 1
+
+    -- 啟動拖拽
+    MakeDraggable(Main)
 
     local window = { currentTab = nil }
 
-    function window.Tab(tabName)
+    -- 導出功能：控制 UI 顯示狀態
+    function window:Toggle()
+        Main.Visible = not Main.Visible
+    end
+
+    -- 導出功能：提供拖拽函數給外部按鈕使用
+    function window:AddDrag(obj)
+        MakeDraggable(obj)
+    end
+
+    function window:Tab(tName)
         local Page = Instance.new("ScrollingFrame", PageContainer)
         Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundTransparency = 1; Page.Visible = false; Page.ScrollBarThickness = 0
         Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
 
         local TabBtn = Instance.new("TextButton", TabContainer)
-        TabBtn.Size = UDim2.new(0.9, 0, 0, 32); TabBtn.BackgroundColor3 = Theme.Secondary; TabBtn.Text = tabName; TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150); TabBtn.Font = "GothamMedium"; TabBtn.TextSize = 11; Instance.new("UICorner", TabBtn)
+        TabBtn.Size = UDim2.new(1, -10, 0, 32); TabBtn.BackgroundColor3 = Color3.fromRGB(30,30,35); TabBtn.Text = tName; TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150); TabBtn.Font = "GothamMedium"; TabBtn.TextSize = 11; Instance.new("UICorner", TabBtn)
 
         TabBtn.MouseButton1Click:Connect(function()
             if window.currentTab then window.currentTab.Page.Visible = false; window.currentTab.Btn.TextColor3 = Color3.fromRGB(150, 150, 150) end
-            Page.Visible = true; TabBtn.TextColor3 = Theme.Accent
+            Page.Visible = true; TabBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
             window.currentTab = {Page = Page, Btn = TabBtn}
         end)
 
-        if not window.currentTab then Page.Visible = true; TabBtn.TextColor3 = Theme.Accent; window.currentTab = {Page = Page, Btn = TabBtn} end
+        if not window.currentTab then Page.Visible = true; TabBtn.TextColor3 = Color3.fromRGB(255, 120, 180); window.currentTab = {Page = Page, Btn = TabBtn} end
 
         local tab = {}
-        function tab.Section(secName)
-            local Section = Instance.new("Frame", Page)
-            Section.Size = UDim2.new(0.96, 0, 0, 35); Section.BackgroundColor3 = Theme.Secondary; Section.BackgroundTransparency = 0.5; Instance.new("UICorner", Section)
-            local SecTitle = Instance.new("TextLabel", Section)
-            SecTitle.Size = UDim2.new(1, -10, 0, 25); SecTitle.Position = UDim2.new(0, 10, 0, 0); SecTitle.Text = secName; SecTitle.TextColor3 = Theme.Accent; SecTitle.Font = "GothamBold"; SecTitle.TextSize = 12; SecTitle.TextXAlignment = "Left"; SecTitle.BackgroundTransparency = 1
-            local Container = Instance.new("Frame", Section); Container.Position = UDim2.new(0, 0, 0, 28); Container.Size = UDim2.new(1, 0, 0, 0); Container.BackgroundTransparency = 1
+        function tab:Section(sName)
+            local Sec = Instance.new("Frame", Page)
+            Sec.Size = UDim2.new(0.96, 0, 0, 35); Sec.BackgroundColor3 = Color3.fromRGB(35, 35, 40); Sec.BackgroundTransparency = 0.5; Instance.new("UICorner", Sec)
+            
+            local STitle = Instance.new("TextLabel", Sec)
+            STitle.Size = UDim2.new(1, -10, 0, 25); STitle.Position = UDim2.new(0, 10, 0, 0); STitle.Text = sName; STitle.TextColor3 = Color3.fromRGB(255, 120, 180); STitle.Font = "GothamBold"; STitle.TextSize = 12; STitle.TextXAlignment = "Left"; STitle.BackgroundTransparency = 1
+            
+            local Container = Instance.new("Frame", Sec); Container.Position = UDim2.new(0, 0, 0, 28); Container.Size = UDim2.new(1, 0, 0, 0); Container.BackgroundTransparency = 1
             local CL = Instance.new("UIListLayout", Container); CL.Padding = UDim.new(0, 5); CL.HorizontalAlignment = "Center"
-            CL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() Section.Size = UDim2.new(0.96, 0, 0, CL.AbsoluteContentSize.Y + 35) end)
+            CL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() Sec.Size = UDim2.new(0.96, 0, 0, CL.AbsoluteContentSize.Y + 35) end)
 
-            local el = {}
-            function el.Button(txt, cb)
-                local b = Instance.new("TextButton", Container); b.Size = UDim2.new(0.92, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(40, 40, 45); b.Text = txt; b.TextColor3 = Theme.Text; b.Font = "Gotham"; b.TextSize = 11; Instance.new("UICorner", b); b.MouseButton1Click:Connect(cb)
+            local elements = {}
+            function elements:Button(txt, cb)
+                local b = Instance.new("TextButton", Container); b.Size = UDim2.new(0.92, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(45, 45, 50); b.Text = txt; b.TextColor3 = Color3.fromRGB(255,255,255); b.Font = "Gotham"; b.TextSize = 11; Instance.new("UICorner", b); b.MouseButton1Click:Connect(cb)
             end
-            function el.Toggle(txt, cb)
-                local b = Instance.new("TextButton", Container); b.Size = UDim2.new(0.92, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(35, 35, 40); b.Text = "  "..txt; b.TextColor3 = Theme.Text; b.Font = "Gotham"; b.TextSize = 11; b.TextXAlignment = "Left"; Instance.new("UICorner", b)
+            function elements:Toggle(txt, cb)
+                local b = Instance.new("TextButton", Container); b.Size = UDim2.new(0.92, 0, 0, 30); b.BackgroundColor3 = Color3.fromRGB(40, 40, 45); b.Text = "  "..txt; b.TextColor3 = Color3.fromRGB(255,255,255); b.Font = "Gotham"; b.TextSize = 11; b.TextXAlignment = "Left"; Instance.new("UICorner", b)
                 local s = Instance.new("Frame", b); s.Size = UDim2.new(0, 30, 0, 14); s.Position = UDim2.new(1, -10, 0.5, 0); s.AnchorPoint = Vector2.new(1, 0.5); s.BackgroundColor3 = Color3.fromRGB(60, 60, 60); Instance.new("UICorner", s).CornerRadius = UDim.new(1, 0)
-                local t = false; b.MouseButton1Click:Connect(function() t = not t; Tween(s, 0.2, {BackgroundColor3 = t and Theme.Accent or Color3.fromRGB(60, 60, 60)}); cb(t) end)
+                local t = false; b.MouseButton1Click:Connect(function() t = not t; services.TweenService:Create(s, TweenInfo.new(0.2), {BackgroundColor3 = t and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(60, 60, 60)}):Play(); cb(t) end)
             end
-            function el.Textbox(txt, hold, cb)
+            function elements:Textbox(txt, hold, cb)
                 local f = Instance.new("Frame", Container); f.Size = UDim2.new(0.92, 0, 0, 30); f.BackgroundColor3 = Color3.fromRGB(30, 30, 35); Instance.new("UICorner", f)
-                local l = Instance.new("TextLabel", f); l.Size = UDim2.new(0.5, 0, 1, 0); l.Position = UDim2.new(0, 10, 0, 0); l.Text = txt; l.TextColor3 = Theme.Text; l.TextSize = 10; l.Font = "Gotham"; l.TextXAlignment = "Left"; l.BackgroundTransparency = 1
-                local i = Instance.new("TextBox", f); i.Size = UDim2.new(0.4, 0, 0, 20); i.Position = UDim2.new(1, -5, 0.5, 0); i.AnchorPoint = Vector2.new(1, 0.5); i.BackgroundColor3 = Color3.fromRGB(20, 20, 25); i.Text = ""; i.PlaceholderText = hold; i.PlaceholderColor3 = Color3.fromRGB(100,100,100); i.TextColor3 = Theme.Accent; i.Font = "Gotham"; i.TextSize = 10; Instance.new("UICorner", i); i.FocusLost:Connect(function() cb(i.Text) end)
+                local l = Instance.new("TextLabel", f); l.Size = UDim2.new(0.5, 0, 1, 0); l.Position = UDim2.new(0, 10, 0, 0); l.Text = txt; l.TextColor3 = Color3.fromRGB(255,255,255); l.TextSize = 10; l.Font = "Gotham"; l.TextXAlignment = "Left"; l.BackgroundTransparency = 1
+                local i = Instance.new("TextBox", f); i.Size = UDim2.new(0.4, 0, 0, 20); i.Position = UDim2.new(1, -5, 0.5, 0); i.AnchorPoint = Vector2.new(1, 0.5); i.BackgroundColor3 = Color3.fromRGB(20, 20, 25); i.Text = ""; i.PlaceholderText = hold; i.TextColor3 = Color3.fromRGB(255, 120, 180); i.Font = "Gotham"; i.TextSize = 10; Instance.new("UICorner", i); i.FocusLost:Connect(function() cb(i.Text) end)
             end
-            return el
+            return elements
         end
         return tab
     end
-    return window
+    return window, sg
 end
 
--- ==========================================
--- 【 🐈 貓貓腳本 功能裝載 】
--- ==========================================
-local myUI = library.new("貓貓腳本")
-
-local Tab1 = myUI.Tab("公告")
-local Info = Tab1.Section("貓貓製作")
-Info.Button("🐾 貓貓製作 - 專屬終端", function() end)
-Info.Button("🐾 腳本測試中 - 貓貓出品", function() end)
-
-local Tab2 = myUI.Tab("戰鬥")
-local Combat = Tab2.Section("貓貓秒殺")
-Combat.Toggle("秒殺開關", function(state) _G.FastAttack = state end)
-Combat.Textbox("秒殺範圍", "10000", function(val) _G.AttackRange = tonumber(val) or 10000 end)
-Combat.Toggle("自動V4覺醒", function(state) _G.AutoV4 = state end)
-
-local Tab3 = myUI.Tab("移動")
-local Move = Tab3.Section("貓貓加速")
-Move.Textbox("速度值", "50", function(val) getfenv().translateSpeed = tonumber(val) or 50 end)
-Move.Toggle("加速開關", function(state) getfenv().translateAccelEnabled = state end)
-
--- ==========================================
--- 【 🚀 後台邏輯執行 】
--- ==========================================
-
--- 1. 防掛機 (貓貓防斷線)
-services.Players.LocalPlayer.Idled:Connect(function()
-    services.VirtualUser:CaptureController()
-    services.VirtualUser:ClickButton2(Vector2.new(0,0))
-    print("貓貓腳本 | 已攔截掛機檢測喵~")
-end)
-
--- 2. 加速執行
-run.Heartbeat:Connect(function()
-    if getfenv().translateAccelEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") then
-        local hum = lp.Character.Humanoid
-        if hum.MoveDirection.Magnitude > 0 then
-            lp.Character:TranslateBy(hum.MoveDirection * (getfenv().translateSpeed / 30))
-        end
-    end
-end)
-
--- 3. 自動 V4 (貓貓覺醒)
-task.spawn(function()
-    while true do
-        if _G.AutoV4 then
-            pcall(function()
-                local awake = lp.Backpack:FindFirstChild("Awakening") or lp.Character:FindFirstChild("Awakening")
-                if awake then awake.RemoteFunction:InvokeServer(true) end
-            end)
-        end
-        task.wait(1)
-    end
-end)
-
-services.StarterGui:SetCore("SendNotification", {
-    Title = "🐾 貓貓腳本",
-    Text = "貓貓製作，載入完成喵~",
-    Duration = 5
-})
+return library
