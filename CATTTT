@@ -12,6 +12,7 @@ local WhitelistNames = {
     ["jay04_23"] = true,
     ["Zn6xx"] = true,
     ["iandsere"] = true,
+    ["Zadrian664"] = true,
 }
 
 -- ==========================================
