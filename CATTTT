@@ -101,7 +101,7 @@ local function DoNekoAction()
 end
 
 -- ==========================================
--- 【 🐾 擊掌 UI 內核系統 - 修復連線 】
+-- 【 🐾 擊掌 UI 內核系統 】
 -- ==========================================
 local function CreateNekoUI()
     if CoreGui:FindFirstChild("NEKOUI_MAIN") then CoreGui.NEKOUI_MAIN:Destroy() end
@@ -201,7 +201,7 @@ local function CreateNekoUI()
 end
 
 -- ==========================================
--- 【 🛡️ 啟動與連線執行 】
+-- 【 🛡️ 啟動與執行 】
 -- ==========================================
 if WhitelistNames[localPlayer.Name] then
     local Neko = CreateNekoUI()
@@ -212,9 +212,8 @@ if WhitelistNames[localPlayer.Name] then
     local Tab4 = Neko:CreateTab("👁️ 貓咪感官", false)
 
     Tab1:AddInfo("小貓認證", "主人：" .. localPlayer.Name)
-    Tab1:AddInfo("擊掌狀態", "🐾 系統連線已修復！")
+    Tab1:AddInfo("擊掌狀態", "🐾 終極系統已就緒喵！")
 
-    -- 🐾 修正連線：現在會正確修改 _G 和 Settings
     Tab2:AddToggle("啟動攻擊循環 🐾", _G, "FastAttack", function(s) end)
     Tab2:AddToggle("啟動自動拉怪 🐾", Settings, "PullEnemies", function(s) end)
     Tab2:AddButton("⚔️ 模式：純打怪", function() Settings.Mode = "Mob" end)
@@ -223,6 +222,8 @@ if WhitelistNames[localPlayer.Name] then
 
     Tab3:AddButton("啟動 貓咪加速 (SPD)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOSPD"))() end)
     Tab3:AddButton("啟動 飛天模式 (Fly)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
+    -- 🐾 貓咪超級進化按鈕在此！
+    Tab3:AddButton("啟動 貓咪超級進化 (V4)", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOV4"))() end)
 
     Tab4:AddToggle("啟動 貓咪透視 (ESP)", _G, "ESP", function(state)
         if state then loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() end
