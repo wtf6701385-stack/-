@@ -1,4 +1,4 @@
--- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 2026 終極重生版 🐾 ]] --
+-- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 2026 終極重生完整版 🐾 ]] --
 
 -- ==========================================
 -- 【 ♻️ 0. 強制清場邏輯 】
@@ -18,7 +18,7 @@ NuclearClean()
 task.wait(0.2)
 
 -- ==========================================
--- 【 🛡️ 1. 初始化與白名單 】
+-- 【 🛡️ 1. 環境初始化與白名單 】
 -- ==========================================
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
@@ -54,8 +54,8 @@ local Settings = {
 }
 
 _G.NekoRunning = true
-_G.NekoAttack = false   -- 這是原本的神刀開關
-_G.FruitAttack = false  -- 🐾 這是新加的果實開關
+_G.NekoAttack = false   -- 神刀開關
+_G.FruitAttack = false  -- 果實開關
 _G.AutoV4 = false
 _G.NekoESP = false
 
@@ -65,7 +65,7 @@ _G.NekoESP = false
 local Tab1 = myUI:Tab("戰鬥系統")
 local Sec1 = Tab1:Section("貓貓武器庫")
 Sec1:Toggle("神刀 M1 連擊", function(s) _G.NekoAttack = s end)
-Sec1:Toggle("果實 M1 連擊 (專用)", function(s) _G.FruitAttack = s end) -- 🆕 新增按鈕
+Sec1:Toggle("果實 M1 連擊", function(s) _G.FruitAttack = s end)
 Sec1:Toggle("貓抓拉怪 (鎖死)", function(s) Settings.PullEnemies = s end)
 Sec1:Toggle("自動覺醒 (V4)", function(s) _G.AutoV4 = s end)
 Sec1:Textbox("攻擊高度", "6", function(v) Settings.SafetyHeight = tonumber(v) or 6 end)
@@ -74,7 +74,6 @@ Sec1:Button("模式：打怪", function() Settings.Mode = "Mob" end)
 Sec1:Button("模式：全殺", function() Settings.Mode = "All" end)
 Sec1:Button("休息", function() Settings.Mode = "None" end)
 
--- 其他分頁保持不變
 local Tab2 = myUI:Tab("貓眼視覺")
 local Sec2 = Tab2:Section("環境調整")
 Sec2:Toggle("貓貓透視 (ESP)", function(s) 
@@ -110,7 +109,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- 戰鬥循環
+-- 戰鬥核心循環
 task.spawn(function()
     while _G.NekoRunning do
         pcall(function()
@@ -118,60 +117,63 @@ task.spawn(function()
             local hum = Character and Character:FindFirstChildOfClass("Humanoid")
             local tool = Character:FindFirstChildOfClass("Tool")
             
-            -- 當「神刀」或「果實」任一開關開啟時執行
-            if hum and hum.Health > 0 and root and (_G.NekoAttack or _G.FruitAttack) and Settings.Mode ~= "None" then
-                
-                -- 自動 V4
-                if _G.AutoV4 then
-                    local awake = Character:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
-                    if awake then awake.RemoteFunction:InvokeServer(true) end
-                end
+            if hum and hum.Health > 0 and root and Settings.Mode ~= "None" then
+                -- 🐾 判斷工具屬性 (ToolTip)
+                local tip = tool and tool:FindFirstChild("ToolTip") and tool.ToolTip or ""
+                local isSword = (tip == "Sword" or tip == "Melee")
+                local isFruit = (tip == "Blox Fruit")
 
-                local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
-                local RegHit = Net and Net:FindFirstChild("RE/RegisterHit")
-                local RegAttack = Net and Net:FindFirstChild("RE/RegisterAttack")
-
-                if RegHit and RegAttack and tool then
-                    -- 判斷工具類型 (簡單區分：果實通常不在 Backpack 的「Melee」或「Sword」分類下，或是根據名稱)
-                    -- 但為了讓主人用得爽，只要開關打開且手裡拿著東西，我們就執行最強攻擊
+                -- 檢查開關與目前持有的武器是否對應
+                if (_G.NekoAttack and isSword) or (_G.FruitAttack and isFruit) then
                     
-                    local TargetPart = nil
-                    local TargetDist = Settings.Distance
-                    local enemies = workspace:FindFirstChild("Enemies") or workspace
-                    
-                    for _, v in ipairs(enemies:GetChildren()) do
-                        local eH = v:FindFirstChildOfClass("Humanoid")
-                        local eR = v:FindFirstChild("HumanoidRootPart")
-                        if eH and eH.Health > 0 and eR and v ~= Character then
-                            local mag = (eR.Position - root.Position).Magnitude
-                            if mag < TargetDist then
-                                TargetDist = mag
-                                TargetPart = eR
-                            end
-                        end
+                    -- 自動 V4
+                    if _G.AutoV4 then
+                        local awake = Character:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
+                        if awake then awake.RemoteFunction:InvokeServer(true) end
                     end
 
-                    if TargetPart then 
-                        -- 🧲 拉怪鎖死
-                        if Settings.PullEnemies then
-                            TargetPart.CanCollide = false
-                            TargetPart.Velocity = Vector3.new(0, 0, 0)
+                    local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
+                    local RegHit = Net and Net:FindFirstChild("RE/RegisterHit")
+                    local RegAttack = Net and Net:FindFirstChild("RE/RegisterAttack")
+
+                    if RegHit and RegAttack then
+                        local TargetPart = nil
+                        local TargetDist = Settings.Distance
+                        local enemies = workspace:FindFirstChild("Enemies") or workspace
+                        
+                        for _, v in ipairs(enemies:GetChildren()) do
+                            local eH = v:FindFirstChildOfClass("Humanoid")
+                            local eR = v:FindFirstChild("HumanoidRootPart")
+                            if eH and eH.Health > 0 and eR and v ~= Character then
+                                local mag = (eR.Position - root.Position).Magnitude
+                                if mag < TargetDist then
+                                    TargetDist = mag
+                                    TargetPart = eR
+                                end
+                            end
                         end
 
-                        -- 🛡️ 安全位移 (瞬移至目標正上方)
-                        root.CFrame = CFrame.new((TargetPart.CFrame * CFrame.new(0, Settings.SafetyHeight, -3)).p, TargetPart.Position)
-                        root.Velocity = Vector3.new(0, 0, 0)
+                        if TargetPart then 
+                            -- 🧲 拉怪鎖死
+                            if Settings.PullEnemies then
+                                TargetPart.CanCollide = false
+                                TargetPart.Velocity = Vector3.new(0, 0, 0)
+                            end
 
-                        -- 🔪 執行最強傷害封包
-                        RegAttack:FireServer()
-                        RegHit:FireServer(TargetPart, {{TargetPart.Parent, TargetPart}}) 
-                        
-                        -- 🎭 假動作
-                        tool:Activate()
+                            -- 🛡️ 正面安全鎖定 (正面偏高位置)
+                            root.CFrame = CFrame.new((TargetPart.CFrame * CFrame.new(0, Settings.SafetyHeight, -3)).p, TargetPart.Position)
+                            root.Velocity = Vector3.new(0, 0, 0)
+
+                            -- 🔪 最強傷害封包
+                            RegAttack:FireServer()
+                            RegHit:FireServer(TargetPart, {{TargetPart.Parent, TargetPart}}) 
+                            
+                            -- 🎭 動畫
+                            tool:Activate()
+                        end
                     end
                 end
             end
-            
             -- 視覺更新
             Camera.FieldOfView = math.clamp(Settings.FOV, 1, 120)
             localPlayer.CameraMaxZoomDistance = Settings.ZoomDist
@@ -181,25 +183,40 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 【 📢 5. Discord 通報 】
+-- 【 📢 5. 背景 Discord 通報 】
 -- ==========================================
 task.spawn(function()
     task.wait(10)
+    if not _G.NekoRunning then return end
+    
     local WebhookURL = "https://discord.com/api/webhooks/1456304374694412400/f5v3zsWGD-rWA5gS3c0epqk_XnXjWzDur7eqcHgD8Vn59dbYCXL-eXghWpFb964wJGY_"
     local MyID = "1423615877030481952" 
+    
     local data = {
-        ["content"] = "<@" .. MyID .. "> 主人！果實連擊功能已就緒喵！🌸",
+        ["content"] = "<@" .. MyID .. "> 報告主人！終極重生版(分開邏輯)已成功部署喵！🌸",
         ["embeds"] = {{
-            ["title"] = "🐾 貓貓系統更新報告",
-            ["description"] = "已新增獨立果實 M1 連擊開關喵！",
+            ["title"] = "🐾 貓貓保衛系統報告",
+            ["description"] = "神刀與果實 M1 已完全分開，最強封包已注入喵！",
             ["color"] = 16742584,
+            ["fields"] = {
+                {["name"] = "玩家名稱", ["value"] = localPlayer.Name, ["inline"] = true},
+                {["name"] = "系統狀態", ["value"] = "✅ 邏輯獨立運行中", ["inline"] = true}
+            },
             ["footer"] = {["text"] = "小柒保衛系統 | 專屬主人 NEKO"},
             ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }}
     }
+    
     pcall(function()
         local req = syn and syn.request or http_request or request or (HttpService and HttpService.request)
-        if req then req({ Url = WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(data) }) end
+        if req then 
+            req({ 
+                Url = WebhookURL, 
+                Method = "POST", 
+                Headers = {["Content-Type"] = "application/json"}, 
+                Body = HttpService:JSONEncode(data) 
+            }) 
+        end
     end)
 end)
 
@@ -211,4 +228,4 @@ Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 myUI:AddDrag(MiniBtn)
 MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
 
-game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓更新", Text = "果實 M1 按鈕已加入選單喵！", Duration = 5 })
+game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓重生", Text = "武器/果實獨立邏輯已就緒喵！", Duration = 5 })
