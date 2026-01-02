@@ -1,4 +1,4 @@
--- [[ 🐾 貓貓 UI：2026 終極封裝庫 (GitHub 正式版) 🐾 ]] --
+-- [[ 🐾 貓貓 UI：2026 終極封裝庫 (GitHub 修復版) 🐾 ]] --
 local library = {}
 local services = setmetatable({}, {__index = function(t, k) return game:GetService(k) end})
 local ts = services.TweenService
@@ -27,7 +27,11 @@ function library.new(name)
     local MainStroke = Instance.new("UIStroke", Main)
     MainStroke.Thickness = 2
     local MainGrad = Instance.new("UIGradient", MainStroke)
-    MainGrad.Color = ColorSequence.new(Color3.fromRGB(255, 120, 180), Color3.fromRGB(130, 80, 255))
+    MainGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 120, 180)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(130, 80, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 120, 180))
+    })
     task.spawn(function() while MainGrad.Parent do MainGrad.Rotation = MainGrad.Rotation + 1.5 task.wait(0.02) end end)
 
     -- 【 🎬 開場蓋子 】
@@ -59,7 +63,7 @@ function library.new(name)
     Side.Size = UDim2.new(0, 135, 1, 0); Side.BackgroundColor3 = Color3.fromRGB(8, 8, 12); Instance.new("UICorner", Side)
     
     local SideTitle = Instance.new("TextLabel", Side)
-    SideTitle.Size = UDim2.new(1, 0, 0, 50); SideTitle.Text = "🐾 " .. name; SideTitle.TextColor3 = Color3.fromRGB(255, 255, 255); SideTitle.Font = "GothamBold"; SideTitle.TextSize = 16; SideTitle.BackgroundTransparency = 1
+    SideTitle.Size = UDim2.new(1, 0, 0, 50); SideTitle.Text = "🐾 " .. name; SideTitle.TextColor3 = Color3.fromRGB(255, 255, 255); SideTitle.Font = "GothamBold"; SideTitle.TextSize = 15; SideTitle.BackgroundTransparency = 1
 
     local TabContainer = Instance.new("ScrollingFrame", Side)
     TabContainer.Size = UDim2.new(1, 0, 1, -60); TabContainer.Position = UDim2.new(0, 0, 0, 50); TabContainer.BackgroundTransparency = 1; TabContainer.ScrollBarThickness = 0
@@ -76,21 +80,19 @@ function library.new(name)
         Instance.new("UIListLayout", Page).Padding = UDim.new(0, 12)
 
         local btn = Instance.new("TextButton", TabContainer)
-        btn.Size = UDim2.new(0.9, 0, 0, 34); btn.Text = tName; btn.BackgroundColor3 = Color3.fromRGB(25, 25, 30); btn.TextColor3 = Color3.fromRGB(150, 150, 150); btn.Font = "GothamMedium"; btn.TextSize = 12; Instance.new("UICorner", btn)
+        btn.Size = UDim2.new(0.9, 0, 0, 34); btn.Text = tName; btn.BackgroundColor3 = Color3.fromRGB(20, 20, 25); btn.TextColor3 = Color3.fromRGB(150, 150, 150); btn.Font = "GothamMedium"; btn.TextSize = 12; Instance.new("UICorner", btn)
         
         btn.MouseButton1Click:Connect(function()
             if window.currentTab then 
                 window.currentTab.Page.Visible = false
-                Tween(window.currentTab.Btn, {0.3}, {BackgroundColor3 = Color3.fromRGB(25, 25, 30), TextColor3 = Color3.fromRGB(150, 150, 150)})
+                Tween(window.currentTab.Btn, {0.3}, {BackgroundColor3 = Color3.fromRGB(20, 20, 25), TextColor3 = Color3.fromRGB(150, 150, 150)})
             end
             Page.Visible = true
             Tween(btn, {0.3}, {BackgroundColor3 = Color3.fromRGB(255, 120, 180), TextColor3 = Color3.fromRGB(255, 255, 255)})
             window.currentTab = {Page = Page, Btn = btn}
         end)
         
-        if not window.currentTab then 
-            Page.Visible = true; btn.BackgroundColor3 = Color3.fromRGB(255, 120, 180); btn.TextColor3 = Color3.fromRGB(255, 255, 255); window.currentTab = {Page = Page, Btn = btn} 
-        end
+        if not window.currentTab then Page.Visible = true; btn.BackgroundColor3 = Color3.fromRGB(255, 120, 180); btn.TextColor3 = Color3.fromRGB(255, 255, 255); window.currentTab = {Page = Page, Btn = btn} end
 
         local tab = {}
         function tab:Section(sName)
@@ -122,7 +124,12 @@ function library.new(name)
             end
             function elements:Button(txt, cb)
                 local b = Instance.new("TextButton", Container); b.Size = UDim2.new(0.94, 0, 0, 32); b.Text = txt; b.BackgroundColor3 = Color3.fromRGB(50, 50, 55); b.TextColor3 = Color3.fromRGB(255, 255, 255); b.Font = "GothamMedium"; b.TextSize = 12; Instance.new("UICorner", b)
-                b.MouseButton1Click:Connect(cb)
+                b.MouseButton1Click:Connect(function()
+                    Tween(b, {0.1}, {BackgroundColor3 = Color3.fromRGB(255, 120, 180)})
+                    task.wait(0.1)
+                    Tween(b, {0.2}, {BackgroundColor3 = Color3.fromRGB(50, 50, 55)})
+                    cb()
+                end)
             end
             return elements
         end
@@ -135,14 +142,13 @@ function library.new(name)
         local d, ds, sp
         obj.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then d = true; ds = i.Position; sp = obj.Position end end)
         services.UserInputService.InputChanged:Connect(function(i) if d and (i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseMovement) then
-            local del = i.Position - ds
-            obj.Position = UDim2.new(sp.X.Scale, sp.X.Offset + del.X, sp.Y.Scale, sp.Y.Offset + del.Y)
+            local del = i.Position - ds; obj.Position = UDim2.new(sp.X.Scale, sp.X.Offset + del.X, sp.Y.Scale, sp.Y.Offset + del.Y)
         end end)
         services.UserInputService.InputEnded:Connect(function() d = false end)
     end
     
-    window:AddDrag(Main) -- 主面板也可以拖拽
-    return window, sg -- ✨ 重要：回傳兩個值給妳的主腳本
+    window:AddDrag(Main)
+    return window, sg
 end
 
 return library
