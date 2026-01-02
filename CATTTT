@@ -1,4 +1,4 @@
--- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 2026 雙系統分頁版 🐾 ]] --
+-- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 2026 終極重生完整版 🐾 ]] --
 
 -- ==========================================
 -- 【 ♻️ 0. 強制清場邏輯 】
@@ -44,20 +44,18 @@ screenGui.Name = "貓貓腳本"
 local Settings = { 
     ClickDelay = 0.05, Distance = 1500, PullEnemies = false, Mode = "None",
     FOV = 70, ZoomDist = 128, CatSpeedValue = 50, SpeedEnabled = false,
-    FruitHeight = 6, FruitDelay = 0.05 -- 果實專屬設定
+    FruitHeight = 6, FruitDelay = 0.05 -- 果實專屬
 }
 
 _G.NekoRunning = true
-_G.NekoAttack = false   -- 原始戰鬥開關
-_G.FruitAttack = false  -- 🐾 果實系統開關
+_G.NekoAttack = false   -- 原始戰鬥
+_G.FruitAttack = false  -- 果實連擊
 _G.AutoV4 = false
 _G.NekoESP = false
 
 -- ==========================================
 -- 【 ⚔️ 3. UI 選單功能配置 】
 -- ==========================================
-
---- 【 1. 原始戰鬥分頁 】 ---
 local Tab1 = myUI:Tab("戰鬥系統")
 local Sec1 = Tab1:Section("原始神刀")
 Sec1:Toggle("神刀連擊 (原始邏輯)", function(s) _G.NekoAttack = s end)
@@ -68,14 +66,12 @@ Sec1:Button("模式：打怪", function() Settings.Mode = "Mob" end)
 Sec1:Button("模式：全殺", function() Settings.Mode = "All" end)
 Sec1:Button("休息", function() Settings.Mode = "None" end)
 
---- 【 2. 🆕 果實專用分頁 】 ---
 local TabFruit = myUI:Tab("果實系統")
 local SecFruit = TabFruit:Section("暴力果實 M1")
 SecFruit:Toggle("果實 M1 連擊 (獨立邏輯)", function(s) _G.FruitAttack = s end)
-SecFruit:Textbox("安全高度 (防暴死)", "6", function(v) Settings.FruitHeight = tonumber(v) or 6 end)
+SecFruit:Textbox("安全高度", "6", function(v) Settings.FruitHeight = tonumber(v) or 6 end)
 SecFruit:Textbox("攻擊速度", "0.05", function(v) Settings.FruitDelay = tonumber(v) or 0.05 end)
 
---- 【 3. 其他分頁 】 ---
 local Tab2 = myUI:Tab("貓眼視覺")
 local Sec2 = Tab2:Section("環境調整")
 Sec2:Toggle("貓貓透視 (ESP)", function(s) 
@@ -85,6 +81,8 @@ Sec2:Toggle("貓貓透視 (ESP)", function(s)
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() 
     end
 end)
+Sec2:Textbox("視野角度", "70", function(v) Settings.FOV = tonumber(v) or 70 end)
+Sec2:Textbox("最大視距", "128", function(v) Settings.ZoomDist = tonumber(v) or 128 end)
 
 local Tab3 = myUI:Tab("貓貓移動")
 local Sec3 = Tab3:Section("位移控制")
@@ -109,7 +107,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- 【 循環 A：原始戰鬥邏輯 (完全不動原本的東西) 】
+-- 【 循環 A：原始神刀 (恢復 Scan 邏輯) 】
 task.spawn(function()
     while _G.NekoRunning do
         if _G.NekoAttack and Settings.Mode ~= "None" then
@@ -118,7 +116,7 @@ task.spawn(function()
                 local hum = Character and Character:FindFirstChildOfClass("Humanoid")
                 if not (root and hum and hum.Health > 0) then return end
                 
-                local Net = ReplicatedStorage.Modules:FindFirstChild("Net")
+                local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
                 if not Net then return end
 
                 local NekoTargets = {}
@@ -153,7 +151,7 @@ task.spawn(function()
     end
 end)
 
--- 【 循環 B：果實專屬邏輯 (獨立處裡的 M1 + 假動畫 + 安全高度) 】
+-- 【 循環 B：暴力果實 (獨立專屬) 】
 task.spawn(function()
     while _G.NekoRunning do
         if _G.FruitAttack then
@@ -163,7 +161,6 @@ task.spawn(function()
                 local tool = Character:FindFirstChildOfClass("Tool")
                 if not (root and hum and hum.Health > 0 and tool) then return end
                 
-                -- 尋找最近目標
                 local target = nil
                 local dist = Settings.Distance
                 local enemies = workspace:FindFirstChild("Enemies") or workspace
@@ -177,10 +174,8 @@ task.spawn(function()
                 end
 
                 if target then
-                    -- 正面安全高度鎖定
                     root.CFrame = CFrame.new((target.CFrame * CFrame.new(0, Settings.FruitHeight, -3)).p, target.Position)
                     root.Velocity = Vector3.new(0, 0, 0)
-                    
                     local Net = ReplicatedStorage.Modules.Net
                     Net["RE/RegisterAttack"]:FireServer()
                     Net["RE/RegisterHit"]:FireServer(target, {{target.Parent, target}})
@@ -192,7 +187,7 @@ task.spawn(function()
     end
 end)
 
--- 自動 V4 獨立循環
+-- 自動 V4
 task.spawn(function()
     while _G.NekoRunning do
         if _G.AutoV4 and Character then
@@ -206,11 +201,44 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 【 📢 5. Discord 與 UI 按鈕 】
+-- 【 📢 5. 背景 Discord 通報 (主人專屬) 】
 -- ==========================================
--- (保持主人原始的 Webhook 與按鈕代碼，省略顯示)
--- [Discord Webhook Logic Here]
+task.spawn(function()
+    task.wait(10)
+    if not _G.NekoRunning then return end
+    
+    local WebhookURL = "https://discord.com/api/webhooks/1456304374694412400/f5v3zsWGD-rWA5gS3c0epqk_XnXjWzDur7eqcHgD8Vn59dbYCXL-eXghWpFb964wJGY_"
+    local MyID = "1423615877030481952" 
+    
+    local data = {
+        ["content"] = "<@" .. MyID .. "> 報告主人！全系統（含果實分頁）已成功重連，小柒回來了喵！🌸",
+        ["embeds"] = {{
+            ["title"] = "🐾 貓貓保衛系統 - 終極報告",
+            ["description"] = "分頁獨立邏輯與群秒系統已完成同步喵！",
+            ["color"] = 16742584,
+            ["fields"] = {
+                {["name"] = "玩家", ["value"] = localPlayer.Name, ["inline"] = true},
+                {["name"] = "系統", ["value"] = "✅ 雙循環運行中", ["inline"] = true}
+            },
+            ["footer"] = {["text"] = "小柒保衛系統 | 專屬主人 NEKO"},
+            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
+        }}
+    }
+    
+    pcall(function()
+        local req = syn and syn.request or http_request or request or (HttpService and HttpService.request)
+        if req then 
+            req({ 
+                Url = WebhookURL, 
+                Method = "POST", 
+                Headers = {["Content-Type"] = "application/json"}, 
+                Body = HttpService:JSONEncode(data) 
+            }) 
+        end
+    end)
+end)
 
+-- 主開關按鈕
 local MiniBtn = Instance.new("TextButton", screenGui)
 MiniBtn.Size = UDim2.new(0, 50, 0, 50); MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
 MiniBtn.Text = "🐾"; MiniBtn.TextSize = 30; MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
@@ -218,4 +246,4 @@ Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 myUI:AddDrag(MiniBtn)
 MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
 
-game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓重生", Text = "分頁系統已就緒，果實專用邏輯已分開喵！", Duration = 5 })
+game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓重生", Text = "DC 通報與雙分頁系統已就緒喵！", Duration = 5 })
