@@ -1,7 +1,7 @@
 -- [[ 🐾 貓貓腳本 (CAT SCRIPT) - 2026 終極重生版 🐾 ]] --
 
 -- ==========================================
--- 【 ♻️ 0. 強制清場邏輯 (解決重複載入問題) 】
+-- 【 ♻️ 0. 強制清場邏輯 】
 -- ==========================================
 if _G.NekoRunning then _G.NekoRunning = false end
 
@@ -18,7 +18,7 @@ NuclearClean()
 task.wait(0.2)
 
 -- ==========================================
--- 【 🛡️ 1. 環境初始化與白名單 】
+-- 【 🛡️ 1. 初始化與白名單 】
 -- ==========================================
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
@@ -42,12 +42,20 @@ local myUI, screenGui = NekoLib.new("貓貓腳本")
 screenGui.Name = "貓貓腳本"
 
 local Settings = { 
-    ClickDelay = 0.1, Distance = 1500, PullEnemies = false, Mode = "None",
-    FOV = 70, ZoomDist = 128, CatSpeedValue = 50, SpeedEnabled = false
+    ClickDelay = 0.05, 
+    Distance = 1500, 
+    PullEnemies = false, 
+    Mode = "None",
+    FOV = 70, 
+    ZoomDist = 128, 
+    CatSpeedValue = 50, 
+    SpeedEnabled = false,
+    SafetyHeight = 6 
 }
 
 _G.NekoRunning = true
-_G.NekoAttack = false
+_G.NekoAttack = false   -- 這是原本的神刀開關
+_G.FruitAttack = false  -- 🐾 這是新加的果實開關
 _G.AutoV4 = false
 _G.NekoESP = false
 
@@ -55,15 +63,18 @@ _G.NekoESP = false
 -- 【 ⚔️ 3. UI 選單功能配置 】
 -- ==========================================
 local Tab1 = myUI:Tab("戰鬥系統")
-local Sec1 = Tab1:Section("貓貓神刀")
-Sec1:Toggle("神刀連擊", function(s) _G.NekoAttack = s end)
-Sec1:Toggle("貓抓拉怪", function(s) Settings.PullEnemies = s end)
+local Sec1 = Tab1:Section("貓貓武器庫")
+Sec1:Toggle("神刀 M1 連擊", function(s) _G.NekoAttack = s end)
+Sec1:Toggle("果實 M1 連擊 (專用)", function(s) _G.FruitAttack = s end) -- 🆕 新增按鈕
+Sec1:Toggle("貓抓拉怪 (鎖死)", function(s) Settings.PullEnemies = s end)
 Sec1:Toggle("自動覺醒 (V4)", function(s) _G.AutoV4 = s end)
+Sec1:Textbox("攻擊高度", "6", function(v) Settings.SafetyHeight = tonumber(v) or 6 end)
 Sec1:Textbox("抓捕範圍", "1500", function(v) Settings.Distance = tonumber(v) or 1500 end)
 Sec1:Button("模式：打怪", function() Settings.Mode = "Mob" end)
 Sec1:Button("模式：全殺", function() Settings.Mode = "All" end)
 Sec1:Button("休息", function() Settings.Mode = "None" end)
 
+-- 其他分頁保持不變
 local Tab2 = myUI:Tab("貓眼視覺")
 local Sec2 = Tab2:Section("環境調整")
 Sec2:Toggle("貓貓透視 (ESP)", function(s) 
@@ -83,12 +94,10 @@ Sec3:Textbox("速度", "50", function(v) Settings.CatSpeedValue = tonumber(v) or
 Sec3:Button("召喚貓貓飛行", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
 
 -- ==========================================
--- 【 🚀 4. 核心功能邏輯 (靈魂重連版) 】
+-- 【 🚀 4. 核心功能邏輯 】
 -- ==========================================
 local Character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
-localPlayer.CharacterAdded:Connect(function(newChar) 
-    Character = newChar -- 死亡復活後自動綁定新身體
-end)
+localPlayer.CharacterAdded:Connect(function(newChar) Character = newChar end)
 
 -- 絲滑加速
 RunService.Heartbeat:Connect(function()
@@ -101,62 +110,68 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- 戰鬥與 V4 循環
+-- 戰鬥循環
 task.spawn(function()
     while _G.NekoRunning do
         pcall(function()
             local root = Character and Character:FindFirstChild("HumanoidRootPart")
             local hum = Character and Character:FindFirstChildOfClass("Humanoid")
+            local tool = Character:FindFirstChildOfClass("Tool")
             
-            if hum and hum.Health > 0 and root then
+            -- 當「神刀」或「果實」任一開關開啟時執行
+            if hum and hum.Health > 0 and root and (_G.NekoAttack or _G.FruitAttack) and Settings.Mode ~= "None" then
+                
                 -- 自動 V4
                 if _G.AutoV4 then
                     local awake = Character:FindFirstChild("Awakening") or localPlayer.Backpack:FindFirstChild("Awakening")
                     if awake then awake.RemoteFunction:InvokeServer(true) end
                 end
 
-                -- 神刀攻擊邏輯
-                if _G.NekoAttack and Settings.Mode ~= "None" then
-                    local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
-                    local RegHit = Net and Net:FindFirstChild("RE/RegisterHit")
-                    local RegAttack = Net and Net:FindFirstChild("RE/RegisterAttack")
+                local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
+                local RegHit = Net and Net:FindFirstChild("RE/RegisterHit")
+                local RegAttack = Net and Net:FindFirstChild("RE/RegisterAttack")
 
-                    if RegHit and RegAttack then
-                        local NekoTargets = {}
-                        local NekoPart = nil
-                        
-                        local function Scan(folder, isPlayers)
-                            for _, obj in ipairs(folder:GetChildren()) do
-                                local enemyChar = isPlayers and obj.Character or obj
-                                if enemyChar and enemyChar ~= Character then
-                                    local eH = enemyChar:FindFirstChildOfClass("Humanoid")
-                                    local eR = enemyChar:FindFirstChild("HumanoidRootPart")
-                                    if eH and eH.Health > 0 and eR and (eR.Position - root.Position).Magnitude < Settings.Distance then
-                                        -- 拉怪功能
-                                        if Settings.PullEnemies and not isPlayers then 
-                                            eR.CanCollide = false
-                                            eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) 
-                                        end
-                                        local part = eR or enemyChar:FindFirstChild("Head")
-                                        if part then 
-                                            NekoPart = part
-                                            table.insert(NekoTargets, {enemyChar, part}) 
-                                        end
-                                    end
-                                end
+                if RegHit and RegAttack and tool then
+                    -- 判斷工具類型 (簡單區分：果實通常不在 Backpack 的「Melee」或「Sword」分類下，或是根據名稱)
+                    -- 但為了讓主人用得爽，只要開關打開且手裡拿著東西，我們就執行最強攻擊
+                    
+                    local TargetPart = nil
+                    local TargetDist = Settings.Distance
+                    local enemies = workspace:FindFirstChild("Enemies") or workspace
+                    
+                    for _, v in ipairs(enemies:GetChildren()) do
+                        local eH = v:FindFirstChildOfClass("Humanoid")
+                        local eR = v:FindFirstChild("HumanoidRootPart")
+                        if eH and eH.Health > 0 and eR and v ~= Character then
+                            local mag = (eR.Position - root.Position).Magnitude
+                            if mag < TargetDist then
+                                TargetDist = mag
+                                TargetPart = eR
                             end
                         end
+                    end
 
-                        Scan(workspace:FindFirstChild("Enemies") or workspace, false)
-                        if Settings.Mode == "All" then Scan(Players, true) end
-
-                        if NekoPart then 
-                            RegAttack:FireServer(Settings.ClickDelay)
-                            RegHit:FireServer(NekoPart, NekoTargets) 
+                    if TargetPart then 
+                        -- 🧲 拉怪鎖死
+                        if Settings.PullEnemies then
+                            TargetPart.CanCollide = false
+                            TargetPart.Velocity = Vector3.new(0, 0, 0)
                         end
+
+                        -- 🛡️ 安全位移 (瞬移至目標正上方)
+                        root.CFrame = CFrame.new((TargetPart.CFrame * CFrame.new(0, Settings.SafetyHeight, -3)).p, TargetPart.Position)
+                        root.Velocity = Vector3.new(0, 0, 0)
+
+                        -- 🔪 執行最強傷害封包
+                        RegAttack:FireServer()
+                        RegHit:FireServer(TargetPart, {{TargetPart.Parent, TargetPart}}) 
+                        
+                        -- 🎭 假動作
+                        tool:Activate()
                     end
                 end
             end
+            
             -- 視覺更新
             Camera.FieldOfView = math.clamp(Settings.FOV, 1, 120)
             localPlayer.CameraMaxZoomDistance = Settings.ZoomDist
@@ -166,40 +181,25 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 【 📢 5. 背景 Discord 通報 (@主人版) 】
+-- 【 📢 5. Discord 通報 】
 -- ==========================================
 task.spawn(function()
     task.wait(10)
-    if not _G.NekoRunning then return end
-    
     local WebhookURL = "https://discord.com/api/webhooks/1456304374694412400/f5v3zsWGD-rWA5gS3c0epqk_XnXjWzDur7eqcHgD8Vn59dbYCXL-eXghWpFb964wJGY_"
-    local MyID = "1423615877030481952" -- 主人的專屬 ID 🐾
-    
+    local MyID = "1423615877030481952" 
     local data = {
-        ["content"] = "<@" .. MyID .. "> 報告主人！腳本已成功部署喵！🌸", -- 這裡是標記主人的地方
+        ["content"] = "<@" .. MyID .. "> 主人！果實連擊功能已就緒喵！🌸",
         ["embeds"] = {{
-            ["title"] = "🐾 貓貓保衛系統報告",
-            ["description"] = "全新重生系統已成功注入喵！",
+            ["title"] = "🐾 貓貓系統更新報告",
+            ["description"] = "已新增獨立果實 M1 連擊開關喵！",
             ["color"] = 16742584,
-            ["fields"] = {
-                {["name"] = "玩家名稱", ["value"] = localPlayer.Name, ["inline"] = true},
-                {["name"] = "系統狀態", ["value"] = "✅ 運行中 (靈魂綁定)", ["inline"] = true}
-            },
             ["footer"] = {["text"] = "小柒保衛系統 | 專屬主人 NEKO"},
             ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }}
     }
-    
     pcall(function()
         local req = syn and syn.request or http_request or request or (HttpService and HttpService.request)
-        if req then 
-            req({ 
-                Url = WebhookURL, 
-                Method = "POST", 
-                Headers = {["Content-Type"] = "application/json"}, 
-                Body = HttpService:JSONEncode(data) 
-            }) 
-        end
+        if req then req({ Url = WebhookURL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(data) }) end
     end)
 end)
 
@@ -211,4 +211,4 @@ Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 myUI:AddDrag(MiniBtn)
 MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
 
-game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓重生", Text = "這次連死神都擋不住我們了喵！", Duration = 5 })
+game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓更新", Text = "果實 M1 按鈕已加入選單喵！", Duration = 5 })
