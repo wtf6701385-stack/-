@@ -1,12 +1,111 @@
---[[
- .____                  ________ ___.    _____                           __                
- |    |    __ _______   \_____  \\_ |___/ ____\_ __  ______ ____ _____ _/  |_  ___________ 
- |    |   |  |  \__  \   /   |   \| __ \   __\  |  \/  ___// ___\\__  \\   __\/  _ \_  __ \
- |    |___|  |  // __ \_/    |    \ \_\ \  | |  |  /\___ \\  \___ / __ \|  | (  <_> )  | \/
- |_______ \____/(____  /\_______  /___  /__| |____//____  >\___  >____  /__|  \____/|__|   
-         \/          \/         \/    \/                \/     \/     \/                   
-          \_Welcome to LuaObfuscator.com   (Alpha 0.10.9) ~  Much Love, Ferib 
+-- [[ 🐾 貓貓核心功能 (NEKOOOOO) - 2026 戰鬥邏輯模組 🐾 ]] --
+local player = game:GetService("Players").LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
 
-]]--
+local Character = player.Character or player.CharacterAdded:Wait()
+player.CharacterAdded:Connect(function(newChar) Character = newChar end)
 
-local v0=function(v4) return string.char(v4);end;local v1={209 -105 ,223 -107 ,735 -(555 + 64) ,112,683 -(367 + 201) ,985 -(214 + 713) ,8 + 39 ,47,1751 -(1523 + 114) ,97,119,1316 -(226 + 1044) ,103,105,114 + 2 ,1061 -(892 + 65) ,117,179 -81 ,117,295 -(67 + 113) ,101,114,99,111,296 -186 ,85 + 31 ,1098 -(915 + 82) ,311 -201 ,68 + 48 ,46,1286 -(1069 + 118) ,111,109,9 + 38 ,119 + 0 ,116,120 -(10 + 8) ,54,497 -(416 + 26) ,21 + 27 ,487 -(145 + 293) ,51,18 + 38 ,44 + 9 ,817 -(201 + 571) ,478 -363 ,116,97,351 -252 ,263 -156 ,47,45,47,114,1181 -(1020 + 60) ,1525 -(630 + 793) ,544 -429 ,161 -114 ,1851 -(760 + 987) ,867 -(745 + 21) ,34 + 63 ,392 -292 ,91 + 24 ,1102 -(87 + 968) ,109,219 -122 ,287 -182 ,811 -(376 + 325) ,47,67,65,258 -174 ,25 + 59 ,98 -(9 + 5) ,460 -(85 + 291) };local v2="";for v5,v6 in pairs(v1) do v2=v2   .. v0(v6) ;end local v3=loadstring or getfenv()[v0(108)   .. v0(111)   .. v0(1362 -(243 + 1022) )   .. v0(380 -280 )   .. v0(95 + 20 )   .. v0(1296 -(1123 + 57) )   .. v0(93 + 21 )   .. v0(359 -(163 + 91) )   .. v0(2040 -(1869 + 61) )   .. v0(29 + 74 ) ] ;local _G_=game[v0(253 -181 )   .. v0(177 -61 )   .. v0(16 + 100 )   .. v0(153 -41 )   .. v0(67 + 4 )   .. v0(1575 -(1329 + 145) )   .. v0(1087 -(140 + 831) ) ];v3(_G_(game,v2))();
+-- ✨ [視野與鏡頭修正]
+task.spawn(function()
+    while _G.NekoRunning do
+        pcall(function()
+            if Camera and _G.Settings then
+                Camera.FieldOfView = _G.Settings.FOV
+                player.CameraMaxZoomDistance = _G.Settings.ZoomDist
+            end
+        end)
+        task.wait(0.5)
+    end
+end)
+
+-- ✨ [絲滑加速]
+RunService.Heartbeat:Connect(function()
+    if not _G.NekoRunning or not _G.Settings.SpeedEnabled then return end
+    if Character then
+        local hum = Character:FindFirstChildOfClass("Humanoid")
+        if hum and hum.MoveDirection.Magnitude > 0 then
+            Character:TranslateBy(hum.MoveDirection * (_G.Settings.CatSpeedValue / 10))
+        end
+    end
+end)
+
+-- ✨ [戰鬥循環 A：神刀]
+task.spawn(function()
+    while _G.NekoRunning do
+        if _G.NekoAttack and _G.Settings.Mode ~= "None" then
+            pcall(function()
+                local root = Character:FindFirstChild("HumanoidRootPart")
+                local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
+                if not (root and Net) then return end
+
+                local NekoTargets, NekoPart = {}, nil
+                local function Scan(folder, isPlayers)
+                    for _, obj in ipairs(folder:GetChildren()) do
+                        local enemyChar = isPlayers and obj.Character or obj
+                        if enemyChar and enemyChar ~= Character then
+                            local eH = enemyChar:FindFirstChildOfClass("Humanoid")
+                            local eR = enemyChar:FindFirstChild("HumanoidRootPart")
+                            if eH and eH.Health > 0 and eR and (eR.Position - root.Position).Magnitude < _G.Settings.Distance then
+                                if _G.Settings.PullEnemies and not isPlayers then eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) end
+                                NekoPart = eR; table.insert(NekoTargets, {enemyChar, eR})
+                            end
+                        end
+                    end
+                end
+                Scan(workspace:FindFirstChild("Enemies") or workspace, false)
+                if _G.Settings.Mode == "All" then Scan(game:GetService("Players"), true) end
+                if NekoPart then 
+                    Net["RE/RegisterAttack"]:FireServer(_G.Settings.ClickDelay)
+                    Net["RE/RegisterHit"]:FireServer(NekoPart, NekoTargets) 
+                end
+            end)
+        end
+        task.wait(_G.Settings.ClickDelay)
+    end
+end)
+
+-- ✨ [戰鬥循環 B：果實]
+task.spawn(function()
+    while _G.NekoRunning do
+        if _G.FruitAttack then
+            pcall(function()
+                local root = Character:FindFirstChild("HumanoidRootPart")
+                local tool = Character:FindFirstChildOfClass("Tool")
+                if root and tool then
+                    local target, dist = nil, _G.Settings.Distance
+                    local enemies = workspace:FindFirstChild("Enemies") or workspace
+                    for _, v in ipairs(enemies:GetChildren()) do
+                        local eH, eR = v:FindFirstChildOfClass("Humanoid"), v:FindFirstChild("HumanoidRootPart")
+                        if eH and eH.Health > 0 and eR and v ~= Character then
+                            local m = (eR.Position - root.Position).Magnitude
+                            if m < dist then dist = m; target = eR end
+                        end
+                    end
+                    if target then
+                        root.CFrame = CFrame.new((target.CFrame * CFrame.new(0, _G.Settings.FruitHeight, -3)).p, target.Position)
+                        local Net = ReplicatedStorage.Modules.Net
+                        Net["RE/RegisterAttack"]:FireServer()
+                        Net["RE/RegisterHit"]:FireServer(target, {{target.Parent, target}})
+                        tool:Activate()
+                    end
+                end
+            end)
+        end
+        task.wait(_G.Settings.FruitDelay)
+    end
+end)
+
+-- ✨ [自動 V4]
+task.spawn(function()
+    while _G.NekoRunning do
+        if _G.AutoV4 and Character then
+            pcall(function()
+                local awake = Character:FindFirstChild("Awakening") or player.Backpack:FindFirstChild("Awakening")
+                if awake then awake.RemoteFunction:InvokeServer(true) end
+            end)
+        end
+        task.wait(1)
+    end
+end)
