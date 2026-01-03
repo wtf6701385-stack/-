@@ -1,0 +1,40 @@
+--[[
+    零域 (ZERO SECTOR) | 解鎖啟動器
+    功能：跳過驗證，直接加載核心
+]]
+
+local StarterGui = game:GetService("StarterGui")
+
+-- 直接加載核心函數
+local function DirectLoad()
+    -- 顯示解鎖成功的通知
+    StarterGui:SetCore("SendNotification", {
+        Title = "零域 | 系統解鎖",
+        Text = "驗證已跳過，正在啟動核心模組...",
+        Duration = 5
+    })
+    
+    -- 指向核心功能檔案
+    local coreUrl = "https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/零"
+    
+    -- 執行加載
+    local success, content = pcall(function() 
+        return game:HttpGet(coreUrl) 
+    end)
+    
+    if success and content and #content > 0 then
+        local func, err = loadstring(content)
+        if func then
+            func() 
+        else
+            warn("核心腳本語法錯誤: " .. tostring(err))
+        end
+    else
+        warn("無法獲取核心內容，請檢查網路連結")
+    end
+end
+
+-- 延遲 1 秒執行，確保環境加載完畢
+task.delay(1, function()
+    DirectLoad()
+end)
