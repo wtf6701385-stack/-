@@ -1,0 +1,38 @@
+-- [[ 🐾 貓貓系統 - 遠端純通報模組 🐾 ]] --
+
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
+
+-- 📢 1. 配置 Webhook (只剩下發送功能)
+local WebhookURL = "https://discord.com/api/webhooks/1456304374694412400/f5v3zsWGD-rWA5gS3c0epqk_XnXjWzDur7eqcHgD8Vn59dbYCXL-eXghWpFb964wJGY_"
+
+-- 🚀 2. 執行通報
+task.spawn(function()
+    local data = {
+        ["embeds"] = {{
+            ["title"] = "🐾 貓貓終端 - 啟動成功",
+            ["description"] = "報告主人！偵測到使用者已成功通過驗證並接入系統喵！",
+            ["color"] = 65535, -- 統一青色
+            ["fields"] = {
+                {["name"] = "用戶名稱", ["value"] = "```" .. localPlayer.Name .. "```", ["inline"] = true},
+                {["name"] = "帳號天數", ["value"] = localPlayer.AccountAge .. " 天", ["inline"] = true},
+                {["name"] = "遊戲 ID", ["value"] = "Place: " .. game.PlaceId, ["inline"] = false}
+            },
+            ["footer"] = {["text"] = "2026 貓貓系統 | 核心狀態: 正常"},
+            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
+        }}
+    }
+
+    pcall(function()
+        local request = syn and syn.request or http_request or request or (HttpService and HttpService.request)
+        if request then
+            request({
+                Url = WebhookURL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode(data)
+            })
+        end
+    end)
+end)
