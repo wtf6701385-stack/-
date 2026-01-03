@@ -83,7 +83,7 @@ SecF:Toggle("果實連擊", function(s) _G.FruitAttack = s end)
 SecF:Textbox("高度", "6", function(v) _G.Settings.FruitHeight = tonumber(v) or 6 end)
 SecF:Textbox("攻速", "0.05", function(v) _G.Settings.FruitDelay = tonumber(v) or 0.05 end)
 
--- ✨ [新增：傳送系統] 
+-- ✨ [傳送系統] 
 local TabT = myUI:Tab("傳送系統")
 local SecT = TabT:Section("跨海傳送")
 local function Sea(c) pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer(c) end) end
@@ -104,6 +104,13 @@ Sec2:Toggle("貓貓透視 (ESP)", function(s)
 end)
 Sec2:Textbox("視野 FOV", "70", function(v) _G.Settings.FOV = tonumber(v) or 70 end)
 Sec2:Textbox("鏡頭拉距", "128", function(v) _G.Settings.ZoomDist = tonumber(v) or 128 end)
+
+-- ⭐ 新增按鈕
+Sec2:Button("掛機 FPS 優化", function() 
+    if _G.OptimizeFPS then _G.OptimizeFPS() else
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"))()
+    end
+end)
 
 local Sec3 = Tab2:Section("絲滑加速")
 Sec3:Toggle("開啟加速", function(s) _G.Settings.SpeedEnabled = s end)
