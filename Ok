@@ -34,7 +34,7 @@ function library.new(name)
         ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 120, 180))
     })
     
-    -- 邊框旋轉動畫
+    -- 邊框旋轉動畫 (主人最愛的亮點喵！)
     task.spawn(function() 
         while MainGrad.Parent do 
             MainGrad.Rotation = MainGrad.Rotation + 1.5 
@@ -189,7 +189,7 @@ function library.new(name)
                     cb(s)
                 end)
             end
-            -- 按鈕
+            -- 按鈕 (配合分裝使用)
             function elements:Button(txt, cb)
                 local b = Instance.new("TextButton", Container)
                 b.Size = UDim2.new(0.94, 0, 0, 32); b.Text = txt
@@ -207,7 +207,7 @@ function library.new(name)
         return tab
     end
 
-    -- 拖拽功能
+    -- 拖拽功能 (讓主人手感更好喵！)
     local function AddDrag(obj)
         local dragging, dragInput, dragStart, startPos
         obj.InputBegan:Connect(function(input)
