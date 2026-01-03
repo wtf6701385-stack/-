@@ -1,231 +1,71 @@
--- [[ 🐾 貓貓 UI：2026 終極封裝庫 (GitHub 穩定版) 🐾 ]]
-local library = {}
-local services = setmetatable({}, {__index = function(t, k) return game:GetService(k) end})
-local ts = services.TweenService
+-- [[ 🐾 影子貓貓 2026 終極合體啟動器 🐾 ]]
 
-local function Tween(obj, info, prop)
-    local t = ts:Create(obj, TweenInfo.new(unpack(info)), prop)
-    t:Play()
-    return t
-end
+-- 1. 加載主人剛給我的 UI 庫
+local NekoLib = loadstring(game:HttpGet("妳的GitHub_UI庫連結"))()
+local win = NekoLib.new("NEKO SYSTEM") -- 這裡會觸發那個超帥的 INITIALIZING 動畫
 
--- 【 核心啟動函數 】
-function library.new(name)
-    local sg = Instance.new("ScreenGui", services.CoreGui)
-    sg.Name = "NekoSystem_" .. name
-    sg.ResetOnSpawn = false
-    sg.IgnoreGuiInset = true
-    sg.DisplayOrder = 999
+-- 2. 預先宣告 _G.Settings 表格 (確保 NEKO 檔案讀得到)
+-- 影子檢查過 NEKO 檔案，這些是它最重要的核心開關
+_G.Settings = {
+    Main = {
+        ["Auto Farm"] = false,
+        ["Select Weapon"] = "Melee", -- 預設近戰
+        ["Auto Fast Farm"] = false,
+        ["Farm Level Method"] = "Quest"
+    },
+    Setting = {
+        ["Fast Attack"] = true,
+        ["Auto Haki"] = true,
+        ["Attack Aura"] = false,
+        ["Bring Mob"] = true
+    },
+    Stats = {
+        ["Auto Add Melee Stats"] = false,
+        ["Auto Add Defense Stats"] = false
+    }
+}
 
-    -- 【 🎨 主框架 】
-    local Main = Instance.new("Frame", sg)
-    Main.Size = UDim2.new(0, 480, 0, 310)
-    Main.Position = UDim2.new(0.5, -240, 0.5, -155)
-    Main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    Main.ClipsDescendants = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
-    
-    local MainStroke = Instance.new("UIStroke", Main)
-    MainStroke.Thickness = 2
-    local MainGrad = Instance.new("UIGradient", MainStroke)
-    MainGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 120, 180)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(130, 80, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 120, 180))
-    })
-    
-    -- 邊框旋轉動畫
-    task.spawn(function() 
-        while MainGrad.Parent do 
-            MainGrad.Rotation = MainGrad.Rotation + 1.5 
-            task.wait(0.02) 
-        end 
-    end)
+-- 3. 開始對接 UI 分頁與功能
+local MainTab = win:Tab("主功能頁")
+local FarmSec = MainTab:Section("自動農場")
 
-    -- 【 🎬 開場蓋子 】
-    local Cover = Instance.new("Frame", Main)
-    Cover.Size = UDim2.new(1, 0, 1, 0)
-    Cover.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-    Cover.ZIndex = 100
-    
-    local Logo = Instance.new("TextLabel", Cover)
-    Logo.Size = UDim2.new(1, 0, 1, 0)
-    Logo.Text = "🐾 NEKO SYSTEM\nINITIALIZING..."
-    Logo.TextColor3 = Color3.fromRGB(255, 120, 180)
-    Logo.Font = Enum.Font.GothamBold
-    Logo.TextSize = 24
-    Logo.BackgroundTransparency = 1
-    Logo.ZIndex = 101
+-- 對接「自動刷等級」
+FarmSec:Toggle("全自動刷等級喵", function(s)
+    _G.Settings.Main["Auto Farm"] = s
+end)
 
-    task.spawn(function()
-        task.wait(1.5) 
-        Tween(Logo, {0.5}, {TextTransparency = 1})
-        local t = Tween(Cover, {0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.In}, {
-            Size = UDim2.new(0, 0, 0, 0), 
-            Position = UDim2.new(0.5, 0, 0.5, 0), 
-            BackgroundTransparency = 1
-        })
-        t.Completed:Wait()
-        Cover:Destroy()
-    end)
+-- 對接「極速刷怪」
+FarmSec:Toggle("極速刷怪 (Fast Farm)", function(s)
+    _G.Settings.Main["Auto Fast Farm"] = s
+end)
 
-    -- 【 📦 內容佈局 】
-    local Content = Instance.new("Frame", Main)
-    Content.Size = UDim2.new(1, 0, 1, 0)
-    Content.BackgroundTransparency = 1
+local CombatSec = MainTab:Section("戰鬥強化")
 
-    local Side = Instance.new("Frame", Content)
-    Side.Size = UDim2.new(0, 135, 1, 0)
-    Side.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
-    Instance.new("UICorner", Side)
-    
-    local SideTitle = Instance.new("TextLabel", Side)
-    SideTitle.Size = UDim2.new(1, 0, 0, 50)
-    SideTitle.Text = "🐾 " .. name
-    SideTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SideTitle.Font = Enum.Font.GothamBold
-    SideTitle.TextSize = 15
-    SideTitle.BackgroundTransparency = 1
+-- 對接「快速攻擊」
+CombatSec:Toggle("無冷卻快速攻擊", function(s)
+    _G.Settings.Setting["Fast Attack"] = s
+end)
 
-    local TabContainer = Instance.new("ScrollingFrame", Side)
-    TabContainer.Size = UDim2.new(1, 0, 1, -60)
-    TabContainer.Position = UDim2.new(0, 0, 0, 50)
-    TabContainer.BackgroundTransparency = 1
-    TabContainer.ScrollBarThickness = 0
-    Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0, 6)
-    Instance.new("UIPadding", TabContainer).PaddingLeft = UDim.new(0, 10)
+-- 對接「攻擊光環」
+CombatSec:Toggle("全屏攻擊光環", function(s)
+    _G.Settings.Setting["Attack Aura"] = s
+end)
 
-    local PageContainer = Instance.new("Frame", Content)
-    PageContainer.Size = UDim2.new(1, -150, 1, -20)
-    PageContainer.Position = UDim2.new(0, 145, 0, 10)
-    PageContainer.BackgroundTransparency = 1
+-- 4. 武器選擇按鈕 (示範如何用 Button 對接)
+local SetSec = MainTab:Section("設定")
+SetSec:Button("切換為近戰武器", function()
+    _G.Settings.Main["Select Weapon"] = "Melee"
+    game:GetService("StarterGui"):SetCore("SendNotification", {Title = "貓貓通知", Text = "已切換為近戰！"})
+end)
 
-    local window = { currentTab = nil }
+SetSec:Button("切換為劍類武器", function()
+    _G.Settings.Main["Select Weapon"] = "Sword"
+    game:GetService("StarterGui"):SetCore("SendNotification", {Title = "貓貓通知", Text = "已切換為劍！"})
+end)
 
-    -- 【 📑 創建分頁 】
-    function window:Tab(tName)
-        local Page = Instance.new("ScrollingFrame", PageContainer)
-        Page.Size = UDim2.new(1, 0, 1, 0)
-        Page.BackgroundTransparency = 1
-        Page.Visible = false
-        Page.ScrollBarThickness = 0
-        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 12)
+-- 5. 最後一步：召喚那 5000 行的「凌霄大腦」
+-- 影子提醒：因為 NEKO 檔案裡原本就有 WindUI，
+-- 我們讓它跑在後台，它會發現 _G.Settings 被我們改了，就會自動動起來！
+loadstring(game:HttpGet("妳的_NEKO_5000行代碼連結"))()
 
-        local btn = Instance.new("TextButton", TabContainer)
-        btn.Size = UDim2.new(0.9, 0, 0, 34)
-        btn.Text = tName
-        btn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-        btn.TextColor3 = Color3.fromRGB(150, 150, 150)
-        btn.Font = Enum.Font.GothamMedium
-        btn.TextSize = 12
-        Instance.new("UICorner", btn)
-        
-        btn.MouseButton1Click:Connect(function()
-            if window.currentTab then 
-                window.currentTab.Page.Visible = false
-                Tween(window.currentTab.Btn, {0.3}, {BackgroundColor3 = Color3.fromRGB(20, 20, 25), TextColor3 = Color3.fromRGB(150, 150, 150)})
-            end
-            Page.Visible = true
-            Tween(btn, {0.3}, {BackgroundColor3 = Color3.fromRGB(255, 120, 180), TextColor3 = Color3.fromRGB(255, 255, 255)})
-            window.currentTab = {Page = Page, Btn = btn}
-        end)
-        
-        if not window.currentTab then 
-            Page.Visible = true
-            btn.BackgroundColor3 = Color3.fromRGB(255, 120, 180)
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            window.currentTab = {Page = Page, Btn = btn} 
-        end
-
-        local tab = {}
-        -- 【 🔘 創建區塊 】
-        function tab:Section(sName)
-            local Sec = Instance.new("Frame", Page)
-            Sec.Size = UDim2.new(0.96, 0, 0, 40)
-            Sec.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            Sec.BackgroundTransparency = 0.96
-            Instance.new("UICorner", Sec)
-            
-            local STitle = Instance.new("TextLabel", Sec)
-            STitle.Size = UDim2.new(1, -10, 0, 25)
-            STitle.Position = UDim2.new(0, 10, 0, 0)
-            STitle.Text = sName:upper()
-            STitle.TextColor3 = Color3.fromRGB(255, 120, 180)
-            STitle.Font = Enum.Font.GothamBold
-            STitle.TextSize = 10
-            STitle.TextXAlignment = Enum.TextXAlignment.Left
-            STitle.BackgroundTransparency = 1
-            
-            local Container = Instance.new("Frame", Sec)
-            Container.Position = UDim2.new(0, 0, 0, 28)
-            Container.Size = UDim2.new(1, 0, 0, 0)
-            Container.BackgroundTransparency = 1
-            local CL = Instance.new("UIListLayout", Container)
-            CL.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            CL.Padding = UDim.new(0, 8)
-            
-            CL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() 
-                Sec.Size = UDim2.new(0.96, 0, 0, CL.AbsoluteContentSize.Y + 38) 
-            end)
-
-            local elements = {}
-            -- 開關
-            function elements:Toggle(txt, cb)
-                local b = Instance.new("TextButton", Container)
-                b.Size = UDim2.new(0.94, 0, 0, 32); b.Text = "  " .. txt
-                b.TextXAlignment = Enum.TextXAlignment.Left; b.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-                b.TextColor3 = Color3.fromRGB(200, 200, 200); b.Font = Enum.Font.GothamMedium; b.TextSize = 12
-                Instance.new("UICorner", b)
-                
-                local dot = Instance.new("Frame", b)
-                dot.Size = UDim2.new(0, 14, 0, 14); dot.Position = UDim2.new(1, -22, 0.5, -7)
-                dot.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-                Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
-                
-                local s = false
-                b.MouseButton1Click:Connect(function()
-                    s = not s
-                    Tween(dot, {0.2}, {BackgroundColor3 = s and Color3.fromRGB(255, 120, 180) or Color3.fromRGB(50, 50, 55)})
-                    cb(s)
-                end)
-            end
-            -- 按鈕
-            function elements:Button(txt, cb)
-                local b = Instance.new("TextButton", Container)
-                b.Size = UDim2.new(0.94, 0, 0, 32); b.Text = txt
-                b.BackgroundColor3 = Color3.fromRGB(50, 50, 55); b.TextColor3 = Color3.fromRGB(255, 255, 255)
-                b.Font = Enum.Font.GothamMedium; b.TextSize = 12; Instance.new("UICorner", b)
-                b.MouseButton1Click:Connect(function()
-                    Tween(b, {0.1}, {BackgroundColor3 = Color3.fromRGB(255, 120, 180)})
-                    task.wait(0.1)
-                    Tween(b, {0.2}, {BackgroundColor3 = Color3.fromRGB(50, 50, 55)})
-                    cb()
-                end)
-            end
-            return elements
-        end
-        return tab
-    end
-
-    -- 拖拽功能
-    local function AddDrag(obj)
-        local dragging, dragInput, dragStart, startPos
-        obj.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true; dragStart = input.Position; startPos = obj.Position
-                input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
-            end
-        end)
-        services.UserInputService.InputChanged:Connect(function(input)
-            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                local delta = input.Position - dragStart
-                obj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
-        end)
-    end
-    
-    AddDrag(Main)
-    return window
-end
-
-return library
+print("🐾 系統已完美對接：貓貓 UI 已接管凌霄大腦！")
