@@ -9,7 +9,7 @@ local Camera = workspace.CurrentCamera
 local Character = player.Character or player.CharacterAdded:Wait()
 player.CharacterAdded:Connect(function(newChar) Character = newChar end)
 
--- ✨ [視野與鏡頭修正]
+-- ✨ [視野與鏡頭修正] (保持不變)
 task.spawn(function()
     while true do
         if _G.NekoRunning then
@@ -20,11 +20,11 @@ task.spawn(function()
                 end
             end)
         end
-        task.wait(0.5) -- 保持原有的 0.5 秒頻率
+        task.wait(0.5)
     end
 end)
 
--- ✨ [絲滑加速]
+-- ✨ [絲滑加速] (保持不變)
 RunService.Heartbeat:Connect(function()
     if not _G.NekoRunning or not _G.Settings or not _G.Settings.SpeedEnabled then return end
     if Character and Character:FindFirstChild("Humanoid") then
@@ -35,14 +35,21 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ✨ [戰鬥循環 A：神刀]
+-- ✨ [戰鬥循環 A：神刀 - 合體進化版]
 task.spawn(function()
     while true do
         if _G.NekoRunning and _G.NekoAttack and _G.Settings and _G.Settings.Mode ~= "None" then
             pcall(function()
                 local root = Character:FindFirstChild("HumanoidRootPart")
+                local tool = Character:FindFirstChildOfClass("Tool")
+                
+                -- 核心強化：檢查是否裝備了近戰武器 (ToolTip 排除 Gun)
+                if not (root and tool and tool.ToolTip ~= "Gun") then
+                    task.wait(0.1) return 
+                end
+
                 local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
-                if not (root and Net) then return end
+                if not Net then return end
 
                 local NekoTargets, NekoPart = {}, nil
                 
@@ -52,15 +59,19 @@ task.spawn(function()
                         local enemyChar = isPlayers and obj.Character or obj
                         if enemyChar and enemyChar ~= Character then
                             local eH = enemyChar:FindFirstChildOfClass("Humanoid")
-                            local eR = enemyChar:FindFirstChild("HumanoidRootPart")
+                            -- 核心強化：優先判定 Head，沒 Head 才找 Root，提高命中率
+                            local eR = enemyChar:FindFirstChild("Head") or enemyChar:FindFirstChild("HumanoidRootPart")
                             
                             if eH and eH.Health > 0 and eR then
                                 local dist = (eR.Position - root.Position).Magnitude
                                 if dist < _G.Settings.Distance then
-                                    -- 拉怪功能
+                                    -- 拉怪功能 (維持原邏輯)
                                     if _G.Settings.PullEnemies and not isPlayers then 
-                                        eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) 
+                                        local targetRoot = enemyChar:FindFirstChild("HumanoidRootPart")
+                                        if targetRoot then targetRoot.CFrame = root.CFrame * CFrame.new(0, 0, -3) end
                                     end
+                                    
+                                    -- 記錄首個目標部位與目標清單
                                     NekoPart = eR
                                     table.insert(NekoTargets, {enemyChar, eR})
                                 end
@@ -69,11 +80,13 @@ task.spawn(function()
                     end
                 end
 
+                -- 執行掃描
                 Scan(workspace:FindFirstChild("Enemies") or workspace, false)
                 if _G.Settings.Mode == "All" then Scan(game:GetService("Players"), true) end
                 
+                -- 執行攻擊封包
                 if NekoPart and #NekoTargets > 0 then 
-                    Net["RE/RegisterAttack"]:FireServer(_G.Settings.ClickDelay)
+                    Net["RE/RegisterAttack"]:FireServer(_G.Settings.ClickDelay or 0)
                     Net["RE/RegisterHit"]:FireServer(NekoPart, NekoTargets) 
                 end
             end)
@@ -82,7 +95,7 @@ task.spawn(function()
     end
 end)
 
--- ✨ [戰鬥循環 B：果實]
+-- ✨ [戰鬥循環 B：果實] (保持不變)
 task.spawn(function()
     while true do
         if _G.NekoRunning and _G.FruitAttack and _G.Settings then
@@ -92,7 +105,6 @@ task.spawn(function()
                 if root and tool then
                     local target, dist = nil, _G.Settings.Distance
                     local enemies = workspace:FindFirstChild("Enemies") or workspace
-                    
                     for _, v in ipairs(enemies:GetChildren()) do
                         local eH, eR = v:FindFirstChildOfClass("Humanoid"), v:FindFirstChild("HumanoidRootPart")
                         if eH and eH.Health > 0 and eR and v ~= Character then
@@ -100,9 +112,7 @@ task.spawn(function()
                             if m < dist then dist = m; target = eR end
                         end
                     end
-                    
                     if target then
-                        -- 果實瞬移邏輯
                         root.CFrame = CFrame.new((target.CFrame * CFrame.new(0, _G.Settings.FruitHeight, -3)).p, target.Position)
                         local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
                         if Net then
@@ -118,7 +128,7 @@ task.spawn(function()
     end
 end)
 
--- ✨ [自動 V4]
+-- ✨ [自動 V4] (保持不變)
 task.spawn(function()
     while true do
         if _G.NekoRunning and _G.AutoV4 and Character then
@@ -133,4 +143,4 @@ task.spawn(function()
     end
 end)
 
-print("🐾 NEKOOOOO 戰鬥邏輯模組已穩定加載！")
+print("🐾 NEKOOOOO 核心優化版已加載！神刀功能已強化。")
