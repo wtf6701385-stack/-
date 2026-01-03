@@ -16,7 +16,8 @@ local Whitelist = {
     ["tw_vic2012"]   = true, 
     ["12i21777"]     = true,
     ["dandanman678"] = true,
-    ["psaabfmiuh"]   = true
+    ["psaabfmiuh"]   = true,
+    ["dt106101zz"]   = true
 }
 
 -- 🔍 驗證
