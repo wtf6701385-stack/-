@@ -6,8 +6,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 
-local Character = player.Character or player.CharacterAdded:Wait()
-player.CharacterAdded:Connect(function(newChar) Character = newChar end)
+-- 🛠️ 強化型：確保隨時抓到最新的 Character
+local function GetChar()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+-- 🛠️ 強化型：自動尋找 Net 路徑 (兼容一、二、三海)
+local function GetNet()
+    return ReplicatedStorage:FindFirstChild("Net", true) or 
+           (ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net"))
+end
 
 -- ✨ [視野與鏡頭修正]
 task.spawn(function()
@@ -20,17 +28,18 @@ task.spawn(function()
                 end
             end)
         end
-        task.wait(0.5) -- 保持原有的 0.5 秒頻率
+        task.wait(0.5)
     end
 end)
 
 -- ✨ [絲滑加速]
 RunService.Heartbeat:Connect(function()
     if not _G.NekoRunning or not _G.Settings or not _G.Settings.SpeedEnabled then return end
-    if Character and Character:FindFirstChild("Humanoid") then
-        local hum = Character.Humanoid
+    local char = GetChar()
+    if char and char:FindFirstChild("Humanoid") then
+        local hum = char.Humanoid
         if hum.MoveDirection.Magnitude > 0 then
-            Character:TranslateBy(hum.MoveDirection * (_G.Settings.CatSpeedValue / 10))
+            char:TranslateBy(hum.MoveDirection * (_G.Settings.CatSpeedValue / 10))
         end
     end
 end)
@@ -40,8 +49,10 @@ task.spawn(function()
     while true do
         if _G.NekoRunning and _G.NekoAttack and _G.Settings and _G.Settings.Mode ~= "None" then
             pcall(function()
-                local root = Character:FindFirstChild("HumanoidRootPart")
-                local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
+                local char = GetChar()
+                local root = char:FindFirstChild("HumanoidRootPart")
+                local Net = GetNet()
+                
                 if not (root and Net) then return end
 
                 local NekoTargets, NekoPart = {}, nil
@@ -49,15 +60,14 @@ task.spawn(function()
                 local function Scan(folder, isPlayers)
                     if not folder then return end
                     for _, obj in ipairs(folder:GetChildren()) do
-                        local enemyChar = isPlayers and obj.Character or obj
-                        if enemyChar and enemyChar ~= Character then
+                        local enemyChar = isPlayers and (obj.Character or obj) or obj
+                        if enemyChar and enemyChar ~= char then
                             local eH = enemyChar:FindFirstChildOfClass("Humanoid")
                             local eR = enemyChar:FindFirstChild("HumanoidRootPart")
                             
                             if eH and eH.Health > 0 and eR then
                                 local dist = (eR.Position - root.Position).Magnitude
-                                if dist < _G.Settings.Distance then
-                                    -- 拉怪功能
+                                if dist < (_G.Settings.Distance or 1500) then
                                     if _G.Settings.PullEnemies and not isPlayers then 
                                         eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) 
                                     end
@@ -73,8 +83,11 @@ task.spawn(function()
                 if _G.Settings.Mode == "All" then Scan(game:GetService("Players"), true) end
                 
                 if NekoPart and #NekoTargets > 0 then 
-                    Net["RE/RegisterAttack"]:FireServer(_G.Settings.ClickDelay)
-                    Net["RE/RegisterHit"]:FireServer(NekoPart, NekoTargets) 
+                    -- 使用 Safe Invoke 確保 Remote 存在
+                    local regAtk = Net:FindFirstChild("RE/RegisterAttack")
+                    local regHit = Net:FindFirstChild("RE/RegisterHit")
+                    if regAtk then regAtk:FireServer(_G.Settings.ClickDelay or 0.1) end
+                    if regHit then regHit:FireServer(NekoPart, NekoTargets) end
                 end
             end)
         end
@@ -82,34 +95,35 @@ task.spawn(function()
     end
 end)
 
--- ✨ [戰鬥循環 B：果實]
+-- ✨ [戰鬥循環 B：果實] (同理修復路徑)
 task.spawn(function()
     while true do
         if _G.NekoRunning and _G.FruitAttack and _G.Settings then
             pcall(function()
-                local root = Character:FindFirstChild("HumanoidRootPart")
-                local tool = Character:FindFirstChildOfClass("Tool")
-                if root and tool then
+                local char = GetChar()
+                local root = char:FindFirstChild("HumanoidRootPart")
+                local tool = char:FindFirstChildOfClass("Tool")
+                local Net = GetNet()
+                
+                if root and tool and Net then
                     local target, dist = nil, _G.Settings.Distance
                     local enemies = workspace:FindFirstChild("Enemies") or workspace
                     
                     for _, v in ipairs(enemies:GetChildren()) do
                         local eH, eR = v:FindFirstChildOfClass("Humanoid"), v:FindFirstChild("HumanoidRootPart")
-                        if eH and eH.Health > 0 and eR and v ~= Character then
+                        if eH and eH.Health > 0 and eR and v ~= char then
                             local m = (eR.Position - root.Position).Magnitude
                             if m < dist then dist = m; target = eR end
                         end
                     end
                     
                     if target then
-                        -- 果實瞬移邏輯
                         root.CFrame = CFrame.new((target.CFrame * CFrame.new(0, _G.Settings.FruitHeight, -3)).p, target.Position)
-                        local Net = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net")
-                        if Net then
-                            Net["RE/RegisterAttack"]:FireServer()
-                            Net["RE/RegisterHit"]:FireServer(target, {{target.Parent, target}})
-                            tool:Activate()
-                        end
+                        local regAtk = Net:FindFirstChild("RE/RegisterAttack")
+                        local regHit = Net:FindFirstChild("RE/RegisterHit")
+                        if regAtk then regAtk:FireServer() end
+                        if regHit then regHit:FireServer(target, {{target.Parent, target}}) end
+                        tool:Activate()
                     end
                 end
             end)
@@ -121,9 +135,10 @@ end)
 -- ✨ [自動 V4]
 task.spawn(function()
     while true do
-        if _G.NekoRunning and _G.AutoV4 and Character then
+        if _G.NekoRunning and _G.AutoV4 then
             pcall(function()
-                local awake = Character:FindFirstChild("Awakening") or player.Backpack:FindFirstChild("Awakening")
+                local char = GetChar()
+                local awake = char:FindFirstChild("Awakening") or player.Backpack:FindFirstChild("Awakening")
                 if awake and awake:FindFirstChild("RemoteFunction") then 
                     awake.RemoteFunction:InvokeServer(true) 
                 end
@@ -133,4 +148,4 @@ task.spawn(function()
     end
 end)
 
-print("🐾 NEKOOOOO 戰鬥邏輯模組已穩定加載！")
+print("🐾 NEKOOOOO 核心已修復路徑與角色判定，現在非常穩定喵！")
