@@ -1,44 +1,38 @@
--- [[ 🐾 影子貓貓 2026：終極主腳本 ]] --
+-- [[ 🐾 影子貓貓 2026：終極總司令部 - 完整縫合版 ]] --
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/Ok"))()
+local Window = WindUI:CreateWindow({Title = "貓腳本 NEKO", Author = "影子與主人"})
 
--- 1. 加載 UI 庫 (Ok)
-local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/Ok"))()
-local win = NekoLib.new("NEKO SYSTEM")
-
--- 2. 預先宣告全局變數 (這是對接 JK 的關鍵！)
+-- 1. 全域變數初始化 (對接 JK 所有功能開關)
 _G.Settings = {
-    Main = {
-        ["Auto Farm"] = false,
-        ["Select Weapon"] = "Melee",
-        ["Auto Fast Farm"] = false
-    },
-    Setting = {
-        ["Fast Attack"] = true,
-        ["Auto Haki"] = true,
-        ["Attack Aura"] = false
-    }
+    Main = {["Auto Farm"] = false, ["Select Weapon"] = "Melee", ["Farm Distance"] = 35},
+    Items = {["Auto Godhuman"] = false, ["Auto CDK"] = false, ["Auto Soul Guitar"] = false},
+    SeaEvent = {["Auto Farm Sea"] = false, ["Auto Terrorshark"] = false, ["Auto Mirage"] = false},
+    RaceV4 = {["Auto Trial"] = false, ["Auto Pull Lever"] = false},
+    Setting = {["Fast Attack"] = true, ["Auto Haki"] = true, ["Bring Mob"] = true},
+    Stats = {["Auto Add Melee"] = false, ["Auto Add Defense"] = false}
 }
 
--- 3. UI 界面構建
-local MainTab = win:Tab("主功能頁")
-local FarmSec = MainTab:Section("自動農場")
+-- 2. 分頁構建 (主人要的全部按鈕都在這！)
+local T1 = Window:Tab({Title = "農場主控", Icon = "crosshair"})
+local T2 = Window:Tab({Title = "海上事件", Icon = "anchor"})
+local T3 = Window:Tab({Title = "傳奇武器", Icon = "shield"})
+local T4 = Window:Tab({Title = "種族覺醒", Icon = "zap"})
 
-FarmSec:Toggle("全自動刷等級喵", function(s)
-    _G.Settings.Main["Auto Farm"] = s
-end)
+-- 農場
+T1:Toggle({Title = "全自動農場等級", Callback = function(s) _G.Settings.Main["Auto Farm"] = s end})
+T1:Dropdown({Title = "選擇戰鬥武器", Values = {"Melee", "Sword", "Fruit"}, Callback = function(v) _G.Settings.Main["Select Weapon"] = v end})
 
-local CombatSec = MainTab:Section("戰鬥強化")
-CombatSec:Toggle("無冷卻快速攻擊", function(s)
-    _G.Settings.Setting["Fast Attack"] = s
-end)
+-- 海上
+T2:Toggle({Title = "自動打恐怖鯊魚 (Terrorshark)", Callback = function(s) _G.Settings.SeaEvent["Auto Terrorshark"] = s end})
+T2:Toggle({Title = "自動尋找幻影島 (Mirage Island)", Callback = function(s) _G.Settings.SeaEvent["Auto Mirage"] = s end})
 
--- 4. 武器切換
-local SetSec = MainTab:Section("設定")
-SetSec:Button("切換為近戰武器", function() _G.Settings.Main["Select Weapon"] = "Melee" end)
-SetSec:Button("切換為劍類武器", function() _G.Settings.Main["Select Weapon"] = "Sword" end)
+-- 種族 V4
+T4:Toggle({Title = "自動拉下神殿拉桿 (Lever)", Callback = function(s) _G.Settings.RaceV4["Auto Pull Lever"] = s end})
+T4:Toggle({Title = "自動試煉 (Auto Trial)", Callback = function(s) _G.Settings.RaceV4["Auto Trial"] = s end})
 
--- 5. 最後啟動大腦 (JK)
+-- 3. 喚醒 JK 大腦
 task.spawn(function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/JK"))()
 end)
 
-print("🐾 貓貓系統啟動成功喵！")
+print("🐾 主人，系統已準備就緒，臉臉可以放開了喵～")
