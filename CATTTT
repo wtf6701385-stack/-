@@ -5,25 +5,28 @@ local localPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- 🛡️ 1. 白名單驗證 (純淨對齊版)
+-- 🛡️ 1. 白名單驗證 (已更新為純淨對齊版)
 local Whitelist = { 
-    ["Kadys5373"]   = true, 
-    ["Zadrian664"]  = true, 
-    ["Zn6xx"]       = true, 
-    ["jay04_23"]    = true, 
-    ["iandsere"]    = true, 
-    ["czr_0416"]    = true, 
-    ["tw_vic2012"]  = true, 
-    ["12i21777"]    = true,
+    ["Kadys5373"]    = true, 
+    ["Zadrian664"]   = true, 
+    ["Zn6xx"]        = true, 
+    ["jay04_23"]     = true, 
+    ["iandsere"]     = true, 
+    ["czr_0416"]     = true, 
+    ["tw_vic2012"]   = true, 
+    ["12i21777"]     = true,
     ["dandanman678"] = true,
-    ["psaabfmiuh"]  = true
+    ["psaabfmiuh"]   = true
 }
 
+-- 🔍 驗證
 if not Whitelist[localPlayer.Name] then
+    -- ❌ 失敗
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/F"))()
     return 
 end
 
+-- ✅ 成功：啟動 5 秒通報倒數
 task.spawn(function()
     task.wait(5)
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/YES"))()
@@ -42,21 +45,27 @@ end
 NuclearClean()
 task.wait(0.2)
 
--- 📦 3. 初始化設定
+-- 📦 3. 初始化全局設定 (保持原始邏輯)
 _G.Settings = { 
     ClickDelay = 0.05, Distance = 1500, PullEnemies = false, Mode = "None",
     FOV = 70, ZoomDist = 128, CatSpeedValue = 50, SpeedEnabled = false,
     FruitHeight = 6, FruitDelay = 0.05 
 }
-_G.NekoRunning, _G.NekoAttack, _G.FruitAttack, _G.AutoV4, _G.NekoESP = true, false, false, false, false
+_G.NekoRunning = true
+_G.NekoAttack = false
+_G.FruitAttack = false
+_G.AutoV4 = false
+_G.NekoESP = false
 
--- 🚀 4. 加載模組
+-- 🚀 4. 加載【戰鬥核心】 (保持原始 NEKOOOOO 連結)
 loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"))()
+
+-- 🍭 5. 載入 【UI 系統】
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("貓貓腳本")
 screenGui.Name = "貓貓腳本"
 
--- [戰鬥系統]
+-- [戰鬥功能配置]
 local Tab1 = myUI:Tab("戰鬥系統")
 local Sec1 = Tab1:Section("神刀與模式")
 Sec1:Toggle("神刀連擊", function(s) _G.NekoAttack = s end)
@@ -74,7 +83,7 @@ SecF:Toggle("果實連擊", function(s) _G.FruitAttack = s end)
 SecF:Textbox("高度", "6", function(v) _G.Settings.FruitHeight = tonumber(v) or 6 end)
 SecF:Textbox("攻速", "0.05", function(v) _G.Settings.FruitDelay = tonumber(v) or 0.05 end)
 
--- ✨ [傳送系統]
+-- ✨ [新增：傳送系統] 
 local TabT = myUI:Tab("傳送系統")
 local SecT = TabT:Section("跨海傳送")
 local function Sea(c) pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer(c) end) end
@@ -101,7 +110,7 @@ Sec3:Toggle("開啟加速", function(s) _G.Settings.SpeedEnabled = s end)
 Sec3:Textbox("速度設定", "50", function(v) _G.Settings.CatSpeedValue = tonumber(v) or 50 end)
 Sec3:Button("召喚飛行", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
 
--- 🐾 6. 介面控制
+-- 🐾 6. 介面控制按鈕
 local MiniBtn = Instance.new("TextButton", screenGui)
 MiniBtn.Size = UDim2.new(0, 50, 0, 50); MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
 MiniBtn.Text = "🐾"; MiniBtn.TextSize = 30; MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
@@ -109,4 +118,9 @@ Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 myUI:AddDrag(MiniBtn)
 MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
 
-game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓終端", Text = "系統已啟動喵！", Duration = 5 })
+-- 📢 系統通知
+game:GetService("StarterGui"):SetCore("SendNotification", { 
+    Title = "🐾 貓貓終端", 
+    Text = "系統已啟動，傳送模組就緒喵！", 
+    Duration = 5 
+})
