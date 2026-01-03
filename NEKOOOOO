@@ -6,6 +6,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 
+-- ✨ [新增：優化執行器] 
+_G.OptimizeFPS = function()
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"))()
+    end)
+end
+
 -- 🛡️ 1. 核心組件安全獲取函數 (依主人要求，完整保留)
 local function SafeWaitForChild(parent, childName)
     local success, result = pcall(function() return parent:WaitForChild(childName, 5) end)
