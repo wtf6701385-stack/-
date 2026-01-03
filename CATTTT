@@ -3,35 +3,31 @@
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- 🛡️ 1. 白名單清單 (身分僅作驗證用途)
+-- 🛡️ 1. 白名單驗證 (純淨對齊版)
 local Whitelist = { 
-    ["Kadys5373"] = "主宰",   
-    ["Zadrian664"] = "皇",    
-    ["Zn6xx"] = "神",         
-    ["jay04_23"] = "神",      
-    ["iandsere"] = "奴",      
-    ["czr_0416"] = "奴", 
-    ["tw_vic2012"] = "奴", 
-    ["12i21777"] = "奴"
+    ["Kadys5373"]   = true, 
+    ["Zadrian664"]  = true, 
+    ["Zn6xx"]       = true, 
+    ["jay04_23"]    = true, 
+    ["iandsere"]    = true, 
+    ["czr_0416"]    = true, 
+    ["tw_vic2012"]  = true, 
+    ["12i21777"]    = true
 }
 
--- 🔍 啟動白名單驗證
-local myRole = Whitelist[localPlayer.Name]
-
-if not myRole then
-    -- ❌ 【失敗】直接啟動懲罰系統，不執行後面任何代碼
+if not Whitelist[localPlayer.Name] then
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/F"))()
     return 
 end
 
--- ✅ 【成功】啟動 5 秒通報倒數 (背景執行，不卡 UI)
 task.spawn(function()
     task.wait(5)
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/YES"))()
 end)
 
--- ♻️ 2. 環境清理 (移除舊的 UI 與殘留腳本)
+-- ♻️ 2. 環境清理
 if _G.NekoRunning then _G.NekoRunning = false end
 local function NuclearClean()
     local CoreGui = game:GetService("CoreGui")
@@ -44,22 +40,16 @@ end
 NuclearClean()
 task.wait(0.2)
 
--- 📦 3. 初始化全局設定 (Settings)
+-- 📦 3. 初始化設定
 _G.Settings = { 
     ClickDelay = 0.05, Distance = 1500, PullEnemies = false, Mode = "None",
     FOV = 70, ZoomDist = 128, CatSpeedValue = 50, SpeedEnabled = false,
     FruitHeight = 6, FruitDelay = 0.05 
 }
-_G.NekoRunning = true
-_G.NekoAttack = false
-_G.FruitAttack = false
-_G.AutoV4 = false
-_G.NekoESP = false
+_G.NekoRunning, _G.NekoAttack, _G.FruitAttack, _G.AutoV4, _G.NekoESP = true, false, false, false, false
 
--- 🚀 4. 加載【戰鬥核心】 (NEKOOOOO)
+-- 🚀 4. 加載模組
 loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"))()
-
--- 🍭 5. 載入 【UI 系統】 (NEKOUI) 並配置介面
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("貓貓腳本")
 screenGui.Name = "貓貓腳本"
@@ -82,7 +72,16 @@ SecF:Toggle("果實連擊", function(s) _G.FruitAttack = s end)
 SecF:Textbox("高度", "6", function(v) _G.Settings.FruitHeight = tonumber(v) or 6 end)
 SecF:Textbox("攻速", "0.05", function(v) _G.Settings.FruitDelay = tonumber(v) or 0.05 end)
 
--- [視覺與移動]
+-- ✨ [傳送系統]
+local TabT = myUI:Tab("傳送系統")
+local SecT = TabT:Section("跨海傳送")
+local function Sea(c) pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer(c) end) end
+
+SecT:Button("前往一海", function() Sea("TravelMain") end)
+SecT:Button("前往二海", function() Sea("TravelDressrosa") end)
+SecT:Button("前往三海", function() Sea("TravelZou") end)
+
+-- [環境與移動]
 local Tab2 = myUI:Tab("環境與移動")
 local Sec2 = Tab2:Section("鏡頭與 ESP")
 Sec2:Toggle("貓貓透視 (ESP)", function(s) 
@@ -100,7 +99,7 @@ Sec3:Toggle("開啟加速", function(s) _G.Settings.SpeedEnabled = s end)
 Sec3:Textbox("速度設定", "50", function(v) _G.Settings.CatSpeedValue = tonumber(v) or 50 end)
 Sec3:Button("召喚飛行", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
 
--- 🐾 6. 介面控制按鈕
+-- 🐾 6. 介面控制
 local MiniBtn = Instance.new("TextButton", screenGui)
 MiniBtn.Size = UDim2.new(0, 50, 0, 50); MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
 MiniBtn.Text = "🐾"; MiniBtn.TextSize = 30; MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
@@ -108,9 +107,4 @@ Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 myUI:AddDrag(MiniBtn)
 MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
 
--- 📢 系統通知
-game:GetService("StarterGui"):SetCore("SendNotification", { 
-    Title = "🐾 貓貓終端", 
-    Text = "歡迎回來！核心與 UI 系統已啟動喵！", 
-    Duration = 5 
-})
+game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓終端", Text = "系統已啟動喵！", Duration = 5 })
