@@ -1,250 +1,44 @@
--- [[ 🐾 Delta 相容性補丁 ]] --
-if not cloneref then
-    getgenv().cloneref = function(obj) return obj end
-end
+-- [[ 🐾 影子貓貓 2026：終極主腳本 ]] --
 
--- 如果 Delta 不支援一些進階函數，這能防止報錯
-if not getgenv().setfpscap then
-    getgenv().setfpscap = function() end
-end
--- [[ 啟動妳的貓貓 UI ]] --
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/Ok"))()
-local win = library.new("NEKO Delta版")
+-- 1. 加載 UI 庫 (Ok)
+local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/Ok"))()
+local win = NekoLib.new("NEKO SYSTEM")
 
--- ... (中間的對接代碼跟之前一樣) ...
-
--- [[ 加載 NEKO 大腦 ]] --
--- 建議加載時包一層 pcall，防止 Delta 崩潰
-task.spawn(function()
-    local success, err = pcall(function()
-        loadstring(game:HttpGet("妳的NEKO檔案連結"))()
-    end)
-    if not success then
-        warn("🐾 影子提醒：加載大腦失敗，原因: " .. tostring(err))
-    end
-end)
-
-
--- 2. 初始化凌霄 2 原本的核心設定表格 (必須與原腳本變量名一致)
+-- 2. 預先宣告全局變數 (這是對接 JK 的關鍵！)
 _G.Settings = {
     Main = {
         ["Auto Farm"] = false,
         ["Select Weapon"] = "Melee",
-        ["Auto Fast Farm"] = false,
+        ["Auto Fast Farm"] = false
     },
     Setting = {
         ["Fast Attack"] = true,
         ["Auto Haki"] = true,
-        ["Attack Aura"] = false,
-    },
-    Stats = {
-        ["Auto Add Melee Stats"] = false,
-        ["Auto Add Defense Stats"] = false,
-        ["Auto Add Sword Stats"] = false,
-    },
-    Farm = {
-        ["Auto Elite Hunter"] = false,
+        ["Attack Aura"] = false
     }
 }
 
--- 3. 創建 UI 分頁
-local MainTab = win:Tab("主功能喵")
-local FarmSec = MainTab:Section("自動農場設定")
+-- 3. UI 界面構建
+local MainTab = win:Tab("主功能頁")
+local FarmSec = MainTab:Section("自動農場")
 
--- 4. 對接開關 (這就是牽線喵！)
-FarmSec:Toggle("全自動農場", function(s)
+FarmSec:Toggle("全自動刷等級喵", function(s)
     _G.Settings.Main["Auto Farm"] = s
 end)
 
-FarmSec:Toggle("極速攻擊 (No CD)", function(s)
+local CombatSec = MainTab:Section("戰鬥強化")
+CombatSec:Toggle("無冷卻快速攻擊", function(s)
     _G.Settings.Setting["Fast Attack"] = s
 end)
 
-FarmSec:Toggle("自動武裝色", function(s)
-    _G.Settings.Setting["Auto Haki"] = s
-end)
+-- 4. 武器切換
+local SetSec = MainTab:Section("設定")
+SetSec:Button("切換為近戰武器", function() _G.Settings.Main["Select Weapon"] = "Melee" end)
+SetSec:Button("切換為劍類武器", function() _G.Settings.Main["Select Weapon"] = "Sword" end)
 
-local StatTab = win:Tab("自動加點")
-local StatSec = StatTab:Section("屬性分配")
-
-StatSec:Toggle("自動加近戰", function(s)
-    _G.Settings.Stats["Auto Add Melee Stats"] = s
-end)
-
-print("🐾 階段 1 完成：UI 已就緒，等待後續邏輯中...")
--- [[ 🐾 階段 2：核心工具函數移植 ]] --
-
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
-
--- 1. 基礎檢查與設定 (這些是原本腳本開頭的 local 變量)
-local function CheckLevel()
-    local myLevel = LP.Data.Level.Value
-    if myLevel >= 1 and myLevel <= 14 then return "Bandit", "BanditQuest1", 1, "Bandit"
-    elseif myLevel >= 15 and myLevel <= 29 then return "Monkey", "JungleQuest", 1, "Monkey"
-    -- ... (此處省略 5000 行中重複的等級判斷，請主人確保之後完整版有包含所有判斷)
-    end
-end
-
--- 2. 自動裝備武器邏輯
-local function EquipWeapon()
-    local weaponName = _G.Settings.Main["Select Weapon"] or "Melee"
-    if LP.Backpack:FindFirstChild(weaponName) then
-        LP.Character.Humanoid:EquipTool(LP.Backpack:FindFirstChild(weaponName))
-    end
-end
-
--- 3. 自動加點邏輯 (對接妳在階段 1 寫的 Toggle)
+-- 5. 最後啟動大腦 (JK)
 task.spawn(function()
-    while task.wait(1) do
-        pcall(function()
-            if _G.Settings.Stats["Auto Add Melee Stats"] then
-                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", "Melee", 3)
-            end
-            if _G.Settings.Stats["Auto Add Defense Stats"] then
-                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", "Defense", 3)
-            end
-            if _G.Settings.Stats["Auto Add Sword Stats"] then
-                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("AddPoint", "Sword", 3)
-            end
-        end)
-    end
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/JK"))()
 end)
 
--- 4. 核心任務系統 (接取/檢查任務)
-local function GetQuest()
-    local myLevel = LP.Data.Level.Value
-    local mobName, questName, questId, npcName = CheckLevel()
-    
-    if not LP.PlayerGui.Main.Quest.Visible then
-        -- 這裡放瞬移到 NPC 的邏輯 (階段 3 會詳細補完)
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", questName, questId)
-    end
-end
-
--- 5. 自動開啟武裝色 (Haki)
-task.spawn(function()
-    while task.wait(5) do
-        if _G.Settings.Setting["Auto Haki"] then
-            if not LP.Character:FindFirstChild("HasBuso") then
-                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
-            end
-        end
-    end
-end)
-
-print("🐾 階段 2 完成：大腦函數已就緒！")
--- [[ 🐾 階段 3：主循環引擎 (主線刷怪邏輯) ]] --
-
-local function CheckQuest() -- 檢查現在有沒有任務
-    return LP.PlayerGui.Main.Quest.Visible
-end
-
-local function GetToPos(pos) -- 核心瞬移函數
-    if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-        LP.Character.HumanoidRootPart.CFrame = pos
-    end
-end
-
--- 啟動自動刷怪主循環
-task.spawn(function()
-    while task.wait() do
-        if _G.Settings.Main["Auto Farm"] then
-            pcall(function()
-                local mobName, questName, questId, npcName = CheckLevel()
-                
-                -- 1. 如果沒任務，就跑去接任務
-                if not CheckQuest() then
-                    local npcPos = workspace.NPCs:FindFirstChild(npcName).Head.CFrame
-                    GetToPos(npcPos)
-                    task.wait(0.5)
-                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", questName, questId)
-                
-                -- 2. 如果有任務了，就去找怪
-                else
-                    local monster = nil
-                    for _, v in pairs(workspace.Enemies:GetChildren()) do
-                        if v.Name == mobName and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                            monster = v
-                            break
-                        end
-                    end
-                    
-                    -- 找不到怪就去刷怪點等
-                    if not monster then
-                        local spawnPos = workspace.EnemySpawns:FindFirstChild(mobName).CFrame
-                        GetToPos(spawnPos)
-                    else
-                        -- 3. 抓到怪物，瞬移到怪物頭上 5 格的位置 (避開傷害)
-                        EquipWeapon()
-                        GetToPos(monster.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0))
-                        
-                        -- 這裡預留給階段 4 的 RegisterHit 攻擊引擎
-                    end
-                end
-            end)
-        end
-    end
-end)
-
-print("🐾 階段 3 完成：刷怪引擎已啟動！")
--- [[ 🐾 階段 4：終極戰鬥引擎 (RegisterHit 加密攻擊) ]] --
-
-local idremote = 101010 -- 原本代碼中的加密種子
-local remote = game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]
-
--- 核心攻擊循環
-task.spawn(function()
-    while task.wait() do
-        -- 只有在開啟快速攻擊且手上有拿武器時才觸發
-        if _G.Settings.Setting["Fast Attack"] and LP.Character:FindFirstChildOfClass("Tool") then
-            pcall(function()
-                local char = LP.Character
-                local hrp = char.HumanoidRootPart
-                local tool = char:FindFirstChildOfClass("Tool")
-                local parts = {}
-
-                -- 搜尋半徑 60 內的敵人 (全屏攻擊邏輯)
-                for _, v in ipairs(workspace.Enemies:GetChildren()) do
-                    if v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
-                        if (hrp.Position - v.HumanoidRootPart.Position).Magnitude <= 60 then
-                            for _, _v in ipairs(v:GetChildren()) do
-                                if _v:IsA("BasePart") then
-                                    parts[#parts + 1] = {v, _v}
-                                end
-                            end
-                        end
-                    end
-                end
-
-                -- 執行 RegisterHit 遠程呼叫
-                if #parts > 0 and (tool:GetAttribute("WeaponType") == "Melee" or tool:GetAttribute("WeaponType") == "Sword") then
-                    -- 這裡就是原腳本最精華的 RegisterHit 繞過邏輯
-                    require(game.ReplicatedStorage.Modules.Net):RemoteEvent("RegisterHit", true)
-                    game.ReplicatedStorage.Modules.Net["RE/RegisterAttack"]:FireServer()
-                    
-                    local head = parts[1][1]:FindFirstChild("Head")
-                    if head then
-                        -- 發送攻擊封包 (包含原本的 ID 偏移計算)
-                        game.ReplicatedStorage.Modules.Net["RE/RegisterHit"]:FireServer(
-                            head, 
-                            parts, 
-                            {}, 
-                            tostring(LP.UserId):sub(2, 4) .. tostring(coroutine.running()):sub(11, 15)
-                        )
-                        
-                        -- 第二重加密驗證回傳
-                        remote:FireServer(string.gsub("RE/RegisterHit", ".", function(c)
-                            return string.char(bit32.bxor(string.byte(c), math.floor(workspace:GetServerTimeNow() / 10 % 10) + 1))
-                        end), bit32.bxor(idremote + 909090, game.ReplicatedStorage.Modules.Net.seed:InvokeServer() * 1))
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- 補上一個 FPS 優化，讓 Delta 跑起來更順
-if setfpscap then setfpscap(1000) end
-
-print("🐾 【手術成功】全部功能已對接完成！貓貓 UI 現在完全掌控了凌霄大腦喵！")
+print("🐾 貓貓系統啟動成功喵！")
