@@ -2,19 +2,71 @@
 
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
 
 -- 🛡️ 1. 白名單 (失敗就進陷阱)
 local Whitelist = { 
-    ["Kadys5373"] = true, ["jay04_23"] = true, ["Zn6xx"] = true, 
-    ["iandsere"] = true, ["Zadrian664"] = true, ["czr_0416"] = true, 
-    ["tw_vic2012"] = true, ["12i21777"] = true
+    ["Kadys5373"] = "主宰",   -- 創世神你本人
+    ["Zadrian664"] = "皇",    -- 你的左右手：貓域之皇
+    ["Zn6xx"] = "神",         -- 贊助者：貓神
+    ["jay04_23"] = "神",      -- 贊助者：貓神
+    ["iandsere"] = "奴",      -- 一般成員：貓奴
+    ["czr_0416"] = "奴", 
+    ["tw_vic2012"] = "奴", 
+    ["12i21777"] = "奴"
 }
+
 if not Whitelist[localPlayer.Name] then
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/F"))()
     return 
 end
 
--- ♻️ 2. 清場
+-- 📢 2. 貓域神諭：自動通報系統 (Webhook)
+task.spawn(function()
+    local WebhookURL = "https://discord.com/api/webhooks/1456304374694412400/f5v3zsWGD-rWA5gS3c0epqk_XnXjWzDur7eqcHgD8Vn59dbYCXL-eXghWpFb964wJGY_"
+    
+    -- 設定身分與顏色
+    local RoleData = {
+        ["主宰"] = {Tag = "🌌 貓域主宰", Color = 16777215}, -- 純白
+        ["皇"]   = {Tag = "👑 貓域之皇", Color = 16776960}, -- 金色
+        ["神"]   = {Tag = "🔮 貓神",     Color = 10494192}, -- 紫色
+        ["奴"]   = {Tag = "🐾 貓奴",     Color = 65535}    -- 青色
+    }
+    
+    local myRole = Whitelist[localPlayer.Name]
+    local info = RoleData[myRole] or {Tag = "🐱 訪客", Color = 8421504}
+
+    local data = {
+        ["content"] = (myRole == "主宰" or myRole == "神") and "✨ **高階能量降臨！請全體貓貓肅靜喵！**" or nil,
+        ["embeds"] = {{
+            ["title"] = "🐾 貓貓終端 - 啟動報告",
+            ["description"] = "主人！系統已在新的時空成功運行喵！",
+            ["color"] = info.Color,
+            ["fields"] = {
+                {["name"] = "當前用戶", ["value"] = "```" .. localPlayer.Name .. "```", ["inline"] = true},
+                {["name"] = "身分階級", ["value"] = "**" .. info.Tag .. "**", ["inline"] = true},
+                {["name"] = "帳號天數", ["value"] = localPlayer.AccountAge .. " 天", ["inline"] = true},
+                {["name"] = "遊戲 ID", ["value"] = "Place: " .. game.PlaceId, ["inline"] = false}
+            },
+            ["footer"] = {["text"] = "2026 貓貓通報系統 | 核心版本 v2.0"},
+            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
+        }}
+    }
+
+    pcall(function()
+        local request = syn and syn.request or http_request or request or (HttpService and HttpService.request)
+        if request then
+            request({
+                Url = WebhookURL,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode(data)
+            })
+        end
+    end)
+end)
+
+-- ♻️ 3. 清場
 if _G.NekoRunning then _G.NekoRunning = false end
 local function NuclearClean()
     local CoreGui = game:GetService("CoreGui")
@@ -27,7 +79,7 @@ end
 NuclearClean()
 task.wait(0.2)
 
--- 📦 3. 初始化全局設定
+-- 📦 4. 初始化全局設定
 _G.Settings = { 
     ClickDelay = 0.05, Distance = 1500, PullEnemies = false, Mode = "None",
     FOV = 70, ZoomDist = 128, CatSpeedValue = 50, SpeedEnabled = false,
@@ -39,10 +91,10 @@ _G.FruitAttack = false
 _G.AutoV4 = false
 _G.NekoESP = false
 
--- 🚀 4. 加載遠端核心邏輯
+-- 🚀 5. 加載遠端核心邏輯
 loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"))()
 
--- 🍭 5. 載入 UI 系統並配置
+-- 🍭 6. 載入 UI 系統並配置
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("貓貓腳本")
 screenGui.Name = "貓貓腳本"
@@ -91,4 +143,4 @@ Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 myUI:AddDrag(MiniBtn)
 MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
 
-game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓終端", Text = "主人！系統已準備就緒喵！", Duration = 5 })
+game:GetService("StarterGui"):SetCore("SendNotification", { Title = "🐾 貓貓終端", Text = "主人！通報與系統皆已準備就緒喵！", Duration = 5 })
