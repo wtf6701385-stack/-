@@ -1,41 +1,64 @@
--- [[ 🐾 貓貓核心功能 (NEKOOOOO) - 2026 戰鬥邏輯模組 🐾 ]] --
--- 保持原有接口：_G.NekoRunning, _G.NekoAttack, _G.FruitAttack, _G.Settings
+-- [[ 🐾 貓貓核心功能 (NEKOOOOO) - 2026 神刀引擎版 🐾 ]] --
 
-local player = game:GetService("Players").LocalPlayer
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 
--- 🛠️ 強化型：確保隨時抓到最新的 Character
-local function GetChar()
-    return player.Character or player.CharacterAdded:Wait()
+-- 🛡️ 1. 核心組件安全獲取函數 (依主人要求，完整保留)
+local function SafeWaitForChild(parent, childName)
+    local success, result = pcall(function() return parent:WaitForChild(childName, 5) end)
+    return success and result or nil
 end
 
--- 🛠️ 強化型：自動尋找 Net 路徑 (兼容一、二、三海)
-local function GetNet()
-    return ReplicatedStorage:FindFirstChild("Net", true) or 
-           (ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Net"))
+local function CheckAndGetCoreComponents()
+    local Remotes, Modules, Net, RegisterAttack, RegisterHit, Enemies = nil, nil, nil, nil, nil, nil
+    pcall(function()
+        Remotes = SafeWaitForChild(ReplicatedStorage, "Remotes")
+        Modules = SafeWaitForChild(ReplicatedStorage, "Modules")
+        Net = Modules and Modules:FindFirstChild("Net") or nil
+        RegisterAttack = Net and Net:FindFirstChild("RE/RegisterAttack") or nil
+        RegisterHit = Net and Net:FindFirstChild("RE/RegisterHit") or nil
+        Enemies = SafeWaitForChild(workspace, "Enemies")
+    end)
+    return Remotes, Net, RegisterAttack, RegisterHit, Enemies
 end
 
--- ✨ [視野與鏡頭修正]
+-- 🛡️ 2. 存活判定與部位獲取 (核心邏輯)
+local function IsAlive(character)
+    return character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0
+end
+
+local function GetRandomValidPart(target)
+    local allParts = target:GetDescendants()
+    local validParts = {}
+    local humanoidRootPart = target:FindFirstChild("HumanoidRootPart")
+    local boneParts = humanoidRootPart and humanoidRootPart.Parent:GetDescendants() or {}
+    for _, part in ipairs(allParts) do
+        if part:IsA("BasePart") and part.CanCollide and table.find(boneParts, part) then
+            table.insert(validParts, part)
+        end
+    end
+    return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
+end
+
+-- ✨ [視野與加速系統] (保持不變)
 task.spawn(function()
     while true do
-        if _G.NekoRunning then
+        if _G.NekoRunning and _G.Settings then
             pcall(function()
-                if Camera and _G.Settings then
-                    Camera.FieldOfView = _G.Settings.FOV
-                    player.CameraMaxZoomDistance = _G.Settings.ZoomDist
-                end
+                Camera.FieldOfView = _G.Settings.FOV
+                Player.CameraMaxZoomDistance = _G.Settings.ZoomDist
             end)
         end
         task.wait(0.5)
     end
 end)
 
--- ✨ [絲滑加速]
 RunService.Heartbeat:Connect(function()
     if not _G.NekoRunning or not _G.Settings or not _G.Settings.SpeedEnabled then return end
-    local char = GetChar()
+    local char = Player.Character
     if char and char:FindFirstChild("Humanoid") then
         local hum = char.Humanoid
         if hum.MoveDirection.Magnitude > 0 then
@@ -44,108 +67,78 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ✨ [戰鬥循環 A：神刀]
+-- ⚔️ 3. 神刀主引擎 (對接 NEKO UI)
+local FastAttack = {
+    Distance = 2500, -- 會自動對接 _G.Settings.Distance
+    attackMobs = true,
+    attackPlayers = true
+}
+
+-- 掃描邏輯 A：怪物
+local function ProcessEnemies(OthersEnemies, Folder)
+    if not Folder or not FastAttack.attackMobs then return nil end
+    local BasePart = nil
+    for _, Enemy in ipairs(Folder:GetChildren()) do
+        if Enemy == Player.Character or not IsAlive(Enemy) then continue end
+        local foundPart = GetRandomValidPart(Enemy)
+        if foundPart and Player:DistanceFromCharacter(foundPart.Position) < (_G.Settings.Distance or FastAttack.Distance) then
+            -- 🐾 整合拉怪功能
+            if _G.Settings.PullEnemies then
+                local eRoot = Enemy:FindFirstChild("HumanoidRootPart")
+                local myRoot = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+                if eRoot and myRoot then eRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3) end
+            end
+            table.insert(OthersEnemies, {Enemy, foundPart})
+            BasePart = foundPart
+        end
+    end
+    return BasePart
+end
+
+-- 掃描邏輯 B：玩家
+local function ProcessRealPlayers(OthersEnemies)
+    if not FastAttack.attackPlayers then return nil end
+    local BasePart = nil
+    for _, OtherPlayer in ipairs(Players:GetPlayers()) do
+        if OtherPlayer == Player then continue end
+        local OtherChar = OtherPlayer.Character
+        if not IsAlive(OtherChar) then continue end
+        local foundPart = GetRandomValidPart(OtherChar)
+        if foundPart and Player:DistanceFromCharacter(foundPart.Position) < (_G.Settings.Distance or FastAttack.Distance) then
+            table.insert(OthersEnemies, {OtherChar, foundPart})
+            BasePart = foundPart
+        end
+    end
+    return BasePart
+end
+
+-- ⚔️ 神刀死循環 (核心發動)
 task.spawn(function()
     while true do
-        if _G.NekoRunning and _G.NekoAttack and _G.Settings and _G.Settings.Mode ~= "None" then
-            pcall(function()
-                local char = GetChar()
-                local root = char:FindFirstChild("HumanoidRootPart")
-                local Net = GetNet()
-                
-                if not (root and Net) then return end
+        local delay = (_G.Settings and _G.Settings.ClickDelay) or 0.1
+        task.wait(delay)
 
-                local NekoTargets, NekoPart = {}, nil
-                
-                local function Scan(folder, isPlayers)
-                    if not folder then return end
-                    for _, obj in ipairs(folder:GetChildren()) do
-                        local enemyChar = isPlayers and (obj.Character or obj) or obj
-                        if enemyChar and enemyChar ~= char then
-                            local eH = enemyChar:FindFirstChildOfClass("Humanoid")
-                            local eR = enemyChar:FindFirstChild("HumanoidRootPart")
-                            
-                            if eH and eH.Health > 0 and eR then
-                                local dist = (eR.Position - root.Position).Magnitude
-                                if dist < (_G.Settings.Distance or 1500) then
-                                    if _G.Settings.PullEnemies and not isPlayers then 
-                                        eR.CFrame = root.CFrame * CFrame.new(0, 0, -3) 
-                                    end
-                                    NekoPart = eR
-                                    table.insert(NekoTargets, {enemyChar, eR})
-                                end
-                            end
+        if _G.NekoRunning and _G.NekoAttack and _G.Settings.Mode ~= "None" then
+            pcall(function()
+                local Equipped = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
+                if Equipped and Equipped.ToolTip ~= "Gun" then
+                    local OthersEnemies = {}
+                    local _, _, regAtk, regHit, EnemiesFolder = CheckAndGetCoreComponents()
+                    
+                    if EnemiesFolder then
+                        local Part1 = ProcessEnemies(OthersEnemies, EnemiesFolder)
+                        local Part2 = (_G.Settings.Mode == "All") and ProcessRealPlayers(OthersEnemies) or nil
+                        
+                        local TargetPart = Part1 or Part2
+                        if TargetPart and #OthersEnemies > 0 and regAtk and regHit then
+                            regAtk:FireServer(delay)
+                            regHit:FireServer(TargetPart, OthersEnemies)
                         end
                     end
                 end
-
-                Scan(workspace:FindFirstChild("Enemies") or workspace, false)
-                if _G.Settings.Mode == "All" then Scan(game:GetService("Players"), true) end
-                
-                if NekoPart and #NekoTargets > 0 then 
-                    -- 使用 Safe Invoke 確保 Remote 存在
-                    local regAtk = Net:FindFirstChild("RE/RegisterAttack")
-                    local regHit = Net:FindFirstChild("RE/RegisterHit")
-                    if regAtk then regAtk:FireServer(_G.Settings.ClickDelay or 0.1) end
-                    if regHit then regHit:FireServer(NekoPart, NekoTargets) end
-                end
             end)
         end
-        task.wait(_G.Settings and _G.Settings.ClickDelay or 0.1)
     end
 end)
 
--- ✨ [戰鬥循環 B：果實] (同理修復路徑)
-task.spawn(function()
-    while true do
-        if _G.NekoRunning and _G.FruitAttack and _G.Settings then
-            pcall(function()
-                local char = GetChar()
-                local root = char:FindFirstChild("HumanoidRootPart")
-                local tool = char:FindFirstChildOfClass("Tool")
-                local Net = GetNet()
-                
-                if root and tool and Net then
-                    local target, dist = nil, _G.Settings.Distance
-                    local enemies = workspace:FindFirstChild("Enemies") or workspace
-                    
-                    for _, v in ipairs(enemies:GetChildren()) do
-                        local eH, eR = v:FindFirstChildOfClass("Humanoid"), v:FindFirstChild("HumanoidRootPart")
-                        if eH and eH.Health > 0 and eR and v ~= char then
-                            local m = (eR.Position - root.Position).Magnitude
-                            if m < dist then dist = m; target = eR end
-                        end
-                    end
-                    
-                    if target then
-                        root.CFrame = CFrame.new((target.CFrame * CFrame.new(0, _G.Settings.FruitHeight, -3)).p, target.Position)
-                        local regAtk = Net:FindFirstChild("RE/RegisterAttack")
-                        local regHit = Net:FindFirstChild("RE/RegisterHit")
-                        if regAtk then regAtk:FireServer() end
-                        if regHit then regHit:FireServer(target, {{target.Parent, target}}) end
-                        tool:Activate()
-                    end
-                end
-            end)
-        end
-        task.wait(_G.Settings and _G.Settings.FruitDelay or 0.5)
-    end
-end)
-
--- ✨ [自動 V4]
-task.spawn(function()
-    while true do
-        if _G.NekoRunning and _G.AutoV4 then
-            pcall(function()
-                local char = GetChar()
-                local awake = char:FindFirstChild("Awakening") or player.Backpack:FindFirstChild("Awakening")
-                if awake and awake:FindFirstChild("RemoteFunction") then 
-                    awake.RemoteFunction:InvokeServer(true) 
-                end
-            end)
-        end
-        task.wait(1)
-    end
-end)
-
-print("🐾 NEKOOOOO 核心已修復路徑與角色判定，現在非常穩定喵！")
+print("🐾 NEKOOOOO 神刀全功能引擎已啟動！傷害判定已鎖定喵。")
