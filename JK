@@ -1,0 +1,65 @@
+-- [[ 🐾 影子貓貓：純淨功能核心 2026 ]] --
+if not game:IsLoaded() then repeat task.wait() until game:IsLoaded() end
+
+-- Delta 相容性與 FPS 解鎖
+if not cloneref then getgenv().cloneref = function(o) return o end end
+if setfpscap then setfpscap(1000000) end
+
+-- 核心變數 (由主 UI 控制)
+_G.Settings = _G.Settings or {
+    Main = {["Auto Farm"] = false, ["Select Weapon"] = "Melee", ["Auto Fast Farm"] = false},
+    Setting = {["Fast Attack"] = true, ["Auto Haki"] = true, ["Player Tween Speed"] = 350},
+    Stats = {["Auto Add Melee Stats"] = false}
+}
+
+local LP = game.Players.LocalPlayer
+local CommF = game:GetService("ReplicatedStorage").Remotes.CommF_
+
+-- [功能函數]
+function AutoHaki()
+    if _G.Settings.Setting["Auto Haki"] and not LP.Character:FindFirstChild("HasBuso") then
+        CommF:InvokeServer("Buso")
+    end
+end
+
+function EquipWeapon(ToolSe)
+    pcall(function()
+        if not LP.Character:FindFirstChild(ToolSe) then
+            local tool = LP.Backpack:FindFirstChild(ToolSe)
+            if tool then LP.Character.Humanoid:EquipTool(tool) end
+        end
+    end)
+end
+
+-- [戰鬥引擎] RegisterHit 加密攻擊
+task.spawn(function()
+    local remote = game:GetService("ReplicatedStorage").Modules.Net["RE/RegisterHit"]
+    while task.wait() do
+        if _G.Settings.Setting["Fast Attack"] and LP.Character:FindFirstChildOfClass("Tool") then
+            pcall(function()
+                local tool = LP.Character:FindFirstChildOfClass("Tool")
+                if tool:GetAttribute("WeaponType") == "Melee" or tool:GetAttribute("WeaponType") == "Sword" then
+                    require(game.ReplicatedStorage.Modules.Net):RemoteEvent("RegisterHit", true)
+                    game.ReplicatedStorage.Modules.Net["RE/RegisterAttack"]:FireServer()
+                    
+                    cloneref(remote):FireServer(string.gsub("RE/RegisterHit", ".", function(c)
+                        return string.char(bit32.bxor(string.byte(c), math.floor(workspace:GetServerTimeNow() / 10 % 10) + 1))
+                    end), bit32.bxor(101010 + 909090, game.ReplicatedStorage.Modules.Net.seed:InvokeServer() * 1))
+                end
+            end)
+        end
+    end
+end)
+
+-- [主農場循環] (提示：此處應保留 NEKO 原始檔中 1-2550 等的 CheckQuest 資料)
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.Settings.Main["Auto Farm"] then
+            -- 這裡執行 CheckQuest() 和移動邏輯
+            AutoHaki()
+            EquipWeapon(_G.Settings.Main["Select Weapon"])
+        end
+    end
+end)
+
+print("🐾 核心引擎已啟動，等待貓貓 UI 指令！")
