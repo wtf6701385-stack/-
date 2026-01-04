@@ -1,4 +1,4 @@
--- [[ 🐾 貓貓 UI：v2.0 System Clean Edition (選單顯示修正版) 🐾 ]] --
+-- [[ 🐾 貓貓 UI：v2.0 System Clean Edition (2026 終極對接版) 🐾 ]] --
 local library = {}
 local services = setmetatable({}, {__index = function(_, k) return game:GetService(k) end})
 local ts = services.TweenService
@@ -50,7 +50,7 @@ function library.new(name)
     Title.TextSize = 15
     Title.BackgroundTransparency = 1
 
-    -- 分頁按鈕容器 (修正關鍵：確保 Size 和 CanvasSize 正確)
+    -- 分頁按鈕容器
     local TabContainer = Instance.new("ScrollingFrame", Side)
     TabContainer.Size = UDim2.new(1, -10, 1, -60)
     TabContainer.Position = UDim2.new(0, 5, 0, 50)
@@ -91,7 +91,7 @@ function library.new(name)
             Page.CanvasSize = UDim2.new(0, 0, 0, pl.AbsoluteContentSize.Y + 10)
         end)
 
-        -- 分頁按鈕
+        -- 分頁按鈕實體
         local Btn = Instance.new("TextButton", TabContainer)
         Btn.Size = UDim2.new(1, 0, 0, 35)
         Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
@@ -150,6 +150,7 @@ function library.new(name)
             end)
 
             local e = {}
+            -- ✨ 更新：回傳按鈕實體，以便主腳本動態修改文字
             function e:Button(t, cb)
                 local b = Instance.new("TextButton", Box)
                 b.Size = UDim2.new(0.94, 0, 0, 30)
@@ -160,6 +161,7 @@ function library.new(name)
                 b.TextSize = 12
                 Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
                 b.MouseButton1Click:Connect(cb)
+                return b 
             end
 
             function e:Toggle(t, cb)
@@ -185,6 +187,7 @@ function library.new(name)
                     Tween(d, {0.15}, {BackgroundColor3 = s and C.Accent or C.DotOff})
                     cb(s)
                 end)
+                return b
             end
 
             function e:Textbox(p, d, cb)
@@ -198,6 +201,7 @@ function library.new(name)
                 b.TextSize = 12
                 Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
                 b.FocusLost:Connect(function() cb(b.Text) end)
+                return b
             end
             return e
         end
