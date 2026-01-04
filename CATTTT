@@ -1,135 +1,244 @@
--- [[ 🐾 貓貓入口 - 2026 終極封裝版 🐾 ]] --
+-- [[ 🐾 貓貓入口 - 2026 UI 重排穩定版 🐾 ]] --
 
-local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
-local HttpService = game:GetService("HttpService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+--==================================================
+-- 🔧 Services / Player
+--==================================================
+local Players            = game:GetService("Players")
+local ReplicatedStorage  = game:GetService("ReplicatedStorage")
+local localPlayer        = Players.LocalPlayer
 
--- 🛡️ 1. 白名單驗證 (已更新為純淨對齊版)
-local Whitelist = { 
-    ["Kadys5373"]    = true, 
-    ["Zadrian664"]   = true, 
-    ["Zn6xx"]        = true, 
-    ["jay04_23"]     = true, 
-    ["iandsere"]     = true, 
-    ["czr_0416"]     = true, 
-    ["tw_vic2012"]   = true, 
-    ["12i21777"]     = true,
-    ["dandanman678"] = true,
-    ["psaabfmiuh"]   = true,
-    ["dt106101zz"]   = true,
-    ["Liu_Ruyancat"]   = true
+--==================================================
+-- 🛡️ 1. 白名單驗證
+--==================================================
+local Whitelist = {
+    ["Kadys5373"]   = true,
+    ["Zadrian664"]  = true,
+    ["Zn6xx"]       = true,
+    ["jay04_23"]    = true,
+    ["iandsere"]    = true,
+    ["czr_0416"]    = true,
+    ["tw_vic2012"]  = true,
+    ["12i21777"]    = true,
+    ["dandanman678"]= true,
+    ["psaabfmiuh"]  = true,
+    ["dt106101zz"]  = true,
+    ["Liu_Ruyancat"]= true
 }
 
--- 🔍 驗證
 if not Whitelist[localPlayer.Name] then
-    -- ❌ 失敗
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/F"))()
-    return 
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/F"
+    ))()
+    return
 end
 
--- ✅ 成功：啟動 5 秒通報倒數
 task.spawn(function()
     task.wait(5)
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/YES"))()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/YES"
+    ))()
 end)
 
+--==================================================
 -- ♻️ 2. 環境清理
-if _G.NekoRunning then _G.NekoRunning = false end
+--==================================================
+if _G.NekoRunning then
+    _G.NekoRunning = false
+end
+
 local function NuclearClean()
     local CoreGui = game:GetService("CoreGui")
-    local targets = {"貓貓腳本", "NEKO", "NekoUI", "NekoTerminal_Lib"}
-    for _, name in ipairs(targets) do
-        local old = CoreGui:FindFirstChild(name) or (localPlayer.PlayerGui:FindFirstChild(name))
-        if old then old:Destroy() end
+
+    for _, name in ipairs({
+        "貓貓腳本",
+        "NEKO",
+        "NekoUI",
+        "NekoTerminal_Lib"
+    }) do
+        local obj =
+            CoreGui:FindFirstChild(name) or
+            localPlayer.PlayerGui:FindFirstChild(name)
+
+        if obj then
+            obj:Destroy()
+        end
     end
 end
+
 NuclearClean()
 task.wait(0.2)
 
--- 📦 3. 初始化全局設定 (保持原始邏輯)
-_G.Settings = { 
-    ClickDelay = 0.05, Distance = 1500, PullEnemies = false, Mode = "None",
-    FOV = 70, ZoomDist = 128, CatSpeedValue = 50, SpeedEnabled = false,
-    FruitHeight = 6, FruitDelay = 0.05 
+--==================================================
+-- 📦 3. 全局設定（鎖定距離）
+--==================================================
+_G.Settings = {
+    ClickDelay     = 0.05,
+    Distance       = 3000, -- 🔒 固定
+    PullEnemies    = false,
+    Mode           = "None",
+    FOV            = 70,
+    ZoomDist       = 128,
+    CatSpeedValue  = 50,
+    SpeedEnabled   = false,
+    FruitHeight    = 6,
+    FruitDelay     = 0.05
 }
+
 _G.NekoRunning = true
-_G.NekoAttack = false
+_G.NekoAttack  = false
 _G.FruitAttack = false
-_G.AutoV4 = false
-_G.NekoESP = false
+_G.AutoV4      = false
+_G.NekoESP     = false
 
--- 🚀 4. 加載【戰鬥核心】 (保持原始 NEKOOOOO 連結)
-loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"))()
+--==================================================
+-- 🚀 4. 戰鬥核心
+--==================================================
+loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"
+))()
 
--- 🍭 5. 載入 【UI 系統】
-local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
-local myUI, screenGui = NekoLib.new("貓貓腳本")
-screenGui.Name = "貓貓腳本"
+--==================================================
+-- 🍭 5. UI 載入
+--==================================================
+local NekoLib          = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"
+))()
 
--- [戰鬥功能配置]
-local Tab1 = myUI:Tab("戰鬥系統")
-local Sec1 = Tab1:Section("神刀與模式")
-Sec1:Toggle("神刀連擊", function(s) _G.NekoAttack = s end)
-Sec1:Toggle("貓抓拉怪", function(s) _G.Settings.PullEnemies = s end)
-Sec1:Toggle("自動覺醒 (V4)", function(s) _G.AutoV4 = s end)
-Sec1:Textbox("抓捕範圍", "1500", function(v) _G.Settings.Distance = tonumber(v) or 1500 end)
-Sec1:Button("模式：打怪", function() _G.Settings.Mode = "Mob" end)
-Sec1:Button("模式：全殺", function() _G.Settings.Mode = "All" end)
-Sec1:Button("休息", function() _G.Settings.Mode = "None" end)
+local myUI, screenGui  = NekoLib.new("貓貓腳本")
+screenGui.Name         = "貓貓腳本"
 
--- [果實系統]
-local TabF = myUI:Tab("果實系統")
-local SecF = TabF:Section("果實 M1")
-SecF:Toggle("果實連擊", function(s) _G.FruitAttack = s end)
-SecF:Textbox("高度", "6", function(v) _G.Settings.FruitHeight = tonumber(v) or 6 end)
-SecF:Textbox("攻速", "0.05", function(v) _G.Settings.FruitDelay = tonumber(v) or 0.05 end)
+--==================================================
+-- 📢 公告 / 資訊（第一頁）
+--==================================================
+local TabInfo = myUI:Tab("公告")
 
--- ✨ [傳送系統] 
-local TabT = myUI:Tab("傳送系統")
-local SecT = TabT:Section("跨海傳送")
-local function Sea(c) pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer(c) end) end
+local I1 = TabInfo:Section("使用者")
+I1:Button("目前使用者：" .. localPlayer.Name, function() end)
 
-SecT:Button("前往一海", function() Sea("TravelMain") end)
-SecT:Button("前往二海", function() Sea("TravelDressrosa") end)
-SecT:Button("前往三海", function() Sea("TravelZou") end)
+local I2 = TabInfo:Section("系統公告")
+I2:Button("貓貓終端 2026 已啟動", function() end)
+I2:Button("抓捕距離固定 3000", function() end)
+I2:Button("UI 已重排，功能依分頁分類", function() end)
 
--- [環境與移動]
-local Tab2 = myUI:Tab("環境與移動")
-local Sec2 = Tab2:Section("鏡頭與 ESP")
-Sec2:Toggle("貓貓透視 (ESP)", function(s) 
+--==================================================
+-- ⚔️ 戰鬥系統
+--==================================================
+local TabFight = myUI:Tab("戰鬥系統")
+
+local F1 = TabFight:Section("核心開關")
+F1:Toggle("神刀連擊",     function(s) _G.NekoAttack = s end)
+F1:Toggle("貓抓拉怪",     function(s) _G.Settings.PullEnemies = s end)
+F1:Toggle("自動覺醒 V4",  function(s) _G.AutoV4 = s end)
+
+local F2 = TabFight:Section("模式切換")
+F2:Button("模式：打怪", function() _G.Settings.Mode = "Mob"  end)
+F2:Button("模式：全殺", function() _G.Settings.Mode = "All"  end)
+F2:Button("休息",       function() _G.Settings.Mode = "None" end)
+
+--==================================================
+-- 🍎 果實系統
+--==================================================
+local TabFruit = myUI:Tab("果實系統")
+local FR       = TabFruit:Section("果實 M1")
+
+FR:Toggle("果實連擊", function(s)
+    _G.FruitAttack = s
+end)
+
+FR:Textbox("高度", "6", function(v)
+    _G.Settings.FruitHeight = tonumber(v) or 6
+end)
+
+FR:Textbox("攻速", "0.05", function(v)
+    _G.Settings.FruitDelay = tonumber(v) or 0.05
+end)
+
+--==================================================
+-- 🌍 環境
+--==================================================
+local TabEnv = myUI:Tab("環境")
+
+local E1 = TabEnv:Section("視覺 / ESP")
+E1:Toggle("貓貓透視 ESP", function(s)
     _G.NekoESP = s
     if s and not _G.ESPLoaded then
         _G.ESPLoaded = true
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))() 
-    end
-end)
-Sec2:Textbox("視野 FOV", "70", function(v) _G.Settings.FOV = tonumber(v) or 70 end)
-Sec2:Textbox("鏡頭拉距", "128", function(v) _G.Settings.ZoomDist = tonumber(v) or 128 end)
-
--- ⭐ 新增按鈕
-Sec2:Button("掛機 FPS 優化", function() 
-    if _G.OptimizeFPS then _G.OptimizeFPS() else
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"))()
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"
+        ))()
     end
 end)
 
-local Sec3 = Tab2:Section("絲滑加速")
-Sec3:Toggle("開啟加速", function(s) _G.Settings.SpeedEnabled = s end)
-Sec3:Textbox("速度設定", "50", function(v) _G.Settings.CatSpeedValue = tonumber(v) or 50 end)
-Sec3:Button("召喚飛行", function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))() end)
+E1:Textbox("FOV", "70", function(v)
+    _G.Settings.FOV = tonumber(v) or 70
+end)
 
--- 🐾 6. 介面控制按鈕
+E1:Textbox("鏡頭距離", "128", function(v)
+    _G.Settings.ZoomDist = tonumber(v) or 128
+end)
+
+local E2 = TabEnv:Section("效能")
+E2:Button("FPS 優化", function()
+    if _G.OptimizeFPS then
+        _G.OptimizeFPS()
+    else
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"
+        ))()
+    end
+end)
+
+--==================================================
+-- 🏃 移動
+--==================================================
+local TabMove = myUI:Tab("移動")
+
+local M1 = TabMove:Section("速度")
+M1:Toggle("開啟加速", function(s)
+    _G.Settings.SpeedEnabled = s
+end)
+
+M1:Textbox("速度", "50", function(v)
+    _G.Settings.CatSpeedValue = tonumber(v) or 50
+end)
+
+local M2 = TabMove:Section("飛行")
+M2:Button("召喚飛行", function()
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"
+    ))()
+end)
+
+--==================================================
+-- 🚪 傳送（最後）
+--==================================================
+local TabTP = myUI:Tab("傳送")
+local TP    = TabTP:Section("跨海")
+
+local function Sea(cmd)
+    pcall(function()
+        ReplicatedStorage.Remotes.CommF_:InvokeServer(cmd)
+    end)
+end
+
+TP:Button("前往一海", function() Sea("TravelMain")        end)
+TP:Button("前往二海", function() Sea("TravelDressrosa")  end)
+TP:Button("前往三海", function() Sea("TravelZou")        end)
+
+--==================================================
+-- 🐾 最小化按鈕（原樣保留）
+--==================================================
 local MiniBtn = Instance.new("TextButton", screenGui)
-MiniBtn.Size = UDim2.new(0, 50, 0, 50); MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
-MiniBtn.Text = "🐾"; MiniBtn.TextSize = 30; MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15); MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
-Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
-myUI:AddDrag(MiniBtn)
-MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
+MiniBtn.Size              = UDim2.new(0, 50, 0, 50)
+MiniBtn.Position          = UDim2.new(0, 15, 0.5, -25)
+MiniBtn.Text              = "🐾"
+MiniBtn.TextSize          = 30
+MiniBtn.BackgroundColor3  = Color3.fromRGB(15, 15, 15)
+MiniBtn.TextColor3        = Color3.fromRGB(255, 120, 180)
 
--- 📢 系統通知
-game:GetService("StarterGui"):SetCore("SendNotification", { 
-    Title = "🐾 貓貓終端", 
-    Text = "系統已啟動，傳送模組就緒喵！", 
-    Duration = 5 
-})
+Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
+
+myUI:AddDrag(MiniBtn)
+MiniBtn.MouseButton1Click:Connect(function()
+    myUI:Toggle()
+end)
