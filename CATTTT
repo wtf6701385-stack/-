@@ -3,6 +3,7 @@
 local Players           = game:GetService("Players")
 local localPlayer       = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui        = game:GetService("StarterGui") -- 新增用於通知
 
 if getgenv().NEKO_RUNNING then return end
 getgenv().NEKO_RUNNING = true
@@ -245,4 +246,43 @@ localPlayer.AncestryChanged:Connect(function(_, p)
     if not p then getgenv().NEKO_RUNNING = false end
 end)
 
-print("🐾 NEKO SYSTEM 啟動成功喵！全系統對接完成。")
+-- =============================================================
+-- 🛡️ 7. NEKO GUARD - 管理員預警系統 (提示版)
+-- =============================================================
+local function ShowAdminWarning(adminName)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "⚠️ 偵測到管理員！",
+            Text = "管理員 [".. adminName .."] 已進入伺服器喵！",
+            Duration = 10
+        })
+        
+        local alertGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+        alertGui.Name = "NekoAdminAlert"
+        local label = Instance.new("TextLabel", alertGui)
+        label.Size = UDim2.new(1, 0, 0.15, 0)
+        label.Position = UDim2.new(0, 0, 0.42, 0)
+        label.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+        label.BackgroundTransparency = 0.2
+        label.Text = "⚠️ 警報：管理員 [".. adminName .."] 在場 ⚠️\n請注意安全喵！"
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.TextSize = 28
+        label.Font = "GothamBold"
+        task.delay(10, function() alertGui:Destroy() end)
+    end)
+end
+
+local function CheckAdmin(p)
+    if p == localPlayer then return end
+    pcall(function()
+        -- 官方群組 ID: 2830050, Rank 200+ 為 Staff/Admin
+        if p:GetRankInGroup(2830050) >= 200 then
+            ShowAdminWarning(p.Name)
+        end
+    end)
+end
+
+Players.PlayerAdded:Connect(CheckAdmin)
+for _, p in ipairs(Players:GetPlayers()) do CheckAdmin(p) end
+
+print("🐾 NEKO SYSTEM 啟動成功喵！安全監控已部署。")
