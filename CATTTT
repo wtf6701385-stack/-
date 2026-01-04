@@ -23,8 +23,7 @@ local Whitelist = {
     ["psaabfmiuh"]   = true,
     ["dt106101zz"]   = true,
     ["Liu_Ruyancat"] = true,
-    ["030501aaaaaaaaaa"] = true
-
+    ["030501aaaaaaaaaa"] = true -- 新增測試帳號
 }
 
 if not Whitelist[localPlayer.Name] then
@@ -73,13 +72,13 @@ _G.Settings = {
 _G.NekoRunning = true
 _G.NekoAttack  = false -- 對接神刀連擊
 _G.FruitAttack = false
-_G.AutoV4      = false
+_G.AutoV4      = false -- 對接核心引擎內的 V4
 _G.NekoESP     = false
 
 -- =============================================================
 -- 🚀 4. 資源載入
 -- =============================================================
--- 戰鬥核心 (NEKOOOOO)
+-- 戰鬥核心 (NEKOOOOO - 含 V4)
 task.spawn(function()
     pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"))()
@@ -99,7 +98,7 @@ local SecStatus = TabInfo:Section("系統即時監控")
 local BtnUser = SecStatus:Button("👤 玩家：載入中...", function() end)
 local BtnAtk  = SecStatus:Button("⚔️ 攻擊：OFF", function() end)
 local BtnMode = SecStatus:Button("🧠 模式：None", function() end)
-local BtnSys  = SecStatus:Button("🟢 系統：穩定運行中", function() end)
+local BtnV4   = SecStatus:Button("🔥 V4：OFF", function() end) -- 新增 V4 狀態顯示
 
 -- 動態更新邏輯
 task.spawn(function()
@@ -107,6 +106,7 @@ task.spawn(function()
         pcall(function()
             BtnUser.Text = "👤 玩家：" .. localPlayer.Name
             BtnAtk.Text  = "⚔️ 攻擊：" .. (_G.NekoAttack and "🟢 運行中" or "🔴 已關閉")
+            BtnV4.Text   = "🔥 V4：" .. (_G.AutoV4 and "🟢 開啟" or "🔴 關閉")
             
             local modeName = "休息"
             if _G.Settings.Mode == "Mob" then modeName = "自動打怪"
@@ -245,4 +245,4 @@ localPlayer.AncestryChanged:Connect(function(_, p)
     if not p then getgenv().NEKO_RUNNING = false end
 end)
 
-print("🐾 NEKO SYSTEM 啟動成功喵！監控已就位。")
+print("🐾 NEKO SYSTEM 啟動成功喵！全系統對接完成。")
