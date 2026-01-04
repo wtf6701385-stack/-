@@ -1,220 +1,178 @@
--- [[ 🐾 貓貓入口 - 2026 UI 重排穩定版 🐾 ]] --
+-- =====================================
+-- 🐾 NEKO MAIN SCRIPT (Stable Full)
+-- =====================================
 
---==================================================
--- 🔧 Services / Player
---==================================================
-local Players            = game:GetService("Players")
-local ReplicatedStorage  = game:GetService("ReplicatedStorage")
-local localPlayer        = Players.LocalPlayer
+if getgenv().NEKO_RUNNING then return end
+getgenv().NEKO_RUNNING = true
 
---==================================================
--- 🛡️ 1. 白名單驗證
---==================================================
-local Whitelist = {
-    ["Kadys5373"]   = true,
-    ["Zadrian664"]  = true,
-    ["Zn6xx"]       = true,
-    ["jay04_23"]    = true,
-    ["iandsere"]    = true,
-    ["czr_0416"]    = true,
-    ["tw_vic2012"]  = true,
-    ["12i21777"]    = true,
-    ["dandanman678"]= true,
-    ["psaabfmiuh"]  = true,
-    ["dt106101zz"]  = true,
-    ["Liu_Ruyancat"]= true,
-    ["030501aaaaaaaaaa"]  = true,
+-- =====================================
+-- 🛡️ 白名單驗證（最前，UI 之前）
+-- =====================================
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local WHITELIST = {
+    ["Kadys5373"]     = true,
+    ["Zadrian664"]    = true,
+    ["Zn6xx"]         = true,
+    ["jay04_23"]      = true,
+    ["iandsere"]      = true,
+    ["czr_0416"]      = true,
+    ["tw_vic2012"]    = true,
+    ["12i21777"]      = true,
+    ["dandanman678"]  = true,
+    ["psaabfmiuh"]    = true,
+    ["dt106101zz"]    = true,
+    ["Liu_Ruyancat"]  = true,
 }
 
-if not Whitelist[localPlayer.Name] then
-    loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/F"
-    ))()
+if not WHITELIST[LocalPlayer.Name] then
+    pcall(function()
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/F"
+        ))()
+    end)
     return
 end
 
+-- 成功通報（延遲，避免卡載入）
 task.spawn(function()
     task.wait(5)
-    loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/YES"
-    ))()
+    pcall(function()
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/YES"
+        ))()
+    end)
 end)
 
---==================================================
--- ♻️ 2. 環境清理
---==================================================
-if _G.NekoRunning then
-    _G.NekoRunning = false
-end
+-- =====================================
+-- ♻️ 環境清理（避免重複）
+-- =====================================
 
-local function NuclearClean()
+pcall(function()
     local CoreGui = game:GetService("CoreGui")
-
-    for _, name in ipairs({
-        "貓貓腳本",
-        "NEKO",
-        "NekoUI",
-        "NekoTerminal_Lib"
-    }) do
-        local obj =
-            CoreGui:FindFirstChild(name) or
-            localPlayer.PlayerGui:FindFirstChild(name)
-
-        if obj then
-            obj:Destroy()
-        end
+    for _, n in ipairs({"貓貓腳本","NEKO","NekoUI"}) do
+        local g = CoreGui:FindFirstChild(n)
+        if g then g:Destroy() end
     end
-end
+end)
 
-NuclearClean()
-task.wait(0.2)
+-- =====================================
+-- 🌐 全域狀態（UI ↔ 核心共用）
+-- =====================================
 
---==================================================
--- 📦 3. 全局設定（鎖定距離）
---==================================================
-_G.Settings = {
-    ClickDelay     = 0.05,
-    Distance       = 3000, -- 🔒 固定
-    PullEnemies    = false,
-    Mode           = "None",
-    FOV            = 70,
-    ZoomDist       = 128,
-    CatSpeedValue  = 50,
-    SpeedEnabled   = false,
-    FruitHeight    = 6,
-    FruitDelay     = 0.05
+_G.NEKO_STATUS = {
+    Attack = false,
+    Mode   = "None",
+    V4     = false,
 }
 
-_G.NekoRunning = true
-_G.NekoAttack  = false
-_G.FruitAttack = false
-_G.AutoV4      = false
-_G.NekoESP     = false
+_G.Settings = {
+    Distance = 3000,     -- 🔒 固定
+}
 
---==================================================
--- 🚀 4. 戰鬥核心
---==================================================
-loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"
-))()
+-- =====================================
+-- 📦 載入 UI Library（你現在用的那支）
+-- =====================================
 
---==================================================
--- 🍭 5. UI 載入
---==================================================
-local NekoLib          = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"
-))()
+local library = loadstring(game:HttpGet("YOUR_UI_LIBRARY_URL"))()
+local Window = library.new("NEKO BF")
 
-local myUI, screenGui  = NekoLib.new("貓貓腳本")
-screenGui.Name         = "貓貓腳本"
+-- =====================================
+-- 📢 公告 / 狀態（第一頁）
+-- =====================================
 
---==================================================
--- 📢 公告 / 資訊（第一頁）
---==================================================
-local TabInfo = myUI:Tab("公告")
+local TabStatus = Window:Tab("公告 / 狀態")
+local SecStatus = TabStatus:Section("系統資訊")
 
-local I1 = TabInfo:Section("使用者")
-I1:Button("目前使用者：" .. localPlayer.Name, function() end)
+local L_User   = SecStatus:Button("👤 玩家：", function() end)
+local L_Attack = SecStatus:Button("⚔️ 攻擊：OFF", function() end)
+local L_Mode   = SecStatus:Button("🧠 模式：None", function() end)
+local L_V4     = SecStatus:Button("🌌 V4：OFF", function() end)
+local L_Range  = SecStatus:Button("🧲 抓捕距離：3000（固定）", function() end)
+local L_Heart  = SecStatus:Button("🟢 系統：Running", function() end)
 
-local I2 = TabInfo:Section("系統公告")
-I2:Button("小柒終端 已啟動", function() end)
-I2:Button("有什麼想加的DC跟我說", function() end)
-I2:Button("neko_cattt", function() end)
-
---==================================================
--- ⚔️ 戰鬥系統
---==================================================
-local TabFight = myUI:Tab("戰鬥系統")
-
-local F1 = TabFight:Section("核心開關")
-F1:Toggle("神刀連擊",     function(s) _G.NekoAttack = s end)
-F1:Toggle("貓抓拉怪",     function(s) _G.Settings.PullEnemies = s end)
-F1:Toggle("自動覺醒 V4",  function(s) _G.AutoV4 = s end)
-
-local F2 = TabFight:Section("模式切換")
-F2:Button("模式：打怪", function() _G.Settings.Mode = "Mob"  end)
-F2:Button("模式：全殺", function() _G.Settings.Mode = "All"  end)
-F2:Button("休息",       function() _G.Settings.Mode = "None" end)
-
---==================================================
--- 🍎 果實系統
---==================================================
-local TabFruit = myUI:Tab("果實系統")
-local FR       = TabFruit:Section("果實 M1")
-
-FR:Toggle("果實連擊", function(s)
-    _G.FruitAttack = s
-end)
-
-FR:Textbox("高度", "6", function(v)
-    _G.Settings.FruitHeight = tonumber(v) or 6
-end)
-
-FR:Textbox("攻速", "0.05", function(v)
-    _G.Settings.FruitDelay = tonumber(v) or 0.05
-end)
-
---==================================================
--- 🌍 環境
---==================================================
-local TabEnv = myUI:Tab("環境")
-
-local E1 = TabEnv:Section("視覺 / ESP")
-E1:Toggle("貓貓透視 ESP", function(s)
-    _G.NekoESP = s
-    if s and not _G.ESPLoaded then
-        _G.ESPLoaded = true
-        loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"
-        ))()
+task.spawn(function()
+    while task.wait(0.4) do
+        pcall(function()
+            L_User.Text   = "👤 玩家：" .. LocalPlayer.Name
+            L_Attack.Text = "⚔️ 攻擊：" .. (_G.NEKO_STATUS.Attack and "ON" or "OFF")
+            L_Mode.Text   = "🧠 模式：" .. _G.NEKO_STATUS.Mode
+            L_V4.Text     = "🌌 V4：" .. (_G.NEKO_STATUS.V4 and "ON" or "OFF")
+        end)
     end
 end)
 
-E1:Textbox("FOV", "70", function(v)
-    _G.Settings.FOV = tonumber(v) or 70
+-- =====================================
+-- ⚔️ 戰鬥
+-- =====================================
+
+local TabCombat = Window:Tab("戰鬥")
+local SecCombat = TabCombat:Section("戰鬥核心")
+
+SecCombat:Toggle("自動攻擊", function(s)
+    _G.NEKO_STATUS.Attack = s
 end)
 
-E1:Textbox("鏡頭距離", "128", function(v)
-    _G.Settings.ZoomDist = tonumber(v) or 128
+SecCombat:Button("模式：打怪", function()
+    _G.NEKO_STATUS.Mode = "Mob"
 end)
 
-local E2 = TabEnv:Section("效能")
-E2:Button("FPS 優化", function()
-    if _G.OptimizeFPS then
-        _G.OptimizeFPS()
-    else
-        loadstring(game:HttpGet(
-            "https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"
-        ))()
+SecCombat:Button("模式：全殺", function()
+    _G.NEKO_STATUS.Mode = "All"
+end)
+
+SecCombat:Button("休息", function()
+    _G.NEKO_STATUS.Mode = "None"
+end)
+
+local SecV4 = TabCombat:Section("覺醒")
+SecV4:Toggle("自動 V4 覺醒", function(s)
+    _G.NEKO_STATUS.V4 = s
+end)
+
+-- =====================================
+-- 🌍 環境（視覺 / FPS）
+-- =====================================
+
+local TabEnv = Window:Tab("環境")
+local SecEnv = TabEnv:Section("視覺 / FPS")
+
+SecEnv:Toggle("FPS 優化", function(s)
+    if s then
+        pcall(function()
+            loadstring(game:HttpGet(
+                "https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"
+            ))()
+        end)
     end
 end)
 
---==================================================
+-- =====================================
 -- 🏃 移動
---==================================================
-local TabMove = myUI:Tab("移動")
+-- =====================================
 
-local M1 = TabMove:Section("速度")
-M1:Toggle("開啟加速", function(s)
-    _G.Settings.SpeedEnabled = s
+local TabMove = Window:Tab("移動")
+local SecMove = TabMove:Section("角色移動")
+
+SecMove:Toggle("高速移動", function(s)
+    _G.Settings.Speed = s
 end)
 
-M1:Textbox("速度", "50", function(v)
-    _G.Settings.CatSpeedValue = tonumber(v) or 50
-end)
-
-local M2 = TabMove:Section("飛行")
-M2:Button("召喚飛行", function()
+SecMove:Button("召喚飛行", function()
     loadstring(game:HttpGet(
         "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"
     ))()
 end)
 
---==================================================
+-- =====================================
 -- 🚪 傳送（最後）
---==================================================
-local TabTP = myUI:Tab("傳送")
-local TP    = TabTP:Section("跨海")
+-- =====================================
+
+local TabTP = Window:Tab("傳送")
+local SecTP = TabTP:Section("跨海傳送")
 
 local function Sea(cmd)
     pcall(function()
@@ -222,24 +180,16 @@ local function Sea(cmd)
     end)
 end
 
-TP:Button("前往一海", function() Sea("TravelMain")        end)
-TP:Button("前往二海", function() Sea("TravelDressrosa")  end)
-TP:Button("前往三海", function() Sea("TravelZou")        end)
+SecTP:Button("前往一海", function() Sea("TravelMain") end)
+SecTP:Button("前往二海", function() Sea("TravelDressrosa") end)
+SecTP:Button("前往三海", function() Sea("TravelZou") end)
 
---==================================================
--- 🐾 最小化按鈕（原樣保留）
---==================================================
-local MiniBtn = Instance.new("TextButton", screenGui)
-MiniBtn.Size              = UDim2.new(0, 50, 0, 50)
-MiniBtn.Position          = UDim2.new(0, 15, 0.5, -25)
-MiniBtn.Text              = "🐾"
-MiniBtn.TextSize          = 30
-MiniBtn.BackgroundColor3  = Color3.fromRGB(15, 15, 15)
-MiniBtn.TextColor3        = Color3.fromRGB(255, 120, 180)
+-- =====================================
+-- ⛔ 收尾保護
+-- =====================================
 
-Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
-
-myUI:AddDrag(MiniBtn)
-MiniBtn.MouseButton1Click:Connect(function()
-    myUI:Toggle()
+LocalPlayer.AncestryChanged:Connect(function(_, p)
+    if not p then
+        getgenv().NEKO_RUNNING = false
+    end
 end)
