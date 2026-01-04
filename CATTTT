@@ -1,12 +1,12 @@
 -- =====================================
--- 🐾 NEKO MAIN SCRIPT (FINAL STABLE)
+-- 🐾 NEKO MAIN SCRIPT (ORIGINAL LINKED)
 -- =====================================
 
 if getgenv().NEKO_RUNNING then return end
 getgenv().NEKO_RUNNING = true
 
 -- =====================================
--- 🛡️ 白名單驗證（最前）
+-- 🛡️ 白名單驗證（最前，原樣）
 -- =====================================
 
 local Players = game:GetService("Players")
@@ -49,13 +49,13 @@ task.spawn(function()
 end)
 
 -- =====================================
--- ♻️ 環境清理（只清「舊 UI」，不殺自己）
+-- ♻️ 舊 UI 清理（不動自己）
 -- =====================================
 
 if not getgenv().NEKO_UI_CLEANED then
     getgenv().NEKO_UI_CLEANED = true
     pcall(function()
-        for _, n in ipairs({"NEKO","NekoUI"}) do
+        for _, n in ipairs({"NEKO","NekoUI","貓貓腳本"}) do
             local g = CoreGui:FindFirstChild(n)
             if g then g:Destroy() end
         end
@@ -63,7 +63,7 @@ if not getgenv().NEKO_UI_CLEANED then
 end
 
 -- =====================================
--- 🌐 全域狀態（UI ↔ 核心）
+-- 🌐 全域狀態（UI ↔ 功能）
 -- =====================================
 
 _G.NEKO_STATUS = {
@@ -73,40 +73,40 @@ _G.NEKO_STATUS = {
 }
 
 _G.Settings = {
-    Distance = 3000, -- 🔒 固定（你已決定）
+    Distance = 3000, -- 🔒 固定
     Speed    = false,
 }
 
 -- =====================================
--- 📦 載入 UI Library（你現在那支）
--- ⚠️ 這裡只換成你實際的 UI 連結即可
+-- 📦 載入你「原本那支」UI Library
 -- =====================================
 
-local library = loadstring(game:HttpGet("YOUR_UI_LIBRARY_URL"))()
-local Window, ScreenGui = library.new("NEKO BF")
+local library = loadstring(game:HttpGet(
+    "【這裡換成你實際使用的 UI Library 連結】"
+))()
+
+local Window = library.new("NEKO BF")
 
 -- =====================================
--- 📢 公告 / 狀態（第一頁）
+-- 📢 公告 / 狀態
 -- =====================================
 
 local TabStatus = Window:Tab("公告 / 狀態")
-local SecStatus = TabStatus:Section("系統資訊")
+local SecStatus = TabStatus:Section("系統狀態")
 
-local L_User   = SecStatus:Button("👤 玩家：", function() end)
-local L_Attack = SecStatus:Button("⚔️ 攻擊：OFF", function() end)
-local L_Mode   = SecStatus:Button("🧠 模式：None", function() end)
-local L_V4     = SecStatus:Button("🌌 V4：OFF", function() end)
-local L_Range  = SecStatus:Button("🧲 抓捕距離：3000（固定）", function() end)
-local L_Heart  = SecStatus:Button("🟢 系統：Running", function() end)
+local BtnUser   = SecStatus:Button("👤 玩家：", function() end)
+local BtnAtk    = SecStatus:Button("⚔️ 攻擊：OFF", function() end)
+local BtnMode   = SecStatus:Button("🧠 模式：None", function() end)
+local BtnV4     = SecStatus:Button("🌌 V4：OFF", function() end)
+local BtnRange  = SecStatus:Button("🧲 抓捕距離：3000（固定）", function() end)
+local BtnAlive  = SecStatus:Button("🟢 系統：Running", function() end)
 
 task.spawn(function()
     while task.wait(0.4) do
-        pcall(function()
-            L_User.Text   = "👤 玩家：" .. LocalPlayer.Name
-            L_Attack.Text = "⚔️ 攻擊：" .. (_G.NEKO_STATUS.Attack and "ON" or "OFF")
-            L_Mode.Text   = "🧠 模式：" .. _G.NEKO_STATUS.Mode
-            L_V4.Text     = "🌌 V4：" .. (_G.NEKO_STATUS.V4 and "ON" or "OFF")
-        end)
+        BtnUser.Text  = "👤 玩家：" .. LocalPlayer.Name
+        BtnAtk.Text   = "⚔️ 攻擊：" .. (_G.NEKO_STATUS.Attack and "ON" or "OFF")
+        BtnMode.Text  = "🧠 模式：" .. _G.NEKO_STATUS.Mode
+        BtnV4.Text    = "🌌 V4：" .. (_G.NEKO_STATUS.V4 and "ON" or "OFF")
     end
 end)
 
@@ -117,8 +117,8 @@ end)
 local TabCombat = Window:Tab("戰鬥")
 local SecCombat = TabCombat:Section("戰鬥核心")
 
-SecCombat:Toggle("自動攻擊", function(s)
-    _G.NEKO_STATUS.Attack = s
+SecCombat:Toggle("自動攻擊", function(v)
+    _G.NEKO_STATUS.Attack = v
 end)
 
 SecCombat:Button("模式：打怪", function()
@@ -134,19 +134,20 @@ SecCombat:Button("休息", function()
 end)
 
 local SecV4 = TabCombat:Section("覺醒")
-SecV4:Toggle("自動 V4 覺醒", function(s)
-    _G.NEKO_STATUS.V4 = s
+
+SecV4:Toggle("自動 V4 覺醒", function(v)
+    _G.NEKO_STATUS.V4 = v
 end)
 
 -- =====================================
--- 🌍 環境（視覺 / FPS）
+-- 🌍 環境
 -- =====================================
 
 local TabEnv = Window:Tab("環境")
 local SecEnv = TabEnv:Section("視覺 / FPS")
 
-SecEnv:Toggle("FPS 優化", function(s)
-    if s then
+SecEnv:Toggle("FPS 優化", function(v)
+    if v then
         pcall(function()
             loadstring(game:HttpGet(
                 "https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"
@@ -162,8 +163,8 @@ end)
 local TabMove = Window:Tab("移動")
 local SecMove = TabMove:Section("角色移動")
 
-SecMove:Toggle("高速移動", function(s)
-    _G.Settings.Speed = s
+SecMove:Toggle("高速移動", function(v)
+    _G.Settings.Speed = v
 end)
 
 SecMove:Button("召喚飛行", function()
@@ -173,11 +174,11 @@ SecMove:Button("召喚飛行", function()
 end)
 
 -- =====================================
--- 🚪 傳送（最後）
+-- 🚪 傳送
 -- =====================================
 
 local TabTP = Window:Tab("傳送")
-local SecTP = TabTP:Section("跨海傳送")
+local SecTP = TabTP:Section("跨海")
 
 local function Sea(cmd)
     pcall(function()
@@ -190,7 +191,7 @@ SecTP:Button("前往二海", function() Sea("TravelDressrosa") end)
 SecTP:Button("前往三海", function() Sea("TravelZou") end)
 
 -- =====================================
--- ⛔ 收尾保護
+-- ⛔ 收尾
 -- =====================================
 
 LocalPlayer.AncestryChanged:Connect(function(_, p)
