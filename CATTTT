@@ -1,43 +1,43 @@
--- [[ 🐾 NEKO TERMINAL - 2026 STABLE 🐾 ]] --
+-- [[ 🐾 NEKO TERMINAL - 2026 STABLE (Clean & Info) 🐾 ]] --
 
 local Players           = game:GetService("Players")
 local localPlayer       = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local StarterGui        = game:GetService("StarterGui") -- 新增用於通知
+local StarterGui        = game:GetService("StarterGui")
 
 if getgenv().NEKO_RUNNING then return end
 getgenv().NEKO_RUNNING = true
 
 -- =============================================================
--- 🛡️ 1. 白名單驗證 (垂直整齊版)
+-- 🛡️ 1. 白名單驗證
 -- =============================================================
 local Whitelist = {
-    ["Kadys5373"]    = true,
-    ["Zadrian664"]   = true,
-    ["Zn6xx"]        = true,
-    ["jay04_23"]     = true,
-    ["iandsere"]     = true,
-    ["czr_0416"]     = true,
-    ["tw_vic2012"]   = true,
-    ["12i21777"]     = true,
-    ["dandanman678"] = true,
-    ["psaabfmiuh"]   = true,
-    ["dt106101zz"]   = true,
-    ["Liu_Ruyancat"] = true,
-    ["030501aaaaaaaaaa"] = true -- 新增測試帳號
+    ["Kadys5373"]      = true,
+    ["Zadrian664"]     = true,
+    ["Zn6xx"]          = true,
+    ["jay04_23"]       = true,
+    ["iandsere"]       = true,
+    ["czr_0416"]       = true,
+    ["tw_vic2012"]     = true,
+    ["12i21777"]       = true,
+    ["dandanman678"]   = true,
+    ["psaabfmiuh"]     = true,
+    ["dt106101zz"]     = true,
+    ["Liu_Ruyancat"]   = true,
+    ["030501aaaaaaaaaa"] = true
 }
 
 if not Whitelist[localPlayer.Name] then
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/F"))()
+    pcall(function() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/F"))() 
     end)
     return
 end
 
 task.spawn(function()
     task.wait(5)
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/YES"))()
+    pcall(function() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/YES"))() 
     end)
 end)
 
@@ -55,57 +55,63 @@ NuclearClean()
 task.wait(0.2)
 
 -- =============================================================
--- 📦 3. 全局設定 (同步 NEKOOOOO 變數)
+-- 📦 3. 全局設定
 -- =============================================================
 _G.Settings = {
     ClickDelay    = 0.05,
     Distance      = 3000,
     PullEnemies   = false,
-    Mode          = "None", -- "Mob", "All", "None"
+    Mode          = "None",
     FOV           = 70,
     ZoomDist      = 128,
     CatSpeedValue = 50,
-    SpeedEnabled  = false,
-    FruitHeight   = 6,
-    FruitDelay    = 0.05
+    SpeedEnabled  = false
 }
 
 _G.NekoRunning = true
-_G.NekoAttack  = false -- 對接神刀連擊
-_G.FruitAttack = false
-_G.AutoV4      = false -- 對接核心引擎內的 V4
+_G.NekoAttack  = false
+_G.AutoV4      = false
 _G.NekoESP     = false
 
 -- =============================================================
 -- 🚀 4. 資源載入
 -- =============================================================
--- 戰鬥核心 (NEKOOOOO - 含 V4)
 task.spawn(function()
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"))()
+    pcall(function() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"))() 
     end)
 end)
 
--- UI Library
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("NEKO BF")
 
 -- =============================================================
--- 📢 5. 公告 / 資訊 (動態監控系統)
+-- 📢 5. 公告與狀態板
 -- =============================================================
-local TabInfo = myUI:Tab("公告 / 狀態")
-local SecStatus = TabInfo:Section("系統即時監控")
+local TabInfo   = myUI:Tab("公告 / 狀態")
 
-local BtnUser = SecStatus:Button("👤 玩家：載入中...", function() end)
-local BtnAtk  = SecStatus:Button("⚔️ 攻擊：OFF", function() end)
-local BtnMode = SecStatus:Button("🧠 模式：None", function() end)
-local BtnV4   = SecStatus:Button("🔥 V4：OFF", function() end) -- 新增 V4 狀態顯示
+-- 📝 5.1 系統公告 (已更新)
+local SecNote   = TabInfo:Section("📢 系統公告")
 
--- 動態更新邏輯
+SecNote:Button("⚠️ 系統會隨時更新", function() 
+    -- 點擊無動作，純顯示用
+end)
+
+SecNote:Button("💬 有事情 DC 找我", function() 
+    -- 點擊無動作，純顯示用
+end)
+
+-- 📝 5.2 系統監控
+local SecStatus = TabInfo:Section("📊 狀態監控")
+local BtnUser   = SecStatus:Button("👤 玩家：" .. localPlayer.Name, function() end)
+local BtnAtk    = SecStatus:Button("⚔️ 攻擊：OFF", function() end)
+local BtnV4     = SecStatus:Button("🔥 V4：OFF", function() end)
+local BtnMode   = SecStatus:Button("🧠 模式：None", function() end)
+
+-- 動態更新狀態
 task.spawn(function()
-    while task.wait(0.4) do
+    while task.wait(0.5) do
         pcall(function()
-            BtnUser.Text = "👤 玩家：" .. localPlayer.Name
             BtnAtk.Text  = "⚔️ 攻擊：" .. (_G.NekoAttack and "🟢 運行中" or "🔴 已關閉")
             BtnV4.Text   = "🔥 V4：" .. (_G.AutoV4 and "🟢 開啟" or "🔴 關閉")
             
@@ -121,7 +127,7 @@ end)
 -- ⚔️ 戰鬥系統
 -- =============================================================
 local TabFight = myUI:Tab("戰鬥系統")
-local F1 = TabFight:Section("核心開關")
+local F1       = TabFight:Section("核心開關")
 
 F1:Toggle("啟動神刀連擊", function(s) 
     _G.NekoAttack = s 
@@ -145,34 +151,16 @@ F2:Button("模式：全殺模式 (All)", function()
     _G.Settings.Mode = "All" 
 end)
 
-F2:Button("停止所有行為", function() 
+F2:Button("🛑 停止所有行為", function() 
     _G.Settings.Mode = "None"
     _G.NekoAttack = false
-end)
-
--- =============================================================
--- 🍎 果實系統
--- =============================================================
-local TabFruit = myUI:Tab("果實系統")
-local FR = TabFruit:Section("果實 M1 自定義")
-
-FR:Toggle("啟動果實連擊", function(s) 
-    _G.FruitAttack = s 
-end)
-
-FR:Textbox("攻擊高度", "6", function(v) 
-    _G.Settings.FruitHeight = tonumber(v) or 6 
-end)
-
-FR:Textbox("攻擊間隔 (秒)", "0.05", function(v) 
-    _G.Settings.FruitDelay = tonumber(v) or 0.05 
 end)
 
 -- =============================================================
 -- 🌍 環境 / 優化
 -- =============================================================
 local TabEnv = myUI:Tab("環境優化")
-local E1 = TabEnv:Section("視覺效果")
+local E1     = TabEnv:Section("視覺效果")
 
 E1:Toggle("開啟貓貓透視 (ESP)", function(s)
     _G.NekoESP = s
@@ -190,7 +178,7 @@ local E2 = TabEnv:Section("系統優化")
 
 E2:Button("FPS 極致優化", function()
     if _G.OptimizeFPS then 
-        _G.OptimizeFPS()
+        _G.OptimizeFPS() 
     else 
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"))() 
     end
@@ -200,7 +188,7 @@ end)
 -- 🏃 移動 / 飛行
 -- =============================================================
 local TabMove = myUI:Tab("移動傳送")
-local M1 = TabMove:Section("角色行動")
+local M1      = TabMove:Section("角色行動")
 
 M1:Toggle("開啟移動加速", function(s) 
     _G.Settings.SpeedEnabled = s 
@@ -215,6 +203,7 @@ M1:Button("召喚貓貓飛行器", function()
 end)
 
 local TP = TabMove:Section("跨海傳送")
+
 local function Sea(c) 
     pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer(c) end) 
 end
@@ -224,65 +213,62 @@ TP:Button("前往：二海 (Dressrosa)", function() Sea("TravelDressrosa") end)
 TP:Button("前往：三海 (Zou)", function() Sea("TravelZou") end)
 
 -- =============================================================
--- 🐾 6. 最小化按鈕 (連動 UI 收合)
+-- 🐾 6. 最小化按鈕
 -- =============================================================
 local MiniBtn = Instance.new("TextButton", screenGui)
-MiniBtn.Size = UDim2.new(0, 50, 0, 50)
-MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
-MiniBtn.Text = "🐾"
-MiniBtn.TextSize = 30
+MiniBtn.Size             = UDim2.new(0, 50, 0, 50)
+MiniBtn.Position         = UDim2.new(0, 15, 0.5, -25)
+MiniBtn.Text             = "🐾"
+MiniBtn.TextSize         = 30
 MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180)
-MiniBtn.ZIndex = 1000
+MiniBtn.TextColor3       = Color3.fromRGB(255, 120, 180)
+MiniBtn.ZIndex           = 1000
 Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 
 myUI:AddDrag(MiniBtn)
-MiniBtn.MouseButton1Click:Connect(function()
-    myUI:Toggle()
+MiniBtn.MouseButton1Click:Connect(function() 
+    myUI:Toggle() 
 end)
 
--- 斷開連接保護
-localPlayer.AncestryChanged:Connect(function(_, p)
-    if not p then getgenv().NEKO_RUNNING = false end
+localPlayer.AncestryChanged:Connect(function(_, p) 
+    if not p then getgenv().NEKO_RUNNING = false end 
 end)
 
 -- =============================================================
--- 🛡️ 7. NEKO GUARD - 管理員預警系統 (提示版)
+-- 🛡️ 7. NEKO GUARD
 -- =============================================================
 local function ShowAdminWarning(adminName)
     pcall(function()
         StarterGui:SetCore("SendNotification", {
-            Title = "⚠️ 偵測到管理員！",
-            Text = "管理員 [".. adminName .."] 已進入伺服器喵！",
+            Title = "⚠️ 偵測到管理員！", 
+            Text = "["..adminName.."] 已進場！", 
             Duration = 10
         })
         
         local alertGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-        alertGui.Name = "NekoAdminAlert"
         local label = Instance.new("TextLabel", alertGui)
-        label.Size = UDim2.new(1, 0, 0.15, 0)
-        label.Position = UDim2.new(0, 0, 0.42, 0)
-        label.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+        label.Size                   = UDim2.new(1, 0, 0.15, 0)
+        label.Position               = UDim2.new(0, 0, 0.42, 0)
+        label.BackgroundColor3       = Color3.fromRGB(180, 0, 0)
         label.BackgroundTransparency = 0.2
-        label.Text = "⚠️ 警報：管理員 [".. adminName .."] 在場 ⚠️\n請注意安全喵！"
-        label.TextColor3 = Color3.new(1, 1, 1)
-        label.TextSize = 28
-        label.Font = "GothamBold"
+        label.Text                   = "⚠️ 警報：管理員 ["..adminName.."] 在場 ⚠️"
+        label.TextColor3             = Color3.new(1, 1, 1)
+        label.TextSize               = 28
+        
         task.delay(10, function() alertGui:Destroy() end)
     end)
 end
 
 local function CheckAdmin(p)
     if p == localPlayer then return end
-    pcall(function()
-        -- 官方群組 ID: 2830050, Rank 200+ 為 Staff/Admin
-        if p:GetRankInGroup(2830050) >= 200 then
-            ShowAdminWarning(p.Name)
-        end
+    pcall(function() 
+        if p:GetRankInGroup(2830050) >= 200 then 
+            ShowAdminWarning(p.Name) 
+        end 
     end)
 end
 
 Players.PlayerAdded:Connect(CheckAdmin)
 for _, p in ipairs(Players:GetPlayers()) do CheckAdmin(p) end
 
-print("🐾 NEKO SYSTEM 啟動成功喵！安全監控已部署。")
+print("🐾 NEKO STABLE 公告已排整齊喵！")
