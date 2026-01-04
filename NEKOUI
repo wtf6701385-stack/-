@@ -1,4 +1,4 @@
--- [[ 🐾 貓貓 UI：v2.0 System Clean Edition 🐾 ]] --
+-- [[ 🐾 貓貓 UI：v2.0 System Clean Edition (選單顯示修正版) 🐾 ]] --
 local library = {}
 local services = setmetatable({}, {__index = function(_, k) return game:GetService(k) end})
 local ts = services.TweenService
@@ -10,70 +10,65 @@ local function Tween(obj, info, prop)
 end
 
 local C = {
-    Accent = Color3.fromRGB(200,100,160),
-    MainBG = Color3.fromRGB(14,14,18),
-    SideBG = Color3.fromRGB(10,10,14),
-    CardBG = Color3.fromRGB(255,255,255),
-    BtnBG  = Color3.fromRGB(32,32,38),
-    BtnBG2 = Color3.fromRGB(42,42,48),
-    Text   = Color3.fromRGB(210,210,210),
-    TextDim= Color3.fromRGB(150,150,155),
-    TextHi = Color3.fromRGB(245,245,245),
-    DotOff = Color3.fromRGB(70,70,78),
+    Accent = Color3.fromRGB(255, 120, 180),
+    MainBG = Color3.fromRGB(18, 18, 22),
+    SideBG = Color3.fromRGB(12, 12, 16),
+    CardBG = Color3.fromRGB(255, 255, 255),
+    BtnBG  = Color3.fromRGB(35, 35, 42),
+    BtnBG2 = Color3.fromRGB(50, 50, 58),
+    Text   = Color3.fromRGB(220, 220, 225),
+    TextDim= Color3.fromRGB(140, 140, 145),
+    TextHi = Color3.fromRGB(255, 255, 255),
+    DotOff = Color3.fromRGB(60, 60, 65),
 }
 
 function library.new(name)
     local sg = Instance.new("ScreenGui", services.CoreGui)
     sg.Name = "貓貓腳本"
     sg.ResetOnSpawn = false
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     local Main = Instance.new("Frame", sg)
-    Main.Size = UDim2.new(0, 420, 0, 280)
-    Main.Position = UDim2.new(0.5, -210, 0.5, -140)
+    Main.Size = UDim2.new(0, 450, 0, 300)
+    Main.Position = UDim2.new(0.5, -225, 0.5, -150)
     Main.BackgroundColor3 = C.MainBG
-    Main.ClipsDescendants = true
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
+    Main.BorderSizePixel = 0
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
-    -- 開場遮罩
-    local Cover = Instance.new("Frame", Main)
-    Cover.Size = UDim2.new(1,0,1,0)
-    Cover.BackgroundColor3 = Color3.fromRGB(8,8,12)
-    Cover.ZIndex = 100
-    task.spawn(function()
-        task.wait(2.2)
-        Tween(Cover,{0.7},{BackgroundTransparency=1})
-        task.wait(0.7)
-        Cover:Destroy()
-    end)
-
-    local Content = Instance.new("Frame", Main)
-    Content.Size = UDim2.new(1,0,1,0)
-    Content.BackgroundTransparency = 1
-
-    local Side = Instance.new("Frame", Content)
-    Side.Size = UDim2.new(0,120,1,0)
+    -- 側邊欄
+    local Side = Instance.new("Frame", Main)
+    Side.Size = UDim2.new(0, 130, 1, 0)
     Side.BackgroundColor3 = C.SideBG
-    Instance.new("UICorner", Side)
+    Side.BorderSizePixel = 0
+    Instance.new("UICorner", Side).CornerRadius = UDim.new(0, 12)
 
     local Title = Instance.new("TextLabel", Side)
-    Title.Size = UDim2.new(1,0,0,46)
-    Title.Text = "🐾 "..name
+    Title.Size = UDim2.new(1, 0, 0, 50)
+    Title.Text = "🐾 " .. name
     Title.TextColor3 = C.TextHi
     Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 14
+    Title.TextSize = 15
     Title.BackgroundTransparency = 1
 
+    -- 分頁按鈕容器 (修正關鍵：確保 Size 和 CanvasSize 正確)
     local TabContainer = Instance.new("ScrollingFrame", Side)
-    TabContainer.Size = UDim2.new(1,0,1,-52)
-    TabContainer.Position = UDim2.new(0,0,0,46)
+    TabContainer.Size = UDim2.new(1, -10, 1, -60)
+    TabContainer.Position = UDim2.new(0, 5, 0, 50)
     TabContainer.BackgroundTransparency = 1
     TabContainer.ScrollBarThickness = 0
-    Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0,6)
-    Instance.new("UIPadding", TabContainer).PaddingLeft = UDim.new(0,8)
+    TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+    
+    local tl = Instance.new("UIListLayout", TabContainer)
+    tl.Padding = UDim.new(0, 5)
+    tl.SortOrder = Enum.SortOrder.LayoutOrder
+    tl:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        TabContainer.CanvasSize = UDim2.new(0, 0, 0, tl.AbsoluteContentSize.Y)
+    end)
 
-    local Pages = Instance.new("Frame", Content)
-    Pages.Size = UDim2.new(1,-135,1,-16)
-    Pages.Position = UDim2.new(0,130,0,8)
+    -- 內容頁面容器
+    local Pages = Instance.new("Frame", Main)
+    Pages.Size = UDim2.new(1, -145, 1, -20)
+    Pages.Position = UDim2.new(0, 135, 0, 10)
     Pages.BackgroundTransparency = 1
 
     local window = {current = nil}
@@ -84,117 +79,124 @@ function library.new(name)
 
     function window:Tab(name)
         local Page = Instance.new("ScrollingFrame", Pages)
-        Page.Size = UDim2.new(1,0,1,0)
-        Page.ScrollBarThickness = 0
+        Page.Size = UDim2.new(1, 0, 1, 0)
+        Page.ScrollBarThickness = 2
+        Page.ScrollBarImageColor3 = C.Accent
         Page.BackgroundTransparency = 1
         Page.Visible = false
+        
         local pl = Instance.new("UIListLayout", Page)
-        pl.Padding = UDim.new(0,10)
+        pl.Padding = UDim.new(0, 8)
         pl:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            Page.CanvasSize = UDim2.new(0,0,0,pl.AbsoluteContentSize.Y+6)
+            Page.CanvasSize = UDim2.new(0, 0, 0, pl.AbsoluteContentSize.Y + 10)
         end)
 
+        -- 分頁按鈕
         local Btn = Instance.new("TextButton", TabContainer)
-        Btn.Size = UDim2.new(0.92,0,0,30)
+        Btn.Size = UDim2.new(1, 0, 0, 35)
+        Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
         Btn.Text = name
-        Btn.Font = Enum.Font.GothamMedium
         Btn.TextColor3 = C.TextDim
-        Btn.BackgroundColor3 = Color3.fromRGB(22,22,28)
-        Instance.new("UICorner", Btn)
+        Btn.Font = Enum.Font.GothamMedium
+        Btn.TextSize = 12
+        Btn.BorderSizePixel = 0
+        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
 
         Btn.MouseButton1Click:Connect(function()
             if window.current then
                 window.current.Page.Visible = false
-                Tween(window.current.Btn,{0.2},{BackgroundColor3 = Color3.fromRGB(22,22,28), TextColor3 = C.TextDim})
+                Tween(window.current.Btn, {0.2}, {BackgroundColor3 = Color3.fromRGB(25, 25, 30), TextColor3 = C.TextDim})
             end
             Page.Visible = true
-            Tween(Btn,{0.2},{BackgroundColor3 = C.Accent, TextColor3 = Color3.new(1,1,1)})
+            Tween(Btn, {0.2}, {BackgroundColor3 = C.Accent, TextColor3 = Color3.new(1,1,1)})
             window.current = {Page = Page, Btn = Btn}
         end)
 
         if not window.current then
             Page.Visible = true
             Btn.BackgroundColor3 = C.Accent
-            Btn.TextColor3 = Color3.new(1,1,1)
+            Btn.TextColor3 = Color3.new(1, 1, 1)
             window.current = {Page = Page, Btn = Btn}
         end
 
         local tab = {}
         function tab:Section(txt)
-            local Sec = Instance.new("Frame",Page)
-            Sec.Size = UDim2.new(0.96,0,0,36)
-            Sec.BackgroundColor3 = C.CardBG
+            local Sec = Instance.new("Frame", Page)
+            Sec.Size = UDim2.new(0.98, 0, 0, 32)
+            Sec.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             Sec.BackgroundTransparency = 0.96
-            Instance.new("UICorner",Sec)
+            Instance.new("UICorner", Sec)
 
-            local T = Instance.new("TextLabel",Sec)
-            T.Size = UDim2.new(1,-10,0,22)
-            T.Position = UDim2.new(0,10,0,2)
-            T.Text = txt:upper()
+            local T = Instance.new("TextLabel", Sec)
+            T.Size = UDim2.new(1, -10, 0, 25)
+            T.Position = UDim2.new(0, 10, 0, 0)
+            T.Text = txt
             T.TextColor3 = C.Accent
             T.Font = Enum.Font.GothamBold
-            T.TextSize = 10
+            T.TextSize = 11
             T.TextXAlignment = Enum.TextXAlignment.Left
             T.BackgroundTransparency = 1
 
-            local Box = Instance.new("Frame",Sec)
-            Box.Size = UDim2.new(1,0,0,0)
-            Box.Position = UDim2.new(0,0,0,26)
+            local Box = Instance.new("Frame", Sec)
+            Box.Size = UDim2.new(1, 0, 0, 0)
+            Box.Position = UDim2.new(0, 0, 0, 28)
             Box.BackgroundTransparency = 1
-            local CL = Instance.new("UIListLayout",Box)
-            CL.Padding = UDim.new(0,6)
-            CL.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            CL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                Sec.Size = UDim2.new(0.96,0,0,CL.AbsoluteContentSize.Y+32)
+            
+            local bl = Instance.new("UIListLayout", Box)
+            bl.Padding = UDim.new(0, 5)
+            bl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            bl:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                Sec.Size = UDim2.new(0.98, 0, 0, bl.AbsoluteContentSize.Y + 35)
             end)
 
             local e = {}
-            function e:Toggle(t,cb)
-                local b = Instance.new("TextButton",Box)
-                b.Size = UDim2.new(0.94,0,0,28)
-                b.Text = "  "..t
-                b.TextXAlignment = Enum.TextXAlignment.Left
+            function e:Button(t, cb)
+                local b = Instance.new("TextButton", Box)
+                b.Size = UDim2.new(0.94, 0, 0, 30)
                 b.BackgroundColor3 = C.BtnBG
+                b.Text = t
                 b.TextColor3 = C.Text
-                Instance.new("UICorner",b)
-                local d = Instance.new("Frame",b)
-                d.Size = UDim2.new(0,12,0,12)
-                d.Position = UDim2.new(1,-20,0.5,-6)
+                b.Font = Enum.Font.GothamMedium
+                b.TextSize = 12
+                Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+                b.MouseButton1Click:Connect(cb)
+            end
+
+            function e:Toggle(t, cb)
+                local b = Instance.new("TextButton", Box)
+                b.Size = UDim2.new(0.94, 0, 0, 30)
+                b.BackgroundColor3 = C.BtnBG
+                b.Text = "  " .. t
+                b.TextColor3 = C.Text
+                b.Font = Enum.Font.GothamMedium
+                b.TextSize = 12
+                b.TextXAlignment = Enum.TextXAlignment.Left
+                Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+                
+                local d = Instance.new("Frame", b)
+                d.Size = UDim2.new(0, 14, 0, 14)
+                d.Position = UDim2.new(1, -22, 0.5, -7)
                 d.BackgroundColor3 = C.DotOff
-                Instance.new("UICorner",d).CornerRadius = UDim.new(1,0)
+                Instance.new("UICorner", d).CornerRadius = UDim.new(1, 0)
+                
                 local s = false
                 b.MouseButton1Click:Connect(function()
                     s = not s
-                    Tween(d,{0.15},{BackgroundColor3 = s and C.Accent or C.DotOff})
+                    Tween(d, {0.15}, {BackgroundColor3 = s and C.Accent or C.DotOff})
                     cb(s)
                 end)
             end
 
-            function e:Button(t,cb)
-                local b = Instance.new("TextButton",Box)
-                b.Size = UDim2.new(0.94,0,0,28)
-                b.Text = t
-                b.BackgroundColor3 = C.BtnBG
-                b.TextColor3 = C.TextHi
-                Instance.new("UICorner",b)
-                b.MouseButton1Click:Connect(function()
-                    Tween(b,{0.1},{BackgroundColor3 = C.BtnBG2})
-                    task.wait(0.1)
-                    Tween(b,{0.15},{BackgroundColor3 = C.BtnBG})
-                    cb()
-                end)
-            end
-
-            function e:Textbox(p,d,cb)
-                local b = Instance.new("TextBox",Box)
-                b.Size = UDim2.new(0.94,0,0,28)
+            function e:Textbox(p, d, cb)
+                local b = Instance.new("TextBox", Box)
+                b.Size = UDim2.new(0.94, 0, 0, 30)
+                b.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
                 b.Text = d or ""
                 b.PlaceholderText = p
-                b.BackgroundColor3 = Color3.fromRGB(24,24,28)
                 b.TextColor3 = C.TextHi
                 b.Font = Enum.Font.GothamMedium
-                b.TextSize = 11
-                Instance.new("UICorner",b)
+                b.TextSize = 12
+                Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
                 b.FocusLost:Connect(function() cb(b.Text) end)
             end
             return e
