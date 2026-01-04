@@ -13,7 +13,7 @@ _G.OptimizeFPS = function()
     end)
 end
 
--- 🛡️ 1. 核心組件安全獲取函數 (依主人要求，完整保留)
+-- 🛡️ 1. 核心組件安全獲取函數
 local function SafeWaitForChild(parent, childName)
     local success, result = pcall(function() return parent:WaitForChild(childName, 5) end)
     return success and result or nil
@@ -32,7 +32,7 @@ local function CheckAndGetCoreComponents()
     return Remotes, Net, RegisterAttack, RegisterHit, Enemies
 end
 
--- 🛡️ 2. 存活判定與部位獲取 (核心邏輯)
+-- 🛡️ 2. 存活判定與部位獲取
 local function IsAlive(character)
     return character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0
 end
@@ -50,7 +50,7 @@ local function GetRandomValidPart(target)
     return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
 end
 
--- ✨ [視野與加速系統] (保持不變)
+-- ✨ [視野與加速系統]
 task.spawn(function()
     while true do
         if _G.NekoRunning and _G.Settings then
@@ -74,9 +74,33 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
+-- 🔥 [新增：自動 V4 覺醒系統 (已封裝)] 
+task.spawn(function()
+    while true do
+        task.wait(1) -- 每秒檢查一次，穩定不卡頓
+        if _G.NekoRunning and _G.AutoV4 then
+            pcall(function()
+                local char = Player.Character
+                local backpack = Player:FindFirstChild("Backpack")
+                
+                -- 雙重搜尋：先找身上，再找背包
+                local Awakening = (char and char:FindFirstChild("Awakening")) or 
+                                  (backpack and backpack:FindFirstChild("Awakening"))
+                
+                if Awakening then
+                    local RemoteFunc = Awakening:FindFirstChild("RemoteFunction")
+                    if RemoteFunc and RemoteFunc:IsA("RemoteFunction") then
+                        RemoteFunc:InvokeServer(true) -- 發動覺醒！
+                    end
+                end
+            end)
+        end
+    end
+end)
+
 -- ⚔️ 3. 神刀主引擎 (對接 NEKO UI)
 local FastAttack = {
-    Distance = 2500, -- 會自動對接 _G.Settings.Distance
+    Distance = 2500,
     attackMobs = true,
     attackPlayers = true
 }
@@ -148,4 +172,4 @@ task.spawn(function()
     end
 end)
 
-print("🐾 NEKOOOOO 神刀全功能引擎已啟動！傷害判定已鎖定喵。")
+print("🐾 NEKOOOOO 神刀全功能引擎 (含 V4) 已啟動！傷害判定已鎖定喵。")
