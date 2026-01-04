@@ -1,4 +1,4 @@
--- [[ 👁️ NEKO SENSE - ULTIMATE FIX 🐾 ]] --
+-- [[ 👁️ NEKO SENSE - ULTIMATE FIX (Clean Ver.) 🐾 ]] --
 
 if _G.ESPStarted then _G.ESPStarted = false; task.wait(0.3) end
 _G.ESPStarted = true
@@ -7,14 +7,22 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- 建立/抓取容器
+-- 建立/抓取容器 (放在 CoreGui 防止被遊戲刪除)
 local Folder = CoreGui:FindFirstChild("NekoESP") or Instance.new("Folder", CoreGui)
 Folder.Name = "NekoESP"
 
+-- 🧹 額外掛一個監聽：玩家一離開，立刻刪除對應的 GUI
+local removeConn = Players.PlayerRemoving:Connect(function(p)
+    if Folder:FindFirstChild(p.Name) then
+        Folder[p.Name]:Destroy()
+    end
+end)
+
 task.spawn(function()
     while _G.ESPStarted do
+        -- 1. 更新現有玩家 (你的原始邏輯)
         for _, p in ipairs(Players:GetPlayers()) do
-            pcall(function() -- 使用 pcall 防止中間有人退出遊戲導致報錯
+            pcall(function() 
                 if p ~= LocalPlayer then
                     local char = p.Character
                     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -23,24 +31,24 @@ task.spawn(function()
                     -- 檢查主人在主 UI 的開關 (_G.NekoESP)
                     if _G.NekoESP and char and hrp and hum and hum.Health > 0 then
                         
-                        -- 1. BillboardGui 核心
+                        -- [A] BillboardGui 核心
                         local bb = Folder:FindFirstChild(p.Name) or Instance.new("BillboardGui", Folder)
                         bb.Name = p.Name; bb.Adornee = hrp; bb.AlwaysOnTop = true
                         bb.Size = UDim2.new(0, 160, 0, 70); bb.ExtentsOffset = Vector3.new(0, 4.5, 0)
                         bb.Enabled = true
                         
-                        -- 即時計算血量
+                        -- 計算血量顏色
                         local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
                         local healthColor = Color3.fromRGB(100, 255, 100):Lerp(Color3.fromRGB(255, 50, 50), 1 - healthPercent)
                         
-                        -- 2. 名字標籤
+                        -- [B] 名字標籤
                         local nameL = bb:FindFirstChild("NameL") or Instance.new("TextLabel", bb)
                         nameL.Name = "NameL"; nameL.Parent = bb
                         nameL.Size = UDim2.new(1, 0, 0.3, 0); nameL.BackgroundTransparency = 1
                         nameL.Font = "GothamBold"; nameL.TextSize = 14; nameL.TextColor3 = Color3.new(1, 1, 1)
                         nameL.TextStrokeTransparency = 0; nameL.Text = "🐾 " .. p.Name
                         
-                        -- 3. 數據標籤 (距離 + 百分比)
+                        -- [C] 數據標籤 (距離 + 百分比)
                         local statsL = bb:FindFirstChild("StatsL") or Instance.new("TextLabel", bb)
                         statsL.Name = "StatsL"; statsL.Parent = bb
                         statsL.Size = UDim2.new(1, 0, 0.3, 0); statsL.Position = UDim2.new(0, 0, 0.35, 0)
@@ -51,34 +59,45 @@ task.spawn(function()
                         statsL.TextColor3 = healthColor
                         statsL.Text = string.format("[ %d%% ]  [ %dm ]", math.floor(healthPercent * 100), dist)
                         
-                        -- 4. 關鍵血條：背景
+                        -- [D] 關鍵血條：背景
                         local barBg = bb:FindFirstChild("BarBg") or Instance.new("Frame", bb)
                         barBg.Name = "BarBg"; barBg.Parent = bb
                         barBg.Size = UDim2.new(0.7, 0, 0, 4); barBg.Position = UDim2.new(0.15, 0, 0.7, 0)
                         barBg.BackgroundColor3 = Color3.new(0, 0, 0); barBg.BorderSizePixel = 0
                         
-                        -- 5. 關鍵血條：動態條 (會動的核心！)
+                        -- [E] 關鍵血條：動態條
                         local bar = barBg:FindFirstChild("Bar") or Instance.new("Frame", barBg)
                         bar.Name = "Bar"; bar.Parent = barBg
                         bar.BorderSizePixel = 0
-                        -- 這裡強制更新長度喵！
                         bar.Size = UDim2.new(healthPercent, 0, 1, 0)
                         bar.BackgroundColor3 = healthColor
 
-                        -- 6. Highlight 透視
+                        -- [F] Highlight 透視
                         local highlight = char:FindFirstChild("NekoHighlight") or Instance.new("Highlight", char)
                         highlight.Name = "NekoHighlight"; highlight.Adornee = char
                         highlight.Enabled = true; highlight.FillColor = healthColor; highlight.FillTransparency = 0.75
                         highlight.OutlineColor = Color3.new(1, 1, 1); highlight.OutlineTransparency = 0
                     else
-                        -- 隱藏 logic
+                        -- 隱藏 logic (針對死亡或開關關閉)
                         if Folder:FindFirstChild(p.Name) then Folder[p.Name].Enabled = false end
                         if char and char:FindFirstChild("NekoHighlight") then char.NekoHighlight.Enabled = false end
                     end
                 end
             end)
         end
-        task.wait(0.1) -- 這樣刷新最穩，血條伸縮超順滑
+
+        -- 🧹 2. 關鍵修復：檢查殘留垃圾
+        -- 這裡會掃描 GUI 資料夾，如果發現名字對應的玩家不在遊戲裡了，就把它刪掉！
+        for _, gui in ipairs(Folder:GetChildren()) do
+            if not Players:FindFirstChild(gui.Name) then
+                gui:Destroy()
+            end
+        end
+
+        task.wait(0.1) -- 保持順滑
     end
+    
+    -- 腳本關閉時的清理
+    if removeConn then removeConn:Disconnect() end
     Folder:ClearAllChildren()
 end)
