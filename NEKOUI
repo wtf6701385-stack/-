@@ -1,4 +1,4 @@
--- [[ 🐾 貓貓 UI：v2.0 System Clean Edition (已加入收合功能) 🐾 ]] --
+-- [[ 🐾 貓貓 UI：v2.0 System Clean Edition 🐾 ]] --
 local library = {}
 local services = setmetatable({}, {__index = function(_, k) return game:GetService(k) end})
 local ts = services.TweenService
@@ -25,9 +25,7 @@ local C = {
 function library.new(name)
     local sg = Instance.new("ScreenGui", services.CoreGui)
     sg.Name = "貓貓腳本"
-    sg.IgnoreGuiInset = true
     sg.ResetOnSpawn = false
-    sg.DisplayOrder = 999
 
     local Main = Instance.new("Frame", sg)
     Main.Size = UDim2.new(0, 420, 0, 280)
@@ -36,27 +34,13 @@ function library.new(name)
     Main.ClipsDescendants = true
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
-    local Stroke = Instance.new("UIStroke", Main)
-    Stroke.Thickness = 1.5
-    Stroke.Color = Color3.fromRGB(80,80,90)
-
-    -- 開場動畫 (略...)
+    -- 開場遮罩
     local Cover = Instance.new("Frame", Main)
     Cover.Size = UDim2.new(1,0,1,0)
     Cover.BackgroundColor3 = Color3.fromRGB(8,8,12)
     Cover.ZIndex = 100
-    local Logo = Instance.new("TextLabel", Cover)
-    Logo.Size = UDim2.new(1,0,1,0)
-    Logo.Text = "🐾 NEKO SYSTEM\nINITIALIZING..."
-    Logo.TextColor3 = C.Accent
-    Logo.Font = Enum.Font.GothamBold
-    Logo.TextSize = 22
-    Logo.BackgroundTransparency = 1
-    Logo.ZIndex = 101
-
     task.spawn(function()
         task.wait(2.2)
-        Tween(Logo,{0.5},{TextTransparency=1})
         Tween(Cover,{0.7},{BackgroundTransparency=1})
         task.wait(0.7)
         Cover:Destroy()
@@ -92,28 +76,10 @@ function library.new(name)
     Pages.Position = UDim2.new(0,130,0,8)
     Pages.BackgroundTransparency = 1
 
-    local window = {current=nil}
+    local window = {current = nil}
 
-    -- ✨✨✨ 新增：收合按鈕功能 ✨✨✨
-    function window:EditOpenButton()
-        local OpenBtn = Instance.new("TextButton", sg)
-        OpenBtn.Size = UDim2.new(0, 50, 0, 50)
-        OpenBtn.Position = UDim2.new(0, 20, 0.5, -25)
-        OpenBtn.BackgroundColor3 = C.MainBG
-        OpenBtn.Text = "🐾"
-        OpenBtn.TextSize = 24
-        OpenBtn.TextColor3 = C.Accent
-        Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
-        local BStroke = Instance.new("UIStroke", OpenBtn)
-        BStroke.Color = C.Accent
-        BStroke.Thickness = 2
-
-        -- 拖動開關
-        window:AddDrag(OpenBtn)
-
-        OpenBtn.MouseButton1Click:Connect(function()
-            Main.Visible = not Main.Visible
-        end)
+    function window:Toggle()
+        Main.Visible = not Main.Visible
     end
 
     function window:Tab(name)
@@ -132,93 +98,104 @@ function library.new(name)
         Btn.Size = UDim2.new(0.92,0,0,30)
         Btn.Text = name
         Btn.Font = Enum.Font.GothamMedium
-        Btn.TextSize = 11
         Btn.TextColor3 = C.TextDim
         Btn.BackgroundColor3 = Color3.fromRGB(22,22,28)
         Instance.new("UICorner", Btn)
 
         Btn.MouseButton1Click:Connect(function()
             if window.current then
-                window.current.Page.Visible=false
+                window.current.Page.Visible = false
                 Tween(window.current.Btn,{0.2},{BackgroundColor3 = Color3.fromRGB(22,22,28), TextColor3 = C.TextDim})
             end
-            Page.Visible=true
+            Page.Visible = true
             Tween(Btn,{0.2},{BackgroundColor3 = C.Accent, TextColor3 = Color3.new(1,1,1)})
-            window.current={Page=Page,Btn=Btn}
+            window.current = {Page = Page, Btn = Btn}
         end)
 
         if not window.current then
-            Page.Visible=true
-            Btn.BackgroundColor3=C.Accent
-            Btn.TextColor3=Color3.new(1,1,1)
-            window.current={Page=Page,Btn=Btn}
+            Page.Visible = true
+            Btn.BackgroundColor3 = C.Accent
+            Btn.TextColor3 = Color3.new(1,1,1)
+            window.current = {Page = Page, Btn = Btn}
         end
 
-        local tab={}
+        local tab = {}
         function tab:Section(txt)
-            local Sec=Instance.new("Frame",Page)
-            Sec.Size=UDim2.new(0.96,0,0,36)
-            Sec.BackgroundColor3=C.CardBG
-            Sec.BackgroundTransparency=0.96
+            local Sec = Instance.new("Frame",Page)
+            Sec.Size = UDim2.new(0.96,0,0,36)
+            Sec.BackgroundColor3 = C.CardBG
+            Sec.BackgroundTransparency = 0.96
             Instance.new("UICorner",Sec)
-            local T=Instance.new("TextLabel",Sec)
-            T.Size=UDim2.new(1,-10,0,22)
-            T.Position=UDim2.new(0,10,0,2)
-            T.Text=txt:upper()
-            T.TextColor3=C.Accent
-            T.Font=Enum.Font.GothamBold
-            T.TextSize=10
-            T.TextXAlignment=Enum.TextXAlignment.Left
-            T.BackgroundTransparency=1
-            local Box=Instance.new("Frame",Sec)
-            Box.Position=UDim2.new(0,0,0,26)
-            Box.Size=UDim2.new(1,0,0,0)
-            Box.BackgroundTransparency=1
-            local CL=Instance.new("UIListLayout",Box)
-            CL.Padding=UDim.new(0,6)
+
+            local T = Instance.new("TextLabel",Sec)
+            T.Size = UDim2.new(1,-10,0,22)
+            T.Position = UDim2.new(0,10,0,2)
+            T.Text = txt:upper()
+            T.TextColor3 = C.Accent
+            T.Font = Enum.Font.GothamBold
+            T.TextSize = 10
+            T.TextXAlignment = Enum.TextXAlignment.Left
+            T.BackgroundTransparency = 1
+
+            local Box = Instance.new("Frame",Sec)
+            Box.Size = UDim2.new(1,0,0,0)
+            Box.Position = UDim2.new(0,0,0,26)
+            Box.BackgroundTransparency = 1
+            local CL = Instance.new("UIListLayout",Box)
+            CL.Padding = UDim.new(0,6)
             CL.HorizontalAlignment = Enum.HorizontalAlignment.Center
             CL:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                Sec.Size=UDim2.new(0.96,0,0,CL.AbsoluteContentSize.Y+32)
+                Sec.Size = UDim2.new(0.96,0,0,CL.AbsoluteContentSize.Y+32)
             end)
 
-            local e={}
+            local e = {}
             function e:Toggle(t,cb)
-                local b=Instance.new("TextButton",Box)
-                b.Size=UDim2.new(0.94,0,0,28)
-                b.Text="  "..t
-                b.TextXAlignment=Enum.TextXAlignment.Left
-                b.BackgroundColor3=C.BtnBG
-                b.TextColor3=C.Text
-                b.Font=Enum.Font.GothamMedium
-                b.TextSize=11
+                local b = Instance.new("TextButton",Box)
+                b.Size = UDim2.new(0.94,0,0,28)
+                b.Text = "  "..t
+                b.TextXAlignment = Enum.TextXAlignment.Left
+                b.BackgroundColor3 = C.BtnBG
+                b.TextColor3 = C.Text
                 Instance.new("UICorner",b)
-                local d=Instance.new("Frame",b)
-                d.Size=UDim2.new(0,12,0,12)
-                d.Position=UDim2.new(1,-20,0.5,-6)
-                d.BackgroundColor3=C.DotOff
-                Instance.new("UICorner",d).CornerRadius=UDim.new(1,0)
-                local s=false
+                local d = Instance.new("Frame",b)
+                d.Size = UDim2.new(0,12,0,12)
+                d.Position = UDim2.new(1,-20,0.5,-6)
+                d.BackgroundColor3 = C.DotOff
+                Instance.new("UICorner",d).CornerRadius = UDim.new(1,0)
+                local s = false
                 b.MouseButton1Click:Connect(function()
-                    s=not s
-                    Tween(d,{0.15},{BackgroundColor3=s and C.Accent or C.DotOff})
+                    s = not s
+                    Tween(d,{0.15},{BackgroundColor3 = s and C.Accent or C.DotOff})
                     cb(s)
                 end)
             end
+
             function e:Button(t,cb)
-                local b=Instance.new("TextButton",Box)
-                b.Size=UDim2.new(0.94,0,0,28)
-                b.Text=t
-                b.BackgroundColor3=C.BtnBG
-                b.TextColor3=C.TextHi
-                b.Font=Enum.Font.GothamMedium
-                b.TextSize=11
+                local b = Instance.new("TextButton",Box)
+                b.Size = UDim2.new(0.94,0,0,28)
+                b.Text = t
+                b.BackgroundColor3 = C.BtnBG
+                b.TextColor3 = C.TextHi
                 Instance.new("UICorner",b)
                 b.MouseButton1Click:Connect(function()
-                    Tween(b,{0.1},{BackgroundColor3=C.BtnBG2})
+                    Tween(b,{0.1},{BackgroundColor3 = C.BtnBG2})
                     task.wait(0.1)
-                    Tween(b,{0.15},{BackgroundColor3=C.BtnBG})
+                    Tween(b,{0.15},{BackgroundColor3 = C.BtnBG})
                     cb()
                 end)
+            end
+
+            function e:Textbox(p,d,cb)
+                local b = Instance.new("TextBox",Box)
+                b.Size = UDim2.new(0.94,0,0,28)
+                b.Text = d or ""
+                b.PlaceholderText = p
+                b.BackgroundColor3 = Color3.fromRGB(24,24,28)
+                b.TextColor3 = C.TextHi
+                b.Font = Enum.Font.GothamMedium
+                b.TextSize = 11
+                Instance.new("UICorner",b)
+                b.FocusLost:Connect(function() cb(b.Text) end)
             end
             return e
         end
@@ -226,19 +203,19 @@ function library.new(name)
     end
 
     function window:AddDrag(obj)
-        local d,s,p
-        obj.InputBegan:Connect(function(i)
-            if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then
-                d=true s=i.Position p=obj.Position
+        local dragging, dragStart, startPos
+        obj.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true dragStart = input.Position startPos = obj.Position
             end
         end)
-        services.UserInputService.InputChanged:Connect(function(i)
-            if d then
-                local delta=i.Position-s
-                obj.Position=UDim2.new(p.X.Scale,p.X.Offset+delta.X,p.Y.Scale,p.Y.Offset+delta.Y)
+        services.UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                obj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
             end
         end)
-        services.UserInputService.InputEnded:Connect(function() d=false end)
+        services.UserInputService.InputEnded:Connect(function() dragging = false end)
     end
 
     window:AddDrag(Main)
