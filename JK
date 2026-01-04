@@ -1,57 +1,616 @@
--- [[ JK 完整版 - 下載位置：GitHub/JK ]]
-local LP = game.Players.LocalPlayer
-local CommF = game:GetService("ReplicatedStorage").Remotes.CommF_
-_G.Settings = _G.Settings or {} -- 確保設定存在
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
--- [1] 完整等級/坐標判定 (NEKO 原始數據)
-function GetQuest()
-    local lv = LP.Data.Level.Value
-    if game.PlaceId == 2753915549 then -- World 1
-        if lv <= 9 then return "Bandit", 1, "BanditQuest1", CFrame.new(1059, 15, 1550), CFrame.new(1045, 27, 1560)
-        -- ...此處補完 1-2450 級所有 elseif 數據
+-- 函数: 创建渐变色文本
+function gradient(text, startColor, endColor)
+    local result = ""
+    local length = #text
+
+    for i = 1, length do
+        local t = (i - 1) / math.max(length - 1, 1)
+        local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
+        local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
+        local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
+
+        local char = text:sub(i, i)
+        result = result .. "<font color=\"rgb(" .. r ..", " .. g .. ", " .. b .. ")\">" .. char .. "</font>"
+    end
+
+    return result
+end
+
+-- 初始化确认弹窗
+local Confirmed = false
+WindUI:Popup({
+    Title = "凌霄脚本",
+    Icon = "rbxassetid://7734068321",
+    IconThemed = true,
+    Content = "欢迎使用" .. gradient("凌霄脚本", Color3.fromHex("#00FF87"), Color3.fromHex("#60EFFF")) .. "",
+    Buttons = {
+        {
+            Title = "取消",
+            Callback = function() end,
+            Variant = "Secondary",
+        },
+        {
+            Title = "继续",
+            Icon = "arrow-right",
+            Callback = function() Confirmed = true end,
+            Variant = "Primary",
+        }
+    }
+})
+
+repeat wait() until Confirmed
+
+-- 提前获取游戏服务和本地玩家信息（用于显示使用者信息）
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+-- 获取本地玩家的基础信息
+local PlayerName = LocalPlayer.Name -- 玩家昵称
+local PlayerId = LocalPlayer.UserId -- 玩家ID
+local PlayerDisplayName = LocalPlayer.DisplayName -- 玩家显示名（如果有）
+
+-- 创建主窗口
+local Window = WindUI:CreateWindow({
+    Title = "凌霄中心",
+    Icon = "rbxassetid://7734068321",
+    IconThemed = true,
+    Author = "初音制作",
+    Folder = "凌霄脚本",
+    Size = UDim2.fromOffset(580, 460),
+    Transparent = true,
+    Theme = "Dark",
+    User = {
+        Enabled = true,
+        Callback = function() 
+            print("当前脚本使用者信息：")
+            print("昵称：" .. PlayerName)
+            print("显示名：" .. PlayerDisplayName)
+            print("用户ID：" .. PlayerId)
+            game:GetService("StarterGui"):SetCore("SendNotification",{
+                Title = "脚本使用者信息",
+                Text = "昵称：" .. PlayerName .. "\nID：" .. PlayerId,
+                Duration = 5;
+            })
+        end,
+        Anonymous = false,
+        Name = PlayerName,
+        ID = PlayerId,
+        DisplayName = PlayerDisplayName
+    },
+    SideBarWidth = 200,
+    ScrollBarEnabled = true,
+})
+
+-- 原脚本初始化部分
+local old
+old = hookmetamethod(game:GetService("StarterGui"), "__namecall", newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+    if method == "SetCore" and args[1] == "SendNotification" then
+        local options = args[2]
+        if type(options) == "table" and 
+           tostring(options.Title) == "凌霄脚本" and 
+           tostring(options.Text) == "初音製作" 
+        then
+            local modifiedOptions = table.clone(options)
+            modifiedOptions.Text = "1"
+            return old(self, args[1], modifiedOptions)
         end
+    end
+    return old(self, ...)
+end))
+
+local main = require(game:GetService("ReplicatedStorage").Util.CameraShaker.Main)
+local returnnil = function() return nil end
+main.StartShake = returnnil
+main.ShakeOnce = returnnil
+main.ShakeSustain = returnnil
+main.CameraShakeInstance = returnnil
+main.Shake = returnnil
+main.Start = returnnil
+
+game:GetService("StarterGui"):SetCore("SendNotification",{
+    Title = "凌霄脚本",
+    Text = "初音制作",
+    Duration = 5;
+})
+
+
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local workspace = game:GetService("Workspace")
+local Player = Players.LocalPlayer 
+
+local Tabs = {}
+
+do
+    Tabs.NoticeSection = Window:Section({
+        Title = "公告",
+        Opened = true,
+    })
+    
+    Tabs.GeneralSection = Window:Section({
+        Title = "脚本",
+        Icon = "settings",
+        Opened = true,
+    })
+    
+    Tabs.RangeSection = Window:Section({
+        Title = "神刀",
+        Icon = "target",
+        Opened = true,
+    })
+    
+    Tabs.ESPSection = Window:Section({
+        Title = "透视",
+        Icon = "eye",
+        Opened = true,
+    })
+    
+    Tabs.TPSection = Window:Section({
+        Title = "傳送",
+        Icon = "map-pin",
+        Opened = true,
+    })
+    
+    -- 标签页
+    Tabs.NoticeTab = Tabs.NoticeSection:Tab({ Title = "公告信息", Icon = "info" })
+    Tabs.GeneralTab = Tabs.GeneralSection:Tab({ Title = "脚本功能", Icon = "tool" })
+    Tabs.RangeTab = Tabs.RangeSection:Tab({ Title = "神刀设置", Icon = "sword" })
+    Tabs.ESPTab = Tabs.ESPSection:Tab({ Title = "透视设置", Icon = "eye" })
+    Tabs.TPTab = Tabs.TPSection:Tab({ Title = "传送功能", Icon = "navigation" })
+    
+    -- 子标签页
+    Tabs.TPSea2Tab = Tabs.TPSection:Tab({ Title = "二海传送", Icon = "ship" })
+    Tabs.TPSea3Tab = Tabs.TPSection:Tab({ Title = "三海传送", Icon = "anchor" })
+end
+
+Window:SelectTab(1)
+
+-- 公告标签页
+Tabs.NoticeTab:Paragraph({
+    Title = "凌霄脚本",
+    Desc = "初音制作\n有些功能壞了用不了，對不起我們儘快更改，謝謝。",
+    Image = "info",
+    ImageSize = 36,
+    Buttons = {
+        {
+            Title = "加载完成",
+            Variant = "Primary",
+            Callback = function() 
+                game:GetService("StarterGui"):SetCore("SendNotification",{
+                    Title = "凌霄脚本",
+                    Text = "加载完成 祝您使用愉快",
+                    Duration = 5;
+                })
+            end,
+            Icon = "check",
+        }
+    }
+})
+
+Tabs.NoticeTab:Divider()
+
+Tabs.NoticeTab:Paragraph({
+    Title = "使用说明",
+    Desc = "这是一个用于游戏的辅助脚本\n请合理使用，遵守游戏规则",
+    Image = "alert-triangle",
+    ImageSize = 30,
+    Color = "Orange",
+})
+
+-- 脚本标签页 (通用功能)
+Tabs.GeneralTab:Slider({
+    Title = "视角缩放距离",
+    Value = {
+        Min = 128,
+        Max = 10000,
+        Default = 128,
+    },
+    Callback = function(value)
+        game:GetService("Players").LocalPlayer.CameraMaxZoomDistance = value
+    end
+})
+
+-- 自动v4
+local toggleKey = "自动v4"
+local autoV4Task = nil
+
+local function getToggleState(key)
+    if not _G.ToggleStates then _G.ToggleStates = {} end
+    return _G.ToggleStates[key] or false
+end
+
+local function callAwakeningRemote()
+    local Backpack = LocalPlayer:FindFirstChild("Backpack")
+    if not Backpack then return end
+    
+    local Awakening = Backpack:FindFirstChild("Awakening")
+    if not Awakening then return end
+    
+    local RemoteFunc = Awakening:FindFirstChild("RemoteFunction")
+    if not RemoteFunc or not RemoteFunc:IsA("RemoteFunction") then return end
+    
+    local success, err = pcall(function()
+        RemoteFunc:InvokeServer(true)
+    end)
+    if not success then
+        warn("自动v4调用失败：", err)
     end
 end
 
--- [2] 最強 RegisterHit 封包 (解密後 Delta 穩定版)
-task.spawn(function()
-    local Net = require(game.ReplicatedStorage.Modules.Net)
-    while task.wait() do
-        if _G.Settings and _G.Settings.Main["Fast Attack"] then
-            pcall(function()
-                local parts = {}
-                for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-                    if v:FindFirstChild("HumanoidRootPart") and (v.HumanoidRootPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude <= 65 then
-                        table.insert(parts, {v, v.HumanoidRootPart})
+local function toggleAutoV4(enable)
+    if autoV4Task then
+        task.cancel(autoV4Task)
+        autoV4Task = nil
+    end
+    
+    if enable then
+        autoV4Task = task.spawn(function()
+            while getToggleState(toggleKey) do
+                callAwakeningRemote()
+                task.wait(1) 
+            end
+            autoV4Task = nil
+        end)
+    end
+end
+
+Tabs.GeneralTab:Toggle({
+    Title = "自動v4",
+    Value = false,
+    Callback = function(IsEnabled)
+        if not _G.ToggleStates then _G.ToggleStates = {} end
+        _G.ToggleStates[toggleKey] = IsEnabled
+        
+        toggleAutoV4(IsEnabled)
+    end
+})
+
+Tabs.GeneralTab:Button({
+    Title = "飛行",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/ni7ykt/RGB-FLY/refs/heads/main/l"))()
+    end
+})
+
+Tabs.GeneralTab:Button({
+    Title = "法天象地",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/ni7ykt/RGB-FLY/refs/heads/main/oa"))()
+    end
+})
+
+Tabs.GeneralTab:Button({
+    Title = "fps优化（无法关闭）",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/kismile236/rjrym/refs/heads/main/fpsboost"))()
+    end
+})
+
+Tabs.GeneralTab:Button({
+    Title = "hoho",
+    Callback = function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/acsu123/HOHO_H/main/Loading_UI'))()
+    end
+})
+
+Tabs.GeneralTab:Button({
+    Title = "落叶中心（所有游戲通用）",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/krlpl/Deciduous-center-LS/main/落叶中心混淆.txt"))()
+    end
+}) 
+
+Tabs.GeneralTab:Button({
+    Title = "Min（舊版本min 畫面會模糊）",
+    Callback = function()
+       loadstring(game:HttpGet("https://raw.githubusercontent.com/LuaCrack/Min/refs/heads/main/MinXoE"))()
+    end
+})
+
+Tabs.GeneralTab:Button({
+    Title = "皮腳本",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/QQ1002100032-Roblox-Pi-script.lua"))()
+    end
+})
+
+-- 神刀标签页
+local Settings = {AutoClick = true, ClickDelay = 0.3}
+local _G = _G or getfenv(0)._G
+_G.FastAttack = _G.FastAttack ~= nil and _G.FastAttack or true
+
+-- ... (此处插入原脚本中的 SafeWaitForChild, CheckAndGetCoreComponents, IsAlive, GetRandomValidPart, Module.FastAttack 函数定义)
+
+Tabs.RangeTab:Toggle({
+    Title = "开关",
+    Value = _G.FastAttack,
+    Callback = function(state)
+        if _ENV.rz_FastAttack then
+            _ENV.rz_FastAttack.IsRunning = state
+            _G.FastAttack = state
+        end
+    end
+})
+
+Tabs.RangeTab:Input({
+    Title = "范围",
+    Placeholder = "5000",
+    Value = "5000",
+    Callback = function(text)
+        local num = tonumber(text) or 2500
+        num = math.floor(math.clamp(num, 1, 2500))
+        if _ENV.rz_FastAttack then
+            _ENV.rz_FastAttack.Distance = num
+        end
+    end
+})
+
+Tabs.RangeTab:Input({
+    Title = "攻速",
+    Placeholder = "0.3",
+    Value = "0.3",
+    Callback = function(text)
+        local num = tonumber(text) or 0.3
+        num = math.round(math.clamp(num, 0.05, 2) * 100) / 100
+        Settings.ClickDelay = num
+    end
+})
+
+Tabs.RangeTab:Toggle({
+    Title = "打怪物",
+    Value = true,
+    Callback = function(state)
+        if _ENV.rz_FastAttack then
+            _ENV.rz_FastAttack.attackMobs = state
+        end
+    end
+})
+
+Tabs.RangeTab:Toggle({
+    Title = "打玩家",
+    Value = true,
+    Callback = function(state)
+        if _ENV.rz_FastAttack then
+            _ENV.rz_FastAttack.attackPlayers = state
+        end
+    end
+})
+
+-- 移速功能
+local speedInputValue = "输入速度值"
+local speedToggleEnabled = false
+local speedConnection = nil
+
+Tabs.RangeTab:Input({
+    Title = "速度",
+    Placeholder = "输入速度值",
+    Value = "50",
+    Callback = function(Value)
+        local speed = tonumber(Value)
+        if speed then
+            getfenv().translateSpeed = speed
+        end
+    end
+})
+
+Tabs.RangeTab:Toggle({
+    Title = "加速开关",
+    Value = false,
+    Callback = function(State)
+        getfenv().translateAccelEnabled = State
+        
+        if State then
+            if getfenv().sudu then
+                getfenv().sudu:Disconnect()
+                getfenv().sudu = nil
+            end
+            
+            getfenv().translateConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                if game:GetService("Players").LocalPlayer.Character and 
+                   game:GetService("Players").LocalPlayer.Character.Humanoid and 
+                   game:GetService("Players").LocalPlayer.Character.Humanoid.Parent then
+                   
+                    local humanoid = game:GetService("Players").LocalPlayer.Character.Humanoid
+                    
+                    if humanoid.MoveDirection.Magnitude > 0 then
+                        local moveDirection = humanoid.MoveDirection
+                        local acceleration = moveDirection * (getfenv().translateSpeed or 50) / 30
+                        
+                        game:GetService("Players").LocalPlayer.Character:TranslateBy(acceleration)
                     end
                 end
-                if #parts > 0 then
-                    Net:RemoteEvent("RegisterHit", true)
-                    game.ReplicatedStorage.Modules.Net["RE/RegisterAttack"]:FireServer()
-                    game.ReplicatedStorage.Modules.Net["RE/RegisterHit"]:FireServer(parts[1][1].Head, parts, {}, tostring(LP.UserId):sub(2,4)..tostring(coroutine.running()):sub(11,15))
-                end
             end)
+        else
+            if getfenv().translateConnection then
+                getfenv().translateConnection:Disconnect()
+                getfenv().translateConnection = nil
+            end
         end
     end
+})
+
+-- 透视功能
+local ESPConfig = {
+    MainSwitch = false,     
+    ShowNameDistance = false, 
+    ShowTracer = false,       
+    ShowHealth = false        
+}
+
+local ESPElements = {}
+
+-- ... (此处插入原脚本中的 CleanupPlayerESP, CreateNameDistanceHealthESP, CreateTracerESP, UpdatePlayerESP, UpdateAllESP, HandlePlayerRespawn, Players.PlayerAdded 等透视相关函数)
+
+Tabs.ESPTab:Toggle({
+    Title = "透视总开关",
+    Value = false,
+    Callback = function(enabled)
+        ESPConfig.MainSwitch = enabled
+        UpdateAllESP()
+    end
+})
+
+Tabs.ESPTab:Toggle({
+    Title = "显示玩家名字+距离",
+    Value = false,
+    Callback = function(enabled)
+        ESPConfig.ShowNameDistance = enabled
+        UpdateAllESP()
+    end
+})
+
+Tabs.ESPTab:Toggle({
+    Title = "显示玩家血量",
+    Value = false,
+    Callback = function(enabled)
+        ESPConfig.ShowHealth = enabled
+        UpdateAllESP()
+    end
+})
+
+Tabs.ESPTab:Toggle({
+    Title = "射线追踪（屏幕中心）",
+    Value = false,
+    Callback = function(enabled)
+        ESPConfig.ShowTracer = enabled
+        UpdateAllESP()
+    end
+})
+
+-- 传送功能
+Tabs.TPTab:Button({
+    Title = "传送至一海",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelMain")
+    end
+})
+
+Tabs.TPTab:Button({
+    Title = "传送至二海",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelDressrosa")
+    end
+})
+
+Tabs.TPTab:Button({
+    Title = "传送至三海",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TravelZou")
+    end
+})
+
+-- 二海传送
+Tabs.TPSea2Tab:Button({
+    Title = "传送至天鹅的房间",
+    Callback = function()
+        local player = Players.LocalPlayer
+        local targetPosition = Vector3.new(-287.37, 305.81, 592.98)
+        
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            print("已传送到天鹅的房间:", targetPosition)
+        end
+    end
+})
+
+Tabs.TPSea2Tab:Button({
+    Title = "传送至豪宅",
+    Callback = function()
+        local player = Players.LocalPlayer
+        local targetPosition = Vector3.new(2286.93, 15.06, 910.51)
+        
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            print("已传送到豪宅:", targetPosition)
+        end
+    end
+})
+
+Tabs.TPSea2Tab:Button({
+    Title = "传送至鬼船里",
+    Callback = function()
+        local player = Players.LocalPlayer
+        local targetPosition = Vector3.new(-6501.06, 83.11, -123.52)
+        
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            print("已传送到鬼船里:", targetPosition)
+        end
+    end
+})
+
+Tabs.TPSea2Tab:Button({
+    Title = "传送至鬼船外",
+    Callback = function()
+        local player = Players.LocalPlayer
+        local targetPosition = Vector3.new(922.78, 123.96, 32842.40)
+        
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            print("已传送到鬼船外:", targetPosition)
+        end
+    end
+})
+
+-- 三海传送
+Tabs.TPSea3Tab:Button({
+    Title = "传送至海洋城堡",
+    Callback = function()
+        local player = Players.LocalPlayer
+        local targetPosition = Vector3.new(-12463.60, 376.26, -7566.08)
+        
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            print("已传送到海洋城堡:", targetPosition)
+        end
+    end
+})
+
+Tabs.TPSea3Tab:Button({
+    Title = "传送至海龟豪宅",
+    Callback = function()
+        local player = Players.LocalPlayer
+        local targetPosition = Vector3.new(-5060.41, 316.43, -3192.30)
+        
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            print("已传送到海龟豪宅:", targetPosition)
+        end
+    end
+})
+
+Tabs.TPSea3Tab:Button({
+    Title = "传送至司法",
+    Callback = function()
+        local player = Players.LocalPlayer
+        local targetPosition = Vector3.new(-5096.48, 316.43, -3177.91)
+        
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            print("已传送到司法:", targetPosition)
+        end
+    end
+})
+
+Tabs.TPSea3Tab:Button({
+    Title = "传送至九头蛇",
+    Callback = function()
+        local player = Players.LocalPlayer
+        local targetPosition = Vector3.new(-5027.03, 316.43, -3206.07)
+        
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            print("已传送到九头蛇:", targetPosition)
+        end
+    end
+})
+
+-- 初始化ESP
+task.spawn(function()
+    task.wait(2)
+    UpdateAllESP()
 end)
 
--- [3] 自動農場循環
-task.spawn(function()
-    while task.wait(0.3) do
-        if _G.Settings.Main["Auto Farm"] then
-            pcall(function()
-                local m, l, n, qp, mp = GetQuest()
-                if not LP.PlayerGui.Main:FindFirstChild("Quest") then
-                    LP.Character.HumanoidRootPart.CFrame = qp
-                    CommF:InvokeServer("StartQuest", n, l)
-                else
-                    local target = game.Workspace.Enemies:FindFirstChild(m)
-                    if target then
-                        LP.Character.HumanoidRootPart.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 35, 0)
-                        -- 裝備武器邏輯
-                    else LP.Character.HumanoidRootPart.CFrame = mp end
-                end
-            end)
-        end
-    end
-end)
