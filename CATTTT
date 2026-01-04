@@ -117,9 +117,9 @@ local I1 = TabInfo:Section("使用者")
 I1:Button("目前使用者：" .. localPlayer.Name, function() end)
 
 local I2 = TabInfo:Section("系統公告")
-I2:Button("貓貓終端 2026 已啟動", function() end)
-I2:Button("抓捕距離固定 3000", function() end)
-I2:Button("UI 已重排，功能依分頁分類", function() end)
+I2:Button("小柒終端 已啟動", function() end)
+I2:Button("有什麼想加的DC跟我說", function() end)
+I2:Button("neko_cattt", function() end)
 
 --==================================================
 -- ⚔️ 戰鬥系統
