@@ -5,15 +5,14 @@ end
 
 getgenv().NEKO_RUNNING = true
 
-
-
 local Players           = game:GetService("Players")
 local LocalPlayer       = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui           = game:GetService("CoreGui")
 
-
-
+-- =====================================
+-- 🛡️ 白名單驗證
+-- =====================================
 local WHITELIST = {
     ["Kadys5373"]    = true,
     ["Zadrian664"]   = true,
@@ -29,8 +28,6 @@ local WHITELIST = {
     ["Liu_Ruyancat"] = true,
 }
 
-
-
 if not WHITELIST[LocalPlayer.Name] then
     pcall(function()
         loadstring(game:HttpGet(
@@ -39,8 +36,6 @@ if not WHITELIST[LocalPlayer.Name] then
     end)
     return
 end
-
-
 
 task.spawn(function()
     task.wait(5)
@@ -51,8 +46,7 @@ task.spawn(function()
     end)
 end)
 
-
-
+-- 清理舊 UI
 for _, n in ipairs({ "NEKO", "NekoUI", "貓貓腳本", "WindUI" }) do
     local g = CoreGui:FindFirstChild(n)
     if g then
@@ -60,8 +54,9 @@ for _, n in ipairs({ "NEKO", "NekoUI", "貓貓腳本", "WindUI" }) do
     end
 end
 
-
-
+-- =====================================
+-- 🌐 全域狀態（與 NEKOOOOO 戰鬥邏輯連動）
+-- =====================================
 _G.NEKO_STATUS = {
     Attack = false,
     Mode   = "None",
@@ -73,16 +68,22 @@ _G.Settings = {
     Speed    = false,
 }
 
+-- =====================================
+-- 📦 資源載入
+-- =====================================
 
-
+-- 載入 UI 庫
 local WindUI = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/wtf6701385-stack/-/refs/heads/main/NEKOUI"
 ))()
 
 local Window = WindUI.new("NEKO BF")
 
+-- ✨✨✨【新增位置】收合按鈕呼叫 ✨✨✨
+-- 這會調用 UI 庫中的 EditOpenButton 函數，產生浮動開關
+Window:EditOpenButton()
 
-
+-- 載入戰鬥邏輯 (異步執行，避免卡住 UI 動畫)
 task.spawn(function()
     local success, err = pcall(function()
         loadstring(game:HttpGet(
@@ -95,7 +96,9 @@ task.spawn(function()
     end
 end)
 
-
+-- =====================================
+-- 📢 UI 內容配置
+-- =====================================
 
 local TabStatus = Window:Tab("公告 / 狀態")
 local SecStatus = TabStatus:Section("系統即時監控")
@@ -106,8 +109,7 @@ local BtnMode  = SecStatus:Button("🧠 模式：None", function() end)
 local BtnV4    = SecStatus:Button("🌌 V4：OFF", function() end)
 local BtnAlive = SecStatus:Button("🟢 系統：穩定運行中", function() end)
 
-
-
+-- 狀態自動更新
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
@@ -128,8 +130,7 @@ task.spawn(function()
     end
 end)
 
-
-
+-- 戰鬥分頁
 local TabCombat = Window:Tab("戰鬥核心")
 local SecCombat = TabCombat:Section("全自動掛機")
 
@@ -150,16 +151,12 @@ SecCombat:Button("停止所有行為", function()
     _G.NEKO_STATUS.Attack = false
 end)
 
-
-
 local SecV4 = TabCombat:Section("種族覺醒")
-
 SecV4:Toggle("自動 V4 技能發動", function(v)
     _G.NEKO_STATUS.V4 = v
 end)
 
-
-
+-- 移動分頁
 local TabMove = Window:Tab("移動傳送")
 local SecMove = TabMove:Section("角色行動")
 
@@ -169,10 +166,7 @@ SecMove:Button("召喚貓貓飛行器", function()
     ))()
 end)
 
-
-
 local SecTP = TabMove:Section("世界傳送")
-
 local function Travel(cmd)
     pcall(function()
         ReplicatedStorage.Remotes.CommF_:InvokeServer(cmd)
@@ -183,8 +177,7 @@ SecTP:Button("前往：一海 (Main)",        function() Travel("TravelMain") en
 SecTP:Button("前往：二海 (Dressrosa)",   function() Travel("TravelDressrosa") end)
 SecTP:Button("前往：三海 (Zou)",          function() Travel("TravelZou") end)
 
-
-
+-- 優化分頁
 local TabEnv = Window:Tab("環境優化")
 local SecFPS = TabEnv:Section("系統加速")
 
@@ -193,17 +186,14 @@ SecFPS:Toggle("FPS 極致優化", function(v)
         loadstring(game:HttpGet(
             "https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"
         ))()
-    end
+    end)
 end)
 
-
-
+-- 收尾
 LocalPlayer.AncestryChanged:Connect(function(_, p)
     if not p then
         getgenv().NEKO_RUNNING = false
     end
 end)
-
-
 
 print("🐾 NEKO SYSTEM 啟動成功喵！")
