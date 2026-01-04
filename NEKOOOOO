@@ -1,175 +1,62 @@
--- [[ 🐾 貓貓核心功能 (NEKOOOOO) - 2026 神刀引擎版 🐾 ]] --
+-- [[ 🐾 貓貓核心擴充：智慧黏人核心引擎 🐾 ]] --
 
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
+-- 1. 核心參數初始化 (與主腳本同步)
+_G.Settings = _G.Settings or {}
+_G.Settings.StickyOffset = CFrame.new(3, 0, 7)
+_G.Settings.StickyDistance = 500
+_G.Settings.StickyLerp = 0.35
 
--- ✨ [新增：優化執行器] 
-_G.OptimizeFPS = function()
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/xiaoxuan-77/-/refs/heads/main/fps优化"))()
-    end)
-end
-
--- 🛡️ 1. 核心組件安全獲取函數
-local function SafeWaitForChild(parent, childName)
-    local success, result = pcall(function() return parent:WaitForChild(childName, 5) end)
-    return success and result or nil
-end
-
-local function CheckAndGetCoreComponents()
-    local Remotes, Modules, Net, RegisterAttack, RegisterHit, Enemies = nil, nil, nil, nil, nil, nil
-    pcall(function()
-        Remotes = SafeWaitForChild(ReplicatedStorage, "Remotes")
-        Modules = SafeWaitForChild(ReplicatedStorage, "Modules")
-        Net = Modules and Modules:FindFirstChild("Net") or nil
-        RegisterAttack = Net and Net:FindFirstChild("RE/RegisterAttack") or nil
-        RegisterHit = Net and Net:FindFirstChild("RE/RegisterHit") or nil
-        Enemies = SafeWaitForChild(workspace, "Enemies")
-    end)
-    return Remotes, Net, RegisterAttack, RegisterHit, Enemies
-end
-
--- 🛡️ 2. 存活判定與部位獲取
-local function IsAlive(character)
-    return character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0
-end
-
-local function GetRandomValidPart(target)
-    local allParts = target:GetDescendants()
-    local validParts = {}
-    local humanoidRootPart = target:FindFirstChild("HumanoidRootPart")
-    local boneParts = humanoidRootPart and humanoidRootPart.Parent:GetDescendants() or {}
-    for _, part in ipairs(allParts) do
-        if part:IsA("BasePart") and part.CanCollide and table.find(boneParts, part) then
-            table.insert(validParts, part)
-        end
-    end
-    return #validParts > 0 and validParts[math.random(1, #validParts)] or target:FindFirstChild("HumanoidRootPart")
-end
-
--- ✨ [視野與加速系統]
-task.spawn(function()
-    while true do
-        if _G.NekoRunning and _G.Settings then
-            pcall(function()
-                Camera.FieldOfView = _G.Settings.FOV
-                Player.CameraMaxZoomDistance = _G.Settings.ZoomDist
-            end)
-        end
-        task.wait(0.5)
-    end
-end)
-
-RunService.Heartbeat:Connect(function()
-    if not _G.NekoRunning or not _G.Settings or not _G.Settings.SpeedEnabled then return end
-    local char = Player.Character
-    if char and char:FindFirstChild("Humanoid") then
-        local hum = char.Humanoid
-        if hum.MoveDirection.Magnitude > 0 then
-            char:TranslateBy(hum.MoveDirection * (_G.Settings.CatSpeedValue / 10))
-        end
-    end
-end)
-
--- 🔥 [新增：自動 V4 覺醒系統 (已封裝)] 
-task.spawn(function()
-    while true do
-        task.wait(1) -- 每秒檢查一次，穩定不卡頓
-        if _G.NekoRunning and _G.AutoV4 then
-            pcall(function()
-                local char = Player.Character
-                local backpack = Player:FindFirstChild("Backpack")
-                
-                -- 雙重搜尋：先找身上，再找背包
-                local Awakening = (char and char:FindFirstChild("Awakening")) or 
-                                  (backpack and backpack:FindFirstChild("Awakening"))
-                
-                if Awakening then
-                    local RemoteFunc = Awakening:FindFirstChild("RemoteFunction")
-                    if RemoteFunc and RemoteFunc:IsA("RemoteFunction") then
-                        RemoteFunc:InvokeServer(true) -- 發動覺醒！
-                    end
-                end
-            end)
-        end
-    end
-end)
-
--- ⚔️ 3. 神刀主引擎 (對接 NEKO UI)
-local FastAttack = {
-    Distance = 2500,
-    attackMobs = true,
-    attackPlayers = true
-}
-
--- 掃描邏輯 A：怪物
-local function ProcessEnemies(OthersEnemies, Folder)
-    if not Folder or not FastAttack.attackMobs then return nil end
-    local BasePart = nil
-    for _, Enemy in ipairs(Folder:GetChildren()) do
-        if Enemy == Player.Character or not IsAlive(Enemy) then continue end
-        local foundPart = GetRandomValidPart(Enemy)
-        if foundPart and Player:DistanceFromCharacter(foundPart.Position) < (_G.Settings.Distance or FastAttack.Distance) then
-            -- 🐾 整合拉怪功能
-            if _G.Settings.PullEnemies then
-                local eRoot = Enemy:FindFirstChild("HumanoidRootPart")
-                local myRoot = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
-                if eRoot and myRoot then eRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3) end
+-- 🔍 2. 獲取最近玩家的工具函數
+local function GetNearestStickyTarget()
+    local nearest, dist = nil, 2000
+    for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+        if p ~= Player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local d = Player:DistanceFromCharacter(p.Character.HumanoidRootPart.Position)
+            if d < dist then
+                dist = d
+                nearest = p
             end
-            table.insert(OthersEnemies, {Enemy, foundPart})
-            BasePart = foundPart
         end
     end
-    return BasePart
+    return nearest
 end
 
--- 掃描邏輯 B：玩家
-local function ProcessRealPlayers(OthersEnemies)
-    if not FastAttack.attackPlayers then return nil end
-    local BasePart = nil
-    for _, OtherPlayer in ipairs(Players:GetPlayers()) do
-        if OtherPlayer == Player then continue end
-        local OtherChar = OtherPlayer.Character
-        if not IsAlive(OtherChar) then continue end
-        local foundPart = GetRandomValidPart(OtherChar)
-        if foundPart and Player:DistanceFromCharacter(foundPart.Position) < (_G.Settings.Distance or FastAttack.Distance) then
-            table.insert(OthersEnemies, {OtherChar, foundPart})
-            BasePart = foundPart
-        end
+-- 🧬 3. 混合黏人執行核心 (連動主腳本開關)
+RunService.Heartbeat:Connect(function()
+    -- 這裡直接監聽主腳本控制的 _G.Settings.StickyEnabled 喵！
+    if not _G.NekoRunning or not _G.Settings.StickyEnabled then 
+        _G.Settings.StickyTarget = nil -- 關閉時清空目標
+        return 
     end
-    return BasePart
-end
-
--- ⚔️ 神刀死循環 (核心發動)
-task.spawn(function()
-    while true do
-        local delay = (_G.Settings and _G.Settings.ClickDelay) or 0.1
-        task.wait(delay)
-
-        if _G.NekoRunning and _G.NekoAttack and _G.Settings.Mode ~= "None" then
-            pcall(function()
-                local Equipped = Player.Character and Player.Character:FindFirstChildOfClass("Tool")
-                if Equipped and Equipped.ToolTip ~= "Gun" then
-                    local OthersEnemies = {}
-                    local _, _, regAtk, regHit, EnemiesFolder = CheckAndGetCoreComponents()
-                    
-                    if EnemiesFolder then
-                        local Part1 = ProcessEnemies(OthersEnemies, EnemiesFolder)
-                        local Part2 = (_G.Settings.Mode == "All") and ProcessRealPlayers(OthersEnemies) or nil
-                        
-                        local TargetPart = Part1 or Part2
-                        if TargetPart and #OthersEnemies > 0 and regAtk and regHit then
-                            regAtk:FireServer(delay)
-                            regHit:FireServer(TargetPart, OthersEnemies)
-                        end
-                    end
-                end
-            end)
+    
+    -- 如果還沒鎖定目標，自動搜尋
+    if not _G.Settings.StickyTarget then
+        _G.Settings.StickyTarget = GetNearestStickyTarget()
+    end
+    
+    local myChar = Player.Character
+    local targetPlayer = _G.Settings.StickyTarget
+    local tChar = targetPlayer and targetPlayer.Character
+    
+    if myChar and tChar and IsAlive(tChar) then
+        local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+        local tRoot = tChar:FindFirstChild("HumanoidRootPart")
+        
+        if myRoot and tRoot then
+            local goalCF = tRoot.CFrame * _G.Settings.StickyOffset
+            local dist = (myRoot.Position - goalCF.Position).Magnitude
+            
+            if dist > _G.Settings.StickyDistance then
+                myRoot.CFrame = goalCF -- 🚀 500M 瞬移召喚
+            else
+                -- ✨ 極速吸附 (狐狸獵手模式)
+                myRoot.CFrame = myRoot.CFrame:Lerp(goalCF, _G.Settings.StickyLerp)
+            end
         end
+    else
+        -- 目標消失或死亡時重新掃描
+        _G.Settings.StickyTarget = GetNearestStickyTarget()
     end
 end)
 
-print("🐾 NEKOOOOO 神刀全功能引擎 (含 V4) 已啟動！傷害判定已鎖定喵。")
+print("🐾 NEKO 黏人核心引擎已就緒，等待主腳本指揮喵！")
