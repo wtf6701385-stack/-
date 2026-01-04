@@ -1,17 +1,18 @@
 -- =====================================
--- 🐾 NEKO MAIN SCRIPT (Stable Full)
+-- 🐾 NEKO MAIN SCRIPT (FINAL STABLE)
 -- =====================================
 
 if getgenv().NEKO_RUNNING then return end
 getgenv().NEKO_RUNNING = true
 
 -- =====================================
--- 🛡️ 白名單驗證（最前，UI 之前）
+-- 🛡️ 白名單驗證（最前）
 -- =====================================
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
 
 local WHITELIST = {
     ["Kadys5373"]     = true,
@@ -37,7 +38,7 @@ if not WHITELIST[LocalPlayer.Name] then
     return
 end
 
--- 成功通報（延遲，避免卡載入）
+-- 成功通報（延遲）
 task.spawn(function()
     task.wait(5)
     pcall(function()
@@ -48,19 +49,21 @@ task.spawn(function()
 end)
 
 -- =====================================
--- ♻️ 環境清理（避免重複）
+-- ♻️ 環境清理（只清「舊 UI」，不殺自己）
 -- =====================================
 
-pcall(function()
-    local CoreGui = game:GetService("CoreGui")
-    for _, n in ipairs({"貓貓腳本","NEKO","NekoUI"}) do
-        local g = CoreGui:FindFirstChild(n)
-        if g then g:Destroy() end
-    end
-end)
+if not getgenv().NEKO_UI_CLEANED then
+    getgenv().NEKO_UI_CLEANED = true
+    pcall(function()
+        for _, n in ipairs({"NEKO","NekoUI"}) do
+            local g = CoreGui:FindFirstChild(n)
+            if g then g:Destroy() end
+        end
+    end)
+end
 
 -- =====================================
--- 🌐 全域狀態（UI ↔ 核心共用）
+-- 🌐 全域狀態（UI ↔ 核心）
 -- =====================================
 
 _G.NEKO_STATUS = {
@@ -70,15 +73,17 @@ _G.NEKO_STATUS = {
 }
 
 _G.Settings = {
-    Distance = 3000,     -- 🔒 固定
+    Distance = 3000, -- 🔒 固定（你已決定）
+    Speed    = false,
 }
 
 -- =====================================
--- 📦 載入 UI Library（你現在用的那支）
+-- 📦 載入 UI Library（你現在那支）
+-- ⚠️ 這裡只換成你實際的 UI 連結即可
 -- =====================================
 
 local library = loadstring(game:HttpGet("YOUR_UI_LIBRARY_URL"))()
-local Window = library.new("NEKO BF")
+local Window, ScreenGui = library.new("NEKO BF")
 
 -- =====================================
 -- 📢 公告 / 狀態（第一頁）
