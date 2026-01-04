@@ -1,55 +1,58 @@
--- [[ Ok 完整版 - 下載位置：GitHub/Ok ]]
-local library = {}
-local services = setmetatable({}, {__index = function(t, k) return game:GetService(k) end})
+-- [[ 🐾 NEKO x HOHO - MAIN LOADER 🐾 ]] --
 
-function library.new(name)
-    local sg = Instance.new("ScreenGui", services.CoreGui)
-    sg.IgnoreGuiInset = true; sg.ResetOnSpawn = false
-    
-    local Main = Instance.new("Frame", sg)
-    Main.Size = UDim2.new(0, 520, 0, 330); Main.Position = UDim2.new(0.5, -260, 0.5, -165)
-    Main.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
-    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
-    
-    -- 漸變邊框 (主人最愛)
-    local Stroke = Instance.new("UIStroke", Main); Stroke.Thickness = 2.5
-    local Grad = Instance.new("UIGradient", Stroke); Grad.Color = ColorSequence.new(Color3.fromRGB(255, 100, 200), Color3.fromRGB(100, 150, 255))
-    task.spawn(function() while task.wait(0.02) do Grad.Rotation = Grad.Rotation + 2 end end)
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
 
-    local TabContainer = Instance.new("Frame", Main) -- 側邊欄
-    TabContainer.Size = UDim2.new(0, 150, 1, 0); TabContainer.BackgroundTransparency = 1
-    local TL = Instance.new("UIListLayout", TabContainer); TL.Padding = UDim.new(0, 5)
+-- 1. 遊戲偵測邏輯
+local GameList = {
+    [994732206]  = "e4aedc7ccd2bacd83555baa884f3d4b1", -- Blox Fruit
+    [5750914919] = "b94343ca266a778e5da8d72e92d4aab5", -- Fisch
+    [4777817887] = "35ad587b07c00b82c218fcf0e55eeea6"  -- Blade Ball
+}
+local scriptId = GameList[game.GameId] or _G.loadCustomId
 
-    local PageContainer = Instance.new("Frame", Main)
-    PageContainer.Size = UDim2.new(1, -160, 1, -20); PageContainer.Position = UDim2.new(0, 155, 0, 10); PageContainer.BackgroundTransparency = 1
-
-    local window = { current = nil }
-    function window:Tab(tName)
-        local Page = Instance.new("ScrollingFrame", PageContainer); Page.Size = UDim2.new(1, 0, 1, 0); Page.Visible = false; Page.BackgroundTransparency = 1; Page.ScrollBarThickness = 0
-        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
-        
-        local btn = Instance.new("TextButton", TabContainer)
-        btn.Size = UDim2.new(1, -10, 0, 35); btn.Text = tName; btn.BackgroundColor3 = Color3.fromRGB(25, 25, 30); btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-        Instance.new("UICorner", btn)
-        
-        btn.Activated:Connect(function() -- Delta 觸控優化
-            if window.current then window.current.P.Visible = false end
-            Page.Visible = true; window.current = {P = Page}
-        end)
-        if not window.current then Page.Visible = true; window.current = {P = Page} end
-
-        local tabFuncs = {}
-        function tabFuncs:Toggle(text, cb)
-            local t = Instance.new("TextButton", Page); t.Size = UDim2.new(0.95, 0, 0, 35); t.Text = "  " .. text; t.TextXAlignment = 0; t.BackgroundColor3 = Color3.fromRGB(30,30,40); t.TextColor3 = Color3.fromRGB(255,255,255)
-            Instance.new("UICorner", t)
-            local s = false
-            t.Activated:Connect(function() s = not s; t.BackgroundColor3 = s and Color3.fromRGB(255,100,200) or Color3.fromRGB(30,30,40); cb(s) end)
-        end
-        function tabFuncs:Dropdown(text, list, cb)
-            -- 簡化版 Dropdown 邏輯...
-        end
-        return tabFuncs
-    end
-    return window
+if not scriptId then
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/acsu123/HohoV2/refs/heads/main/ScriptLoadButOlder.lua'))()
+    return
 end
-return library
+
+-- 2. 載入 Luarmor API
+local api = loadstring(game:HttpGet("https://sdkapi-public.luarmor.net/library.lua"))()
+api.script_id = scriptId
+
+-- 3. 載入分離出的 UI 模組 (這裡改為你 GitHub 的位子)
+-- ⚠️ 請將下方的網址替換成你上傳 UI.lua 後的 RAW 連結
+local UI_Loader = loadstring(game:HttpGet("YOUR_UI_GITHUB_LINK"))()
+local UI = UI_Loader.CreateUI() -- 呼叫 UI 生成函數
+
+-- 4. 功能對接 (Logic Linking)
+UI.SubmitBtn.MouseButton1Click:Connect(function()
+    local key = UI.Textbox.Text
+    key = key:gsub("[%s\t\r\n]", "")
+    
+    local status = api.check_key(key)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "NEKO Key System",
+        Text = status.message
+    })
+    
+    if status.code == "KEY_VALID" then
+        writefile("HohoKeyV4.txt", key)
+        UI.Destroy() -- 驗證成功後關閉 UI
+        api.load_script()
+    end
+end)
+
+UI.GetBtn.MouseButton1Click:Connect(function()
+    setclipboard('https://hehehub-acsu123.pythonanywhere.com/api/getkey?hwid=' .. tick())
+end)
+
+-- 5. 自動讀取舊 Key
+if isfile("HohoKeyV4.txt") then
+    local savedKey = readfile("HohoKeyV4.txt")
+    UI.Textbox.Text = savedKey
+    -- 自動執行一次檢查
+end
+
+print("🐾 NEKO 核心載入完成，等待 Key 驗證...")
